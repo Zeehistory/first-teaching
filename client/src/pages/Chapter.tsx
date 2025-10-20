@@ -12,7 +12,7 @@ import TextSizeControl from "@/components/TextSizeControl";
 import PageReferenceInput from "@/components/PageReferenceInput";
 import { volumes } from "@/lib/volumes";
 import { buildSectionHierarchy } from "@/lib/sectionHierarchy";
-import type { Footnote, Section } from "@shared/schema";
+import type { Footnote } from "@shared/schema";
 
 export default function Chapter() {
   const [, params] = useRoute("/v/:volumeNumber/:id");
@@ -108,13 +108,6 @@ export default function Chapter() {
     ? sectionHierarchy.trails.get(currentSection.id) ?? []
     : [];
 
-  const activeSectionIds = currentSection
-    ? new Set([
-        ...sectionTrail.map((ancestor: Section) => ancestor.id),
-        currentSection.id,
-      ])
-    : new Set<string>();
-
   const handleSectionClick = (
     volumeNo: number,
     chapId: string,
@@ -146,7 +139,6 @@ export default function Chapter() {
               chapters={bookData.chapters}
               currentChapterId={chapterId}
               currentSectionId={currentSectionId}
-              activeSectionIds={activeSectionIds}
               onHomeClick={(volumeNo) => setLocation(`/v/${volumeNo}`)}
               onSectionClick={handleSectionClick}
             />
@@ -195,36 +187,42 @@ export default function Chapter() {
               {highlightTerm && highlightMatches > 0 && highlightIndex !== null && (
                 <div className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-sans text-muted-foreground shadow-sm">
                   <span className="tracking-wide">
-                    {highlightIndex + 1}/{highlightMatches}
+                    {highlightMatches === 1
+                      ? `1 of 1`
+                      : `${highlightIndex + 1} / ${highlightMatches}`}
                   </span>
-                  <button
-                    type="button"
-                    className="hover:text-foreground transition-colors"
-                    onClick={() =>
-                      setHighlightIndex((prev) =>
-                        prev === null || highlightMatches === 0
-                          ? prev
-                          : (prev + highlightMatches - 1) % highlightMatches
-                      )
-                    }
-                    aria-label="Previous match"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    className="hover:text-foreground transition-colors"
-                    onClick={() =>
-                      setHighlightIndex((prev) =>
-                        prev === null || highlightMatches === 0
-                          ? prev
-                          : (prev + 1) % highlightMatches
-                      )
-                    }
-                    aria-label="Next match"
-                  >
-                    ›
-                  </button>
+                  {highlightMatches > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className="hover:text-foreground transition-colors"
+                        onClick={() =>
+                          setHighlightIndex((prev) =>
+                            prev === null || highlightMatches === 0
+                              ? prev
+                              : (prev + highlightMatches - 1) % highlightMatches
+                          )
+                        }
+                        aria-label="Previous match"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        className="hover:text-foreground transition-colors"
+                        onClick={() =>
+                          setHighlightIndex((prev) =>
+                            prev === null || highlightMatches === 0
+                              ? prev
+                              : (prev + 1) % highlightMatches
+                          )
+                        }
+                        aria-label="Next match"
+                      >
+                        ›
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
               <Button
