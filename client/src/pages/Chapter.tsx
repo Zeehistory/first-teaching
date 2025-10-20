@@ -8,6 +8,7 @@ import SearchOverlay from "@/components/SearchOverlay";
 import FootnotePanel from "@/components/FootnotePanel";
 import ReadingProgress from "@/components/ReadingProgress";
 import ThemeToggle from "@/components/ThemeToggle";
+import TextSizeControl from "@/components/TextSizeControl";
 import PageReferenceInput from "@/components/PageReferenceInput";
 import { volumes } from "@/lib/volumes";
 import type { Footnote } from "@shared/schema";
@@ -158,6 +159,11 @@ export default function Chapter() {
             </div>
 
             <div className="flex items-center gap-2">
+              <TextSizeControl
+                textSize={textSize}
+                onIncrease={() => setTextSize((s) => Math.min(s + 2, 22))}
+                onDecrease={() => setTextSize((s) => Math.max(s - 2, 14))}
+              />
               <Button
                 variant="ghost"
                 size="icon"

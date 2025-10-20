@@ -6,6 +6,22 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+const BASIC_USER = process.env.BASIC_USER ?? "reader";
+const BASIC_PASS = process.env.BASIC_PASS ?? "the-first-teaching-testing-2025";
+
+app.use((req, res, next) => {
+  const header = req.headers.authorization;
+  const token = header && header.startsWith("Basic ") ? header.slice(6) : "";
+  const [user, pass] = token ? Buffer.from(token, "base64").toString().split(":") : ["", ""];
+
+  if (user === BASIC_USER && pass === BASIC_PASS) {
+    return next();
+  }
+
+  res.set("WWW-Authenticate", 'Basic realm="First Teaching"');
+  return res.status(401).send("Authentication required.");
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
