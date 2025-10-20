@@ -14,7 +14,7 @@ interface SearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   bookData: BookData;
-  onResultClick: (chapterId: string, sectionId: string) => void;
+  onResultClick: (volumeNumber: number, chapterId: string, sectionId: string, query: string) => void;
 }
 
 export default function SearchOverlay({
@@ -37,14 +37,15 @@ export default function SearchOverlay({
 
     bookData.chapters.forEach((chapter) => {
       chapter.sections.forEach((section) => {
+        const plainContent = section.content.replace(/<[^>]+>/g, " ");
         if (
           section.title.toLowerCase().includes(lowerQuery) ||
-          section.content.toLowerCase().includes(lowerQuery)
+          plainContent.toLowerCase().includes(lowerQuery)
         ) {
-          const index = section.content.toLowerCase().indexOf(lowerQuery);
+          const index = plainContent.toLowerCase().indexOf(lowerQuery);
           const start = Math.max(0, index - 50);
-          const end = Math.min(section.content.length, index + query.length + 50);
-          const snippet = section.content.substring(start, end);
+          const end = Math.min(plainContent.length, index + query.length + 50);
+          const snippet = plainContent.substring(start, end);
 
           searchResults.push({
             chapter,
@@ -108,15 +109,20 @@ export default function SearchOverlay({
           {results.map((result, index) => (
             <button
               key={index}
-              onClick={() => {
-                onResultClick(result.chapter.id, result.section.id);
-                onClose();
-              }}
+            onClick={() => {
+              onResultClick(
+                bookData.volumeNumber,
+                result.chapter.id,
+                result.section.id,
+                query.trim()
+              );
+              onClose();
+            }}
               className="block w-full text-left p-6 bg-card rounded-md border border-card-border hover-elevate active-elevate-2"
               data-testid={`search-result-${index}`}
             >
               <div className="text-sm font-sans text-primary mb-1">
-                Chapter {result.chapter.number}: {result.chapter.title}
+                Volume {bookData.volumeNumber} • {result.chapter.title}
               </div>
               <div className="text-base font-medium mb-2">
                 {result.section.title}

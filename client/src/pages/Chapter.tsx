@@ -8,64 +8,102 @@ import SearchOverlay from "@/components/SearchOverlay";
 import FootnotePanel from "@/components/FootnotePanel";
 import ReadingProgress from "@/components/ReadingProgress";
 import ThemeToggle from "@/components/ThemeToggle";
-import TextSizeControl from "@/components/TextSizeControl";
 import PageReferenceInput from "@/components/PageReferenceInput";
-import { mockBookData } from "@/lib/mockData";
+import { volumes } from "@/lib/volumes";
 import type { Footnote } from "@shared/schema";
 
 export default function Chapter() {
-  const [, params] = useRoute("/chapter/:id");
+  const [, params] = useRoute("/volume/:volumeNumber/chapter/:id");
   const [location, setLocation] = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedFootnote, setSelectedFootnote] = useState<Footnote | null>(null);
   const [textSize, setTextSize] = useState(() => {
     const saved = localStorage.getItem("textSize");
-    return saved ? parseInt(saved) : 18;
+    return saved ? parseInt(saved, 10) : 18;
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [highlightTerm, setHighlightTerm] = useState<string | null>(null);
 
   const searchParams = new URLSearchParams(location.split("?")[1]);
   const sectionParam = searchParams.get("section");
+  const highlightParam = searchParams.get("highlight");
 
-  const chapterId = params?.id || null;
-  const chapter = mockBookData.chapters.find((c) => c.id === chapterId);
+  const volumeNumber = params?.volumeNumber ? parseInt(params.volumeNumber, 10) : NaN;
+  const chapterId = params?.id ?? null;
+
+  const volume = volumes.find((entry) => entry.number === volumeNumber && entry.data);
+  const bookData = volume?.data;
+  const chapter = bookData?.chapters.find((c) => c.id === chapterId) ?? null;
+
+  const firstSectionId =
+    chapter?.sections.find((section) => section.content.trim().length > 0)?.id ??
+    chapter?.sections[0]?.id ??
+    null;
+
   const [currentSectionId, setCurrentSectionId] = useState<string | null>(
-    sectionParam || chapter?.sections[0]?.id || null
+    sectionParam || firstSectionId
   );
 
   useEffect(() => {
     if (sectionParam) {
       setCurrentSectionId(sectionParam);
+    } else if (firstSectionId) {
+      setCurrentSectionId(firstSectionId);
     }
-  }, [sectionParam]);
+  }, [sectionParam, firstSectionId]);
+
+  useEffect(() => {
+    if (highlightParam && highlightParam.trim().length > 0) {
+      setHighlightTerm(highlightParam.trim());
+    } else {
+      setHighlightTerm(null);
+    }
+  }, [highlightParam]);
 
   useEffect(() => {
     localStorage.setItem("textSize", textSize.toString());
   }, [textSize]);
 
-  if (!chapter) {
+  if (!bookData || !chapter) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-heading mb-4">Chapter not found</h1>
-          <Button onClick={() => setLocation("/")}>Return Home</Button>
+      <div className="flex items-center justify-center min-h-screen px-6 text-center">
+        <div className="max-w-xl">
+          <h1 className="text-3xl font-heading mb-4">Volume Content Unavailable</h1>
+          <p className="text-muted-foreground mb-6">
+            The chapter you&apos;re looking for resides in a volume that has not yet been
+            released in this digital companion. Please select an available volume from
+            the main library to continue reading.
+          </p>
+          <Button onClick={() => setLocation("/")}>Back to Volume Library</Button>
         </div>
       </div>
     );
   }
 
-  const currentSection = chapter.sections.find((s) => s.id === currentSectionId);
-  const currentSectionIndex = chapter.sections.findIndex(
-    (s) => s.id === currentSectionId
-  );
-  const prevSection = currentSectionIndex > 0 ? chapter.sections[currentSectionIndex - 1] : null;
-  const nextSection = currentSectionIndex < chapter.sections.length - 1 
-    ? chapter.sections[currentSectionIndex + 1] 
-    : null;
+  const currentSection = chapter.sections.find((s) => s.id === currentSectionId) ?? null;
+  const currentSectionIndex = chapter.sections.findIndex((s) => s.id === currentSectionId);
+  const prevSection =
+    currentSectionIndex > 0 ? chapter.sections[currentSectionIndex - 1] : null;
+  const nextSection =
+    currentSectionIndex > -1 && currentSectionIndex < chapter.sections.length - 1
+      ? chapter.sections[currentSectionIndex + 1]
+      : null;
 
-  const handleSectionClick = (chapterId: string, sectionId: string) => {
+  const handleSectionClick = (
+    volumeNo: number,
+    chapId: string,
+    sectionId: string,
+    highlight?: string
+  ) => {
     setCurrentSectionId(sectionId);
-    setLocation(`/chapter/${chapterId}?section=${sectionId}`);
+    const params = new URLSearchParams();
+    params.set("section", sectionId);
+    const trimmedHighlight = highlight?.trim();
+    if (trimmedHighlight) {
+      params.set("highlight", trimmedHighlight);
+    }
+    setLocation(`/volume/${volumeNo}/chapter/${chapId}?${params.toString()}`);
+    setHighlightTerm(trimmedHighlight ?? null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -76,10 +114,11 @@ export default function Chapter() {
         {sidebarOpen && (
           <div className="w-80 flex-shrink-0 overflow-hidden">
             <ChapterSidebar
-              chapters={mockBookData.chapters}
+              volumeNumber={bookData.volumeNumber}
+              chapters={bookData.chapters}
               currentChapterId={chapterId}
               currentSectionId={currentSectionId}
-              onHomeClick={() => setLocation("/")}
+              onHomeClick={(volumeNo) => setLocation(`/volume/${volumeNo}`)}
               onSectionClick={handleSectionClick}
             />
           </div>
@@ -110,17 +149,13 @@ export default function Chapter() {
                 </svg>
               </Button>
               <PageReferenceInput
-                chapters={mockBookData.chapters}
+                volumeNumber={bookData.volumeNumber}
+                chapters={bookData.chapters}
                 onNavigate={handleSectionClick}
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <TextSizeControl
-                textSize={textSize}
-                onIncrease={() => setTextSize((s) => Math.min(s + 2, 22))}
-                onDecrease={() => setTextSize((s) => Math.max(s - 2, 14))}
-              />
               <Button
                 variant="ghost"
                 size="icon"
@@ -138,8 +173,8 @@ export default function Chapter() {
               <ChapterContent
                 section={currentSection}
                 chapterTitle={chapter.title}
-                chapterNumber={chapter.number}
                 textSize={textSize}
+                highlightTerm={highlightTerm}
                 onFootnoteClick={setSelectedFootnote}
               />
             )}
@@ -150,18 +185,16 @@ export default function Chapter() {
                   {prevSection && (
                     <Button
                       variant="outline"
-                      onClick={() => handleSectionClick(chapter.id, prevSection.id)}
+                      onClick={() =>
+                        handleSectionClick(bookData.volumeNumber, chapter.id, prevSection.id)
+                      }
                       data-testid="button-prev-section"
                       className="gap-2"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       <div className="text-left">
-                        <div className="text-xs text-muted-foreground font-sans">
-                          Previous
-                        </div>
-                        <div className="font-medium line-clamp-1">
-                          {prevSection.title}
-                        </div>
+                        <div className="text-xs text-muted-foreground font-sans">Previous</div>
+                        <div className="font-medium line-clamp-1">{prevSection.title}</div>
                       </div>
                     </Button>
                   )}
@@ -170,17 +203,15 @@ export default function Chapter() {
                   {nextSection && (
                     <Button
                       variant="outline"
-                      onClick={() => handleSectionClick(chapter.id, nextSection.id)}
+                      onClick={() =>
+                        handleSectionClick(bookData.volumeNumber, chapter.id, nextSection.id)
+                      }
                       data-testid="button-next-section"
                       className="gap-2"
                     >
                       <div className="text-right">
-                        <div className="text-xs text-muted-foreground font-sans">
-                          Next
-                        </div>
-                        <div className="font-medium line-clamp-1">
-                          {nextSection.title}
-                        </div>
+                        <div className="text-xs text-muted-foreground font-sans">Next</div>
+                        <div className="font-medium line-clamp-1">{nextSection.title}</div>
                       </div>
                       <ArrowRight className="h-4 w-4" />
                     </Button>
@@ -195,8 +226,10 @@ export default function Chapter() {
       <SearchOverlay
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        bookData={mockBookData}
-        onResultClick={handleSectionClick}
+        bookData={bookData}
+        onResultClick={(volumeNo, chapterId, sectionId, term) =>
+          handleSectionClick(volumeNo, chapterId, sectionId, term)
+        }
       />
 
       <FootnotePanel

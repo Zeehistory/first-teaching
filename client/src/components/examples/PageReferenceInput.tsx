@@ -1,13 +1,14 @@
 import PageReferenceInput from "../PageReferenceInput";
-import { mockBookData } from "@/lib/mockData";
+import { completeBookData } from "@/lib/bookContent";
 
 export default function PageReferenceInputExample() {
   return (
     <div className="flex items-center justify-center p-8">
       <PageReferenceInput
-        chapters={mockBookData.chapters}
-        onNavigate={(chapterId, sectionId) => {
-          console.log("Navigate to:", chapterId, sectionId);
+        volumeNumber={completeBookData.volumeNumber}
+        chapters={completeBookData.chapters}
+        onNavigate={(volumeNumber, chapterId, sectionId) => {
+          console.log("Navigate to:", volumeNumber, chapterId, sectionId);
         }}
       />
     </div>

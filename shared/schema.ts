@@ -7,9 +7,24 @@ export interface Footnote {
   sectionId: string;
 }
 
+export const insertUserSchema = z.object({
+  username: z.string(),
+  passwordHash: z.string(),
+});
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export const userSchema = insertUserSchema.extend({
+  id: z.string(),
+});
+
+export type User = z.infer<typeof userSchema>;
+
 export interface Section {
   id: string;
   title: string;
+  level: number;
+  parentId: string | null;
   content: string;
   pageReference?: number;
   footnotes: Footnote[];
@@ -32,4 +47,19 @@ export interface BookData {
   introduction: string;
   totalVolumes: number;
   chapters: Chapter[];
+}
+
+export type VolumeStatus = "available" | "in-progress" | "coming-soon";
+
+export interface VolumeSummary {
+  number: number;
+  title: string;
+  subtitle?: string;
+  description: string;
+  status: VolumeStatus;
+  coverImage?: string;
+}
+
+export interface Volume extends VolumeSummary {
+  data?: BookData;
 }

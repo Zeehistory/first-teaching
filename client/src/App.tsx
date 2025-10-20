@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Home from "@/pages/Home";
+import Volume from "@/pages/Volume";
 import Chapter from "@/pages/Chapter";
 import NotFound from "@/pages/not-found";
 
@@ -12,7 +13,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/chapter/:id" component={Chapter} />
+      <Route path="/volume/:volumeNumber/chapter/:id" component={Chapter} />
+      <Route path="/volume/:volumeNumber" component={Volume} />
       <Route component={NotFound} />
     </Switch>
   );

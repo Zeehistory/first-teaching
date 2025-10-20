@@ -10,11 +10,13 @@ import {
 import type { Chapter } from "@shared/schema";
 
 interface PageReferenceInputProps {
+  volumeNumber: number;
   chapters: Chapter[];
-  onNavigate: (chapterId: string, sectionId: string) => void;
+  onNavigate: (volumeNumber: number, chapterId: string, sectionId: string) => void;
 }
 
 export default function PageReferenceInput({
+  volumeNumber,
   chapters,
   onNavigate,
 }: PageReferenceInputProps) {
@@ -29,7 +31,7 @@ export default function PageReferenceInput({
     for (const chapter of chapters) {
       for (const section of chapter.sections) {
         if (section.pageReference === page) {
-          onNavigate(chapter.id, section.id);
+          onNavigate(volumeNumber, chapter.id, section.id);
           setOpen(false);
           setPageNumber("");
           return;

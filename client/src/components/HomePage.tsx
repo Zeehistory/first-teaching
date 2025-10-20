@@ -1,4 +1,4 @@
-import { Book, Search as SearchIcon } from "lucide-react";
+import { Book, Search as SearchIcon, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { BookData } from "@shared/schema";
@@ -8,16 +8,31 @@ interface HomePageProps {
   bookData: BookData;
   onChapterClick: (chapterId: string) => void;
   onSearchClick: () => void;
+  onBackToLibrary?: () => void;
 }
 
 export default function HomePage({
   bookData,
   onChapterClick,
   onSearchClick,
+  onBackToLibrary,
 }: HomePageProps) {
   return (
     <div className="min-h-screen">
       <div className="max-w-4xl mx-auto px-6 py-16">
+        {onBackToLibrary && (
+          <div className="mb-10">
+            <Button
+              variant="ghost"
+              onClick={onBackToLibrary}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Main Library
+            </Button>
+          </div>
+        )}
+
         <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
             <div className="p-4 bg-primary/10 rounded-full">
@@ -85,22 +100,15 @@ export default function HomePage({
               onClick={() => onChapterClick(chapter.id)}
               data-testid={`chapter-card-${chapter.id}`}
             >
-              <div className="flex items-start gap-4 mb-3">
-                {chapter.number > 0 && (
-                  <span className="text-3xl font-heading text-primary flex-shrink-0">
-                    {chapter.number}
-                  </span>
-                )}
-                <div className="flex-1">
-                  <h2 className="text-xl md:text-2xl font-heading font-medium mb-2">
-                    {chapter.title}
-                  </h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {chapter.description}
-                  </p>
-                  <div className="mt-3 text-sm text-primary font-sans">
-                    {chapter.sections.length} section{chapter.sections.length !== 1 ? "s" : ""}
-                  </div>
+              <div className="mb-3">
+                <h2 className="text-xl md:text-2xl font-heading font-medium mb-2">
+                  {chapter.title}
+                </h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {chapter.description}
+                </p>
+                <div className="mt-3 text-sm text-primary font-sans">
+                  {chapter.sections.length} section{chapter.sections.length !== 1 ? "s" : ""}
                 </div>
               </div>
             </Card>

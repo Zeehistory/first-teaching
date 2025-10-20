@@ -63,9 +63,10 @@ Preferred communication style: Simple, everyday language.
 
 **Content Structure**:
 - Book data modeled as hierarchical: BookData → Chapters → Sections → Footnotes
+- Volume library defined in `client/src/lib/volumes.ts` (nineteen volume placeholders, Volume 1 populated)
 - Content includes HTML formatting tags for rich text (bold, italic, underline)
 - Each section can reference physical book page numbers
-- Mock data currently stored in `client/src/lib/mockData.ts` pending CMS/database integration
+- Complete Volume 1 data generated from `Volume1_Speaking the Truth with Love copy.docx` and stored in `client/src/lib/bookContent.ts`
 
 ### Design System
 
@@ -122,9 +123,9 @@ Preferred communication style: Simple, everyday language.
 - `@replit/vite-plugin-dev-banner`: Development banner
 
 ### Content Management
-**Current State**: Static mock data in TypeScript files
+**Current State**: Volume catalog defined in TypeScript (`client/src/lib/volumes.ts`)
 
 **Future Integration Points**: 
-- Content likely to be migrated from `tmp/book-content.txt` and processed HTML files
+- Additional volume manuscripts to be processed from DOCX → HTML via scripts (`scripts/generate_book_data.py`)
 - Schema supports rich text with HTML tags in content strings
 - PostgreSQL database configured via Drizzle for production content storage

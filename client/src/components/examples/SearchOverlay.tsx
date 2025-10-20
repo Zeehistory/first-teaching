@@ -1,7 +1,7 @@
 import { useState } from "react";
 import SearchOverlay from "../SearchOverlay";
 import { Button } from "@/components/ui/button";
-import { mockBookData } from "@/lib/mockData";
+import { completeBookData } from "@/lib/bookContent";
 
 export default function SearchOverlayExample() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,9 +12,9 @@ export default function SearchOverlayExample() {
       <SearchOverlay
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        bookData={mockBookData}
-        onResultClick={(chapterId, sectionId) => {
-          console.log("Navigate to", chapterId, sectionId);
+        bookData={completeBookData}
+        onResultClick={(volumeNumber, chapterId, sectionId, term) => {
+          console.log("Navigate to", volumeNumber, chapterId, sectionId, term);
         }}
       />
     </div>

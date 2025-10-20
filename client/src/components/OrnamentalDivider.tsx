@@ -1,6 +1,10 @@
-export default function OrnamentalDivider() {
+interface OrnamentalDividerProps {
+  className?: string;
+}
+
+export default function OrnamentalDivider({ className = "my-12" }: OrnamentalDividerProps) {
   return (
-    <div className="flex items-center justify-center my-12">
+    <div className={`flex items-center justify-center ${className}`}>
       <svg
         width="120"
         height="24"
