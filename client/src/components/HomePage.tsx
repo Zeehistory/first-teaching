@@ -24,16 +24,38 @@ export default function HomePage({
               <Book className="h-12 w-12 text-primary" />
             </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-heading font-semibold mb-4">
-            {bookData.title}
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground font-heading italic mb-8">
-            {bookData.subtitle}
-          </p>
+          
+          <div className="mb-3">
+            <p className="text-sm font-sans uppercase tracking-wide text-primary mb-2">
+              Volume {bookData.volumeNumber} of {bookData.totalVolumes}
+            </p>
+            <h2 className="text-2xl md:text-3xl font-heading italic text-muted-foreground mb-4">
+              {bookData.volumeTitle}
+            </h2>
+          </div>
+
           <OrnamentalDivider />
-          <p className="text-lg leading-relaxed max-w-2xl mx-auto">
-            {bookData.introduction}
+
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-heading font-semibold mb-3">
+              {bookData.seriesTitle}
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground font-heading italic">
+              {bookData.seriesSubtitle}
+            </p>
+          </div>
+
+          <p className="text-base font-sans text-muted-foreground mb-6">
+            by {bookData.author}
           </p>
+
+          <OrnamentalDivider />
+
+          <div className="max-w-2xl mx-auto">
+            <p className="text-lg leading-relaxed">
+              {bookData.introduction}
+            </p>
+          </div>
         </div>
 
         <div className="flex justify-center mb-12">
@@ -49,7 +71,13 @@ export default function HomePage({
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="mb-8">
+          <h3 className="text-2xl font-heading font-medium text-center mb-8">
+            Table of Contents
+          </h3>
+        </div>
+
+        <div className="space-y-4">
           {bookData.chapters.map((chapter) => (
             <Card
               key={chapter.id}
@@ -57,29 +85,37 @@ export default function HomePage({
               onClick={() => onChapterClick(chapter.id)}
               data-testid={`chapter-card-${chapter.id}`}
             >
-              <div className="flex items-baseline gap-3 mb-3">
-                <span className="text-4xl font-heading text-primary">
-                  {chapter.number}
-                </span>
-                <h2 className="text-2xl font-heading font-medium flex-1">
-                  {chapter.title}
-                </h2>
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                {chapter.description}
-              </p>
-              <div className="mt-4 text-sm text-primary font-sans">
-                {chapter.sections.length} section{chapter.sections.length !== 1 ? "s" : ""}
+              <div className="flex items-start gap-4 mb-3">
+                {chapter.number > 0 && (
+                  <span className="text-3xl font-heading text-primary flex-shrink-0">
+                    {chapter.number}
+                  </span>
+                )}
+                <div className="flex-1">
+                  <h2 className="text-xl md:text-2xl font-heading font-medium mb-2">
+                    {chapter.title}
+                  </h2>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {chapter.description}
+                  </p>
+                  <div className="mt-3 text-sm text-primary font-sans">
+                    {chapter.sections.length} section{chapter.sections.length !== 1 ? "s" : ""}
+                  </div>
+                </div>
               </div>
             </Card>
           ))}
         </div>
 
         <div className="mt-16 text-center">
-          <p className="text-sm text-muted-foreground font-sans">
-            This companion website provides extended discussions referenced in the physical book.
+          <p className="text-sm text-muted-foreground font-sans leading-relaxed">
+            This companion website provides extended discussions and detailed commentary referenced in the physical book.
             <br />
-            Look for page numbers in the margins to find corresponding online content.
+            Look for page numbers throughout the text to find corresponding sections in your printed copy.
+            <br />
+            <span className="italic mt-2 block">
+              "Read, mark, learn, and inwardly digest"
+            </span>
           </p>
         </div>
       </div>

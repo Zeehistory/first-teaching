@@ -24,8 +24,12 @@ export interface Chapter {
 }
 
 export interface BookData {
-  title: string;
-  subtitle: string;
+  volumeNumber: number;
+  volumeTitle: string;
+  seriesTitle: string;
+  seriesSubtitle: string;
+  author: string;
   introduction: string;
+  totalVolumes: number;
   chapters: Chapter[];
 }
