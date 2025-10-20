@@ -86,10 +86,18 @@ export default function ChapterContent({
     const term = highlightTerm?.trim();
     if (!term) return;
 
-    const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    if (!escapedTerm) return;
+    const candidates = Array.from(
+      new Set(
+        [term, ...term.split(/\s+/)]
+          .map((token) => token.trim())
+          .filter((token) => token.length > 0)
+          .map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      )
+    ).filter(Boolean);
 
-    const regex = new RegExp(escapedTerm, "gi");
+    if (!candidates.length) return;
+
+    const regexes = candidates.map((pattern) => new RegExp(pattern, "gi"));
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     const createdMarks: HTMLElement[] = [];
 
@@ -100,34 +108,52 @@ export default function ChapterContent({
       if (textNode.parentElement?.closest("sup[data-footnote]")) {
         continue;
       }
-      if (!regex.test(textContent)) {
+
+      const matches: Array<{ start: number; end: number }> = [];
+
+      regexes.forEach((regex) => {
         regex.lastIndex = 0;
-        continue;
-      }
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(textContent)) !== null) {
+          matches.push({ start: match.index, end: match.index + match[0].length });
+          if (match.index === regex.lastIndex) {
+            regex.lastIndex += 1;
+          }
+        }
+      });
+
+      if (!matches.length) continue;
+
+      matches.sort((a, b) => a.start - b.start);
+      const merged: Array<{ start: number; end: number }> = [];
+      matches.forEach((range) => {
+        const last = merged[merged.length - 1];
+        if (!last || range.start >= last.end) {
+          merged.push({ ...range });
+        }
+      });
 
       const frag = document.createDocumentFragment();
-      let lastIndex = 0;
-      textContent.replace(regex, (match, offset) => {
-        const start = Number(offset);
-        if (start > lastIndex) {
-          frag.appendChild(document.createTextNode(textContent.slice(lastIndex, start)));
+      let cursor = 0;
+
+      merged.forEach(({ start, end }) => {
+        if (start > cursor) {
+          frag.appendChild(document.createTextNode(textContent.slice(cursor, start)));
         }
         const mark = document.createElement("mark");
         mark.dataset.highlight = "true";
-        mark.textContent = match;
+        mark.textContent = textContent.slice(start, end);
         frag.appendChild(mark);
         createdMarks.push(mark);
-        lastIndex = start + match.length;
-        return match;
+        cursor = end;
       });
 
-      if (lastIndex < textContent.length) {
-        frag.appendChild(document.createTextNode(textContent.slice(lastIndex)));
+      if (cursor < textContent.length) {
+        frag.appendChild(document.createTextNode(textContent.slice(cursor)));
       }
 
       const parent = textNode.parentNode;
       parent?.replaceChild(frag, textNode);
-      regex.lastIndex = 0;
     }
 
     if (createdMarks.length > 0) {
