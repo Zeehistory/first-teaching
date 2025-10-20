@@ -350,3 +350,29 @@
     inset: -1px;
   }
 }
+
+/* Block quote styling for scripture/important passages */
+.scripture-quote {
+  @apply border-l-4 pl-6 pr-4 py-4 my-6 italic;
+  border-color: hsl(45, 90%, 55%); /* Amber/yellow border */
+  background-color: hsl(40, 40%, 92%); /* Beige background */
+}
+
+/* Ensure HTML formatting renders in chapter content */
+.chapter-prose b,
+.chapter-prose strong {
+  @apply font-bold;
+}
+
+.chapter-prose i,
+.chapter-prose em {
+  @apply italic;
+}
+
+.chapter-prose u {
+  @apply underline;
+}
+
+.chapter-prose sup {
+  @apply align-super text-xs;
+}
