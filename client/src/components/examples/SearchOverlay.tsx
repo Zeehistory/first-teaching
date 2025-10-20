@@ -1,7 +1,7 @@
 import { useState } from "react";
 import SearchOverlay from "../SearchOverlay";
 import { Button } from "@/components/ui/button";
-import { completeBookData } from "@/lib/bookContent";
+import { volumeOneData } from "@/lib/content";
 
 export default function SearchOverlayExample() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +12,7 @@ export default function SearchOverlayExample() {
       <SearchOverlay
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        bookData={completeBookData}
+        bookData={volumeOneData}
         onResultClick={(volumeNumber, chapterId, sectionId, term) => {
           console.log("Navigate to", volumeNumber, chapterId, sectionId, term);
         }}

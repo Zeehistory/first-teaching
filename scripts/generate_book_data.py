@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import html
 import json
 import re
@@ -298,11 +299,21 @@ def build_heading_tree(docx_path: Path) -> Tuple[HeadingNode, Dict[int, str]]:
     style_val = p_style_element.attrib.get(f"{{{NAMESPACE['w']}}}val") if p_style_element is not None else None
     level = heading_level(style_val)
 
+    outline_val: Optional[str] = None
+    if level is None:
+      outline = paragraph.find("w:pPr/w:outlineLvl", NAMESPACE)
+      if outline is not None:
+        outline_val = outline.attrib.get(f"{{{NAMESPACE['w']}}}val")
+        if outline_val and outline_val.isdigit():
+          level = int(outline_val) + 1
+
     if level is not None:
       texts = get_text_elements(paragraph)
       title = "".join(texts).strip()
       if not title:
         continue
+      if outline_val and outline_val.isdigit() and outline_val == "1" and not title.startswith("Select Readings from Volume Two"):
+        level += 1
       while stack and stack[-1].level >= level:
         stack.pop()
       node = HeadingNode(level=level, title=title, parent=stack[-1], order_index=order)
@@ -343,8 +354,11 @@ def blocks_to_html(blocks: List[Block]) -> Tuple[str, Set[int]]:
   return "\n".join(html_parts), collected_footnotes
 
 
-def create_section(node: HeadingNode) -> Tuple[Dict, Set[int]]:
+def create_section(node: HeadingNode) -> Optional[Tuple[Dict, Set[int]]]:
   html_content, footnote_ids = blocks_to_html(node.blocks)
+  if not html_content.strip() and not footnote_ids and not node.children:
+    return None
+
   section = {
     "id": slugify(node.title),
     "title": node.title,
@@ -363,23 +377,28 @@ def build_sections_flat(
   sections: List[Dict] = []
 
   def add_section(node: HeadingNode, parent_id: Optional[str]) -> None:
-    section, footnote_ids = create_section(node)
-    section["parentId"] = parent_id
-    section["footnotes"] = [
-      {
-        "id": f"fn-{section['id']}-{fid}",
-        "number": fid,
-        "content": footnote_map.get(fid, ""),
-        "sectionId": section["id"],
-      }
-      for fid in sorted(footnote_ids)
-    ]
-    sections.append(section)
+    created = create_section(node)
+    if created is not None:
+      section, footnote_ids = created
+      section["parentId"] = parent_id
+      section["footnotes"] = [
+        {
+          "id": f"fn-{section['id']}-{fid}",
+          "number": fid,
+          "content": footnote_map.get(fid, ""),
+          "sectionId": section["id"],
+        }
+        for fid in sorted(footnote_ids)
+      ]
+      sections.append(section)
+      parent_for_children = section["id"]
+    else:
+      parent_for_children = parent_id
 
     for child in node.children:
       if is_chapter_node(child):
         continue
-      add_section(child, section["id"])
+      add_section(child, parent_for_children)
 
   intro_parent: Optional[str] = None
   if chapter_node.blocks:
@@ -424,12 +443,18 @@ def chapter_description_from_sections(sections: List[Dict]) -> str:
   return ""
 
 
-def generate_book_data(docx_path: Path) -> Dict:
+def generate_book_data(
+  docx_path: Path,
+  *,
+  volume_number: int,
+  volume_title: str,
+  introduction: str,
+  series_title: str,
+  series_subtitle: str,
+  author: str,
+  total_volumes: int,
+) -> Dict:
   root, footnotes = build_heading_tree(docx_path)
-
-  series_title = "First Teaching of the Last Message"
-  series_subtitle = "The Divine Science & Its Six Pillars"
-  volume_title = "Speaking the Truth with Love"
 
   chapters: List[Dict] = []
   chapter_number = 1
@@ -455,28 +480,50 @@ def generate_book_data(docx_path: Path) -> Dict:
     traverse(child)
 
   return {
-    "volumeNumber": 1,
+    "volumeNumber": volume_number,
     "volumeTitle": volume_title,
     "seriesTitle": series_title,
     "seriesSubtitle": series_subtitle,
-    "author": "Umar F. Abd-Allah Wymann-Landgraf",
-    "introduction": "This digital companion reproduces the complete text of Volume 1 with preserved inline formatting, cross references, and footnotes.",
-    "totalVolumes": 18,
+    "author": author,
+    "introduction": introduction,
+    "totalVolumes": total_volumes,
     "chapters": chapters,
   }
 
 
 def main() -> None:
-  docx_path = Path("Volume1_Speaking the Truth with Love copy.docx")
-  if not docx_path.exists():
-    raise FileNotFoundError(f"Unable to locate DOCX at {docx_path}")
+  parser = argparse.ArgumentParser(description="Convert DOCX to book content JSON/TypeScript")
+  parser.add_argument("--doc", type=Path, default=Path("content/source/volume1.docx"), help="Path to source DOCX file")
+  parser.add_argument("--out", type=Path, default=Path("client/src/lib/content/volume-data.ts"), help="Destination file path")
+  parser.add_argument("--volume-number", type=int, default=1)
+  parser.add_argument("--volume-title", default="Speaking the Truth with Love")
+  parser.add_argument("--series-title", default="First Teaching of the Last Message")
+  parser.add_argument("--series-subtitle", default="The Divine Science & Its Six Pillars")
+  parser.add_argument("--author", default="Umar F. Abd-Allah Wymann-Landgraf")
+  parser.add_argument("--introduction", default="This digital companion reproduces the complete text of this volume with preserved inline formatting, cross references, and footnotes.")
+  parser.add_argument("--total-volumes", type=int, default=19)
+  parser.add_argument("--export-name", default="volumeData")
+  args = parser.parse_args()
 
-  data = generate_book_data(docx_path)
-  output_path = Path("client/src/lib/bookContent.ts")
+  if not args.doc.exists():
+    raise FileNotFoundError(f"Unable to locate DOCX at {args.doc}")
+
+  data = generate_book_data(
+    args.doc,
+    volume_number=args.volume_number,
+    volume_title=args.volume_title,
+    introduction=args.introduction,
+    series_title=args.series_title,
+    series_subtitle=args.series_subtitle,
+    author=args.author,
+    total_volumes=args.total_volumes,
+  )
+
+  output_path = args.out
   output_path.parent.mkdir(parents=True, exist_ok=True)
   with output_path.open("w", encoding="utf-8") as f:
     f.write('import type { BookData } from "@shared/schema";\n\n')
-    f.write("export const completeBookData: BookData = ")
+    f.write(f"export const {args.export_name}: BookData = ")
     json.dump(data, f, indent=2, ensure_ascii=False)
     f.write(";\n")
 

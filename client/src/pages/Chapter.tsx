@@ -13,7 +13,7 @@ import { volumes } from "@/lib/volumes";
 import type { Footnote } from "@shared/schema";
 
 export default function Chapter() {
-  const [, params] = useRoute("/volume/:volumeNumber/chapter/:id");
+  const [, params] = useRoute("/v/:volumeNumber/:id");
   const [location, setLocation] = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedFootnote, setSelectedFootnote] = useState<Footnote | null>(null);
@@ -25,8 +25,8 @@ export default function Chapter() {
   const [highlightTerm, setHighlightTerm] = useState<string | null>(null);
 
   const searchParams = new URLSearchParams(location.split("?")[1]);
-  const sectionParam = searchParams.get("section");
-  const highlightParam = searchParams.get("highlight");
+  const sectionParam = searchParams.get("s");
+  const highlightParam = searchParams.get("h");
 
   const volumeNumber = params?.volumeNumber ? parseInt(params.volumeNumber, 10) : NaN;
   const chapterId = params?.id ?? null;
@@ -97,12 +97,14 @@ export default function Chapter() {
   ) => {
     setCurrentSectionId(sectionId);
     const params = new URLSearchParams();
-    params.set("section", sectionId);
+    params.set("s", sectionId);
     const trimmedHighlight = highlight?.trim();
     if (trimmedHighlight) {
-      params.set("highlight", trimmedHighlight);
+      params.set("h", trimmedHighlight);
     }
-    setLocation(`/volume/${volumeNo}/chapter/${chapId}?${params.toString()}`);
+    const query = params.toString();
+    const path = `/v/${volumeNo}/${chapId}${query ? `?${query}` : ""}`;
+    setLocation(path);
     setHighlightTerm(trimmedHighlight ?? null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -118,7 +120,7 @@ export default function Chapter() {
               chapters={bookData.chapters}
               currentChapterId={chapterId}
               currentSectionId={currentSectionId}
-              onHomeClick={(volumeNo) => setLocation(`/volume/${volumeNo}`)}
+              onHomeClick={(volumeNo) => setLocation(`/v/${volumeNo}`)}
               onSectionClick={handleSectionClick}
             />
           </div>

@@ -13,8 +13,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/volume/:volumeNumber/chapter/:id" component={Chapter} />
-      <Route path="/volume/:volumeNumber" component={Volume} />
+      <Route path="/v/:volumeNumber/:id" component={Chapter} />
+      <Route path="/v/:volumeNumber" component={Volume} />
       <Route component={NotFound} />
     </Switch>
   );

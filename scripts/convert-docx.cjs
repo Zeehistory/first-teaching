@@ -4,7 +4,7 @@ const path = require("path");
 
 async function convertDocx() {
   try {
-    const docxPath = path.join(__dirname, "../attached_assets/Volume1_Speaking the Truth with Love_1760944571000.docx");
+    const docxPath = path.join(__dirname, "../content/source/volume1.docx");
     
     console.log("Reading DOCX file...");
     const result = await mammoth.convertToHtml({ path: docxPath }, {

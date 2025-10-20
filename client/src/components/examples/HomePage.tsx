@@ -1,10 +1,10 @@
 import HomePage from "../HomePage";
-import { completeBookData } from "@/lib/bookContent";
+import { volumeOneData } from "@/lib/content";
 
 export default function HomePageExample() {
   return (
     <HomePage
-      bookData={completeBookData}
+      bookData={volumeOneData}
       onChapterClick={(id) => console.log("Chapter clicked:", id)}
       onSearchClick={() => console.log("Search clicked")}
     />

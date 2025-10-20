@@ -66,7 +66,6 @@ export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps)
               <span className="text-xs font-sans uppercase tracking-wide text-muted-foreground block">
                 Footnote
               </span>
-              <span className="text-sm text-muted-foreground">Click anywhere outside to close</span>
             </div>
           </div>
           <div className="flex items-center gap-2">

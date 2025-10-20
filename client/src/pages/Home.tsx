@@ -9,7 +9,7 @@ export default function Home() {
     <VolumesLanding
       overview={seriesOverview}
       volumes={volumes}
-      onSelectVolume={(volumeNumber) => setLocation(`/volume/${volumeNumber}`)}
+      onSelectVolume={(volumeNumber) => setLocation(`/v/${volumeNumber}`)}
     />
   );
 }

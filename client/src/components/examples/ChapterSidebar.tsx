@@ -1,9 +1,9 @@
 import { useState } from "react";
 import ChapterSidebar from "../ChapterSidebar";
-import { completeBookData } from "@/lib/bookContent";
+import { volumeOneData } from "@/lib/content";
 
 export default function ChapterSidebarExample() {
-  const initialChapter = completeBookData.chapters[0];
+  const initialChapter = volumeOneData.chapters[0];
   const initialSection = initialChapter.sections[0];
   const [currentChapterId, setCurrentChapterId] = useState<string | null>(initialChapter.id);
   const [currentSectionId, setCurrentSectionId] = useState<string | null>(initialSection.id);
@@ -11,8 +11,8 @@ export default function ChapterSidebarExample() {
   return (
     <div className="h-96 w-80">
       <ChapterSidebar
-        volumeNumber={completeBookData.volumeNumber}
-        chapters={completeBookData.chapters}
+        volumeNumber={volumeOneData.volumeNumber}
+        chapters={volumeOneData.chapters}
         currentChapterId={currentChapterId}
         currentSectionId={currentSectionId}
         onHomeClick={(volumeNumber) => console.log("Home clicked", volumeNumber)}

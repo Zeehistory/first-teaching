@@ -1,12 +1,12 @@
 import type { BookData } from "@shared/schema";
 
-export const completeBookData: BookData = {
+export const volumeOneData: BookData = {
   "volumeNumber": 1,
   "volumeTitle": "Speaking the Truth with Love",
   "seriesTitle": "First Teaching of the Last Message",
   "seriesSubtitle": "The Divine Science & Its Six Pillars",
   "author": "Umar F. Abd-Allah Wymann-Landgraf",
-  "introduction": "This digital companion reproduces the complete text of Volume 1 with preserved inline formatting, cross references, and footnotes.",
+  "introduction": "This digital companion reproduces the complete text of this volume with preserved inline formatting, cross references, and footnotes.",
   "totalVolumes": 19,
   "chapters": [
     {

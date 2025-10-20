@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { volumes } from "@/lib/volumes";
 
 export default function Volume() {
-  const [, params] = useRoute("/volume/:volumeNumber");
+  const [, params] = useRoute("/v/:volumeNumber");
   const [, setLocation] = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -50,7 +50,7 @@ export default function Volume() {
       <HomePage
         bookData={volume.data}
         onChapterClick={(chapterId) =>
-          setLocation(`/volume/${volume.data?.volumeNumber}/chapter/${chapterId}`)
+          setLocation(`/v/${volume.data?.volumeNumber}/${chapterId}`)
         }
         onSearchClick={() => setIsSearchOpen(true)}
         onBackToLibrary={() => setLocation("/")}
@@ -61,9 +61,10 @@ export default function Volume() {
         bookData={volume.data}
         onResultClick={(volumeNo, chapterId, sectionId, term) => {
           const params = new URLSearchParams();
-          params.set("section", sectionId);
-          if (term) params.set("highlight", term);
-          setLocation(`/volume/${volumeNo}/chapter/${chapterId}?${params.toString()}`);
+          params.set("s", sectionId);
+          if (term) params.set("h", term);
+          const query = params.toString();
+          setLocation(`/v/${volumeNo}/${chapterId}?${query}`);
           setIsSearchOpen(false);
         }}
       />
