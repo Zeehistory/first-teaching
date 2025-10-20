@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useRoute } from "wouter";
 import { Search as SearchIcon, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import TextSizeControl from "@/components/TextSizeControl";
 import PageReferenceInput from "@/components/PageReferenceInput";
 import { volumes } from "@/lib/volumes";
-import type { Footnote } from "@shared/schema";
+import { buildSectionHierarchy } from "@/lib/sectionHierarchy";
+import type { Footnote, Section } from "@shared/schema";
 
 export default function Chapter() {
   const [, params] = useRoute("/v/:volumeNumber/:id");
@@ -24,6 +25,8 @@ export default function Chapter() {
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [highlightTerm, setHighlightTerm] = useState<string | null>(null);
+  const [highlightMatches, setHighlightMatches] = useState(0);
+  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
 
   const searchParams = new URLSearchParams(location.split("?")[1]);
   const sectionParam = searchParams.get("s");
@@ -62,6 +65,15 @@ export default function Chapter() {
   }, [highlightParam]);
 
   useEffect(() => {
+    if (highlightTerm) {
+      setHighlightIndex(0);
+    } else {
+      setHighlightIndex(null);
+      setHighlightMatches(0);
+    }
+  }, [highlightTerm]);
+
+  useEffect(() => {
     localStorage.setItem("textSize", textSize.toString());
   }, [textSize]);
 
@@ -81,6 +93,8 @@ export default function Chapter() {
     );
   }
 
+  const sectionHierarchy = useMemo(() => buildSectionHierarchy(chapter.sections), [chapter]);
+
   const currentSection = chapter.sections.find((s) => s.id === currentSectionId) ?? null;
   const currentSectionIndex = chapter.sections.findIndex((s) => s.id === currentSectionId);
   const prevSection =
@@ -89,6 +103,17 @@ export default function Chapter() {
     currentSectionIndex > -1 && currentSectionIndex < chapter.sections.length - 1
       ? chapter.sections[currentSectionIndex + 1]
       : null;
+
+  const sectionTrail = currentSection
+    ? sectionHierarchy.trails.get(currentSection.id) ?? []
+    : [];
+
+  const activeSectionIds = currentSection
+    ? new Set([
+        ...sectionTrail.map((ancestor: Section) => ancestor.id),
+        currentSection.id,
+      ])
+    : new Set<string>();
 
   const handleSectionClick = (
     volumeNo: number,
@@ -121,6 +146,7 @@ export default function Chapter() {
               chapters={bookData.chapters}
               currentChapterId={chapterId}
               currentSectionId={currentSectionId}
+              activeSectionIds={activeSectionIds}
               onHomeClick={(volumeNo) => setLocation(`/v/${volumeNo}`)}
               onSectionClick={handleSectionClick}
             />
@@ -154,7 +180,9 @@ export default function Chapter() {
               <PageReferenceInput
                 volumeNumber={bookData.volumeNumber}
                 chapters={bookData.chapters}
-                onNavigate={handleSectionClick}
+                onNavigate={(volumeNo, chapterId, sectionId) =>
+                  handleSectionClick(volumeNo, chapterId, sectionId)
+                }
               />
             </div>
 
@@ -164,6 +192,41 @@ export default function Chapter() {
                 onIncrease={() => setTextSize((s) => Math.min(s + 2, 22))}
                 onDecrease={() => setTextSize((s) => Math.max(s - 2, 14))}
               />
+              {highlightTerm && highlightMatches > 0 && highlightIndex !== null && (
+                <div className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-sans text-muted-foreground shadow-sm">
+                  <span className="tracking-wide">
+                    {highlightIndex + 1}/{highlightMatches}
+                  </span>
+                  <button
+                    type="button"
+                    className="hover:text-foreground transition-colors"
+                    onClick={() =>
+                      setHighlightIndex((prev) =>
+                        prev === null || highlightMatches === 0
+                          ? prev
+                          : (prev + highlightMatches - 1) % highlightMatches
+                      )
+                    }
+                    aria-label="Previous match"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="hover:text-foreground transition-colors"
+                    onClick={() =>
+                      setHighlightIndex((prev) =>
+                        prev === null || highlightMatches === 0
+                          ? prev
+                          : (prev + 1) % highlightMatches
+                      )
+                    }
+                    aria-label="Next match"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -183,6 +246,18 @@ export default function Chapter() {
                 chapterTitle={chapter.title}
                 textSize={textSize}
                 highlightTerm={highlightTerm}
+                sectionTrail={sectionTrail}
+                currentHighlightIndex={highlightIndex}
+                onHighlightMatches={(count) => {
+                  setHighlightMatches(count);
+                  if (count === 0) {
+                    setHighlightIndex(null);
+                  } else {
+                    setHighlightIndex((prev) =>
+                      prev !== null && prev < count ? prev : 0
+                    );
+                  }
+                }}
                 onFootnoteClick={setSelectedFootnote}
               />
             )}

@@ -7,6 +7,9 @@ interface ChapterContentProps {
   chapterTitle: string;
   textSize: number;
   highlightTerm: string | null;
+  sectionTrail: Section[];
+  currentHighlightIndex: number | null;
+  onHighlightMatches?: (count: number) => void;
   onFootnoteClick: (footnote: Footnote) => void;
 }
 
@@ -15,9 +18,13 @@ export default function ChapterContent({
   chapterTitle,
   textSize,
   highlightTerm,
+  sectionTrail,
+  currentHighlightIndex,
+  onHighlightMatches,
   onFootnoteClick,
 }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const highlightRefs = useRef<HTMLElement[]>([]);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -79,6 +86,8 @@ export default function ChapterContent({
         parent.replaceChild(textNode, mark);
         parent.normalize();
       });
+      highlightRefs.current = [];
+      onHighlightMatches?.(0);
     };
 
     clearHighlights();
@@ -157,20 +166,49 @@ export default function ChapterContent({
     }
 
     if (createdMarks.length > 0) {
-      createdMarks[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      highlightRefs.current = createdMarks;
+      onHighlightMatches?.(createdMarks.length);
     }
 
     return clearHighlights;
-  }, [highlightTerm, section.id]);
+  }, [highlightTerm, section.id, onHighlightMatches]);
+
+  useEffect(() => {
+    const marks = highlightRefs.current;
+    if (!marks.length) return;
+
+    marks.forEach((mark) => mark.classList.remove("is-active"));
+
+    if (currentHighlightIndex === null) return;
+
+    const index = Math.min(Math.max(currentHighlightIndex, 0), marks.length - 1);
+    const active = marks[index];
+    if (active) {
+      active.classList.add("is-active");
+      active.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [currentHighlightIndex]);
 
   return (
     <article className="max-w-3xl mx-auto px-6 py-10">
-      <div className="mb-6">
+      <div className="mb-6 space-y-3">
+        {sectionTrail.length > 0 && (
+          <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-sans uppercase tracking-[0.35em] text-muted-foreground">
+            {sectionTrail.map((ancestor, index) => (
+              <span key={ancestor.id} className="flex items-center gap-3">
+                <span className="truncate max-w-[14rem] opacity-80">{ancestor.title}</span>
+                {index < sectionTrail.length - 1 && (
+                  <span className="h-px w-6 bg-muted opacity-60" />
+                )}
+              </span>
+            ))}
+          </nav>
+        )}
         <h1 className="text-4xl md:text-5xl font-heading font-semibold mb-1">
           {chapterTitle}
         </h1>
         {section.title !== chapterTitle && (
-          <p className="text-muted-foreground font-sans text-base">
+          <p className="text-muted-foreground font-sans text-base md:text-lg">
             {section.title}
           </p>
         )}

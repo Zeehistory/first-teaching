@@ -417,6 +417,11 @@
   animation: highlight-glow 2.8s ease-out 1;
 }
 
+.chapter-prose mark[data-highlight].is-active {
+  background: linear-gradient(135deg, hsl(48, 95%, 78%), hsl(45, 90%, 72%));
+  box-shadow: 0 0 0 2px hsla(48, 70%, 60%, 0.5);
+}
+
 @keyframes highlight-glow {
   0% {
     background: hsla(48, 95%, 80%, 1);
