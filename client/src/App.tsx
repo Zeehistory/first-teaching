@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import Volume from "@/pages/Volume";
 import Chapter from "@/pages/Chapter";
 import NotFound from "@/pages/not-found";
+import AskAssistant from "@/components/AskAssistant";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <ThemeProvider>
           <Toaster />
           <Router />
+          <AskAssistant />
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>

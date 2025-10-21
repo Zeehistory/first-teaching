@@ -43,8 +43,9 @@ export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps)
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 bg-card border-t border-card-border shadow-xl z-50 animate-in slide-in-from-bottom duration-300"
+      className="fixed bottom-0 left-0 bg-card border-t border-card-border shadow-xl z-50 animate-in slide-in-from-bottom duration-300"
       data-testid="footnote-panel"
+      style={{ right: "var(--assistant-panel-width)", maxWidth: "calc(100vw - var(--assistant-panel-width))" }}
     >
       <div
         className="max-w-4xl mx-auto px-6 pt-4 pb-6"

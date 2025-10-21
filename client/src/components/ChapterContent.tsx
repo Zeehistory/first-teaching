@@ -30,6 +30,45 @@ export default function ChapterContent({
     const container = contentRef.current;
     if (!container) return;
 
+    const paragraphs = Array.from(
+      container.querySelectorAll<HTMLParagraphElement>("p.auto-blockquote")
+    );
+    paragraphs.forEach((paragraph) => paragraph.classList.remove("auto-blockquote"));
+
+    const candidates = Array.from(container.querySelectorAll<HTMLParagraphElement>("p"));
+    const shouldElevate = (paragraph: HTMLParagraphElement): boolean => {
+      const text = (paragraph.textContent || "").trim();
+      if (!text || text.length < 40) return false;
+
+      const hasQuote = /[“”"]/.test(text);
+      if (!hasQuote) return false;
+
+      if (/^["“].+[”"]$/.test(text)) {
+        return true;
+      }
+
+      const previous = paragraph.previousElementSibling;
+      if (previous) {
+        const prevText = (previous.textContent || "").trim();
+        if (prevText && /[:：]\s*$/.test(prevText)) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    candidates.forEach((paragraph) => {
+      if (shouldElevate(paragraph)) {
+        paragraph.classList.add("auto-blockquote");
+      }
+    });
+  }, [section.id]);
+
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container) return;
+
     const handleClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target) return;

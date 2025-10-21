@@ -21,6 +21,7 @@ export default function ChapterContentExample() {
         highlightTerm={null}
         sectionTrail={trail}
         currentHighlightIndex={null}
+        onHighlightMatches={() => {}}
         onFootnoteClick={(footnote) => setSelectedFootnote(footnote)}
       />
       <FootnotePanel

@@ -131,7 +131,7 @@ export default function Chapter() {
   return (
     <>
       <ReadingProgress />
-      <div className="flex h-screen overflow-hidden">
+      <div className="chapter-shell flex h-screen overflow-hidden">
         {sidebarOpen && (
           <div className="w-80 flex-shrink-0 overflow-hidden">
             <ChapterSidebar
@@ -225,6 +225,14 @@ export default function Chapter() {
                   )}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("open-ask-assistant"))}
+                aria-label="Open study assistant"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition hover:border-primary/50 hover:text-primary"
+              >
+                <AssistantMark className="h-4 w-4" />
+              </button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -318,5 +326,22 @@ export default function Chapter() {
         onClose={() => setSelectedFootnote(null)}
       />
     </>
+  );
+}
+
+function AssistantMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M16 4 12 6 8 4 6 6 8 10 6 16 8 22 6 26 8 28 12 26 16 28 20 26 24 28 26 26 24 22 26 16 24 10 26 6 24 4 20 6 16 4Z" />
+      <circle cx="16" cy="16" r="5.5" />
+    </svg>
   );
 }

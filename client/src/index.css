@@ -91,6 +91,7 @@
   --shadow-2xl: 0px 30px 50px -10px hsl(30 20% 15% / 0.20);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+  --assistant-panel-width: 0px;
 
   /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
 
@@ -241,6 +242,20 @@
   body {
     @apply bg-background text-foreground font-serif antialiased;
   }
+
+  .chapter-shell {
+    transition: margin-right 250ms ease;
+  }
+
+  body.assistant-open .chapter-shell {
+    margin-right: var(--assistant-panel-width);
+  }
+
+  @media (max-width: 1024px) {
+    body.assistant-open .chapter-shell {
+      margin-right: 0;
+    }
+  }
 }
 
 /**
@@ -352,10 +367,68 @@
 }
 
 /* Block quote styling for scripture/important passages */
-.scripture-quote {
-  @apply border-l-4 pl-6 pr-4 py-4 my-6 italic;
-  border-color: hsl(45, 90%, 55%); /* Amber/yellow border */
-  background-color: hsl(40, 40%, 92%); /* Beige background */
+.chapter-prose blockquote,
+.scripture-quote,
+.chapter-prose p.auto-blockquote {
+  position: relative;
+  margin: 3rem 0;
+  padding: 2.25rem 2.5rem;
+  border-radius: 18px;
+  border-left: 6px solid hsl(42, 72%, 52%);
+  background: radial-gradient(circle at top right, hsla(45, 60%, 96%, 0.95), hsla(42, 50%, 92%, 0.95));
+  box-shadow:
+    0 24px 50px -30px rgba(102, 84, 33, 0.35),
+    inset 0 0 0 1px hsla(42, 60%, 70%, 0.4);
+  font-family: var(--font-serif);
+  font-size: 1.08em;
+  line-height: 1.85;
+  color: var(--foreground);
+  isolation: isolate;
+}
+
+.chapter-prose blockquote::before,
+.scripture-quote::before,
+.chapter-prose p.auto-blockquote::before {
+  content: "“";
+  position: absolute;
+  inset: -22px auto auto 24px;
+  font-size: 4.5rem;
+  font-family: var(--font-heading);
+  color: hsla(42, 40%, 62%, 0.35);
+  pointer-events: none;
+}
+
+.chapter-prose blockquote::after,
+.scripture-quote::after,
+.chapter-prose p.auto-blockquote::after {
+  content: "";
+  position: absolute;
+  inset: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid hsla(42, 50%, 70%, 0.35);
+  pointer-events: none;
+}
+
+.chapter-prose blockquote p,
+.scripture-quote p {
+  margin-bottom: 1.5rem;
+}
+
+.chapter-prose blockquote p:last-child,
+.scripture-quote p:last-child {
+  margin-bottom: 0;
+}
+
+.chapter-prose blockquote cite,
+.scripture-quote cite {
+  display: block;
+  margin-top: 1.5rem;
+  font-style: normal;
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  color: hsla(42, 40%, 40%, 0.8);
 }
 
 /* Ensure HTML formatting renders in chapter content */
