@@ -8,19 +8,22 @@ app.use(express.urlencoded({ extended: false }));
 
 const BASIC_USER = process.env.BASIC_USER ?? "reader";
 const BASIC_PASS = process.env.BASIC_PASS ?? "the-first-teaching-testing-2025";
+const BASIC_AUTH_ENABLED = (process.env.BASIC_AUTH ?? "on").toLowerCase() !== "off";
 
-app.use((req, res, next) => {
-  const header = req.headers.authorization;
-  const token = header && header.startsWith("Basic ") ? header.slice(6) : "";
-  const [user, pass] = token ? Buffer.from(token, "base64").toString().split(":") : ["", ""];
+if (BASIC_AUTH_ENABLED) {
+  app.use((req, res, next) => {
+    const header = req.headers.authorization;
+    const token = header && header.startsWith("Basic ") ? header.slice(6) : "";
+    const [user, pass] = token ? Buffer.from(token, "base64").toString().split(":") : ["", ""];
 
-  if (user === BASIC_USER && pass === BASIC_PASS) {
-    return next();
-  }
+    if (user === BASIC_USER && pass === BASIC_PASS) {
+      return next();
+    }
 
-  res.set("WWW-Authenticate", 'Basic realm="First Teaching"');
-  return res.status(401).send("Authentication required.");
-});
+    res.set("WWW-Authenticate", 'Basic realm="First Teaching"');
+    return res.status(401).send("Authentication required.");
+  });
+}
 
 app.use((req, res, next) => {
   const start = Date.now();

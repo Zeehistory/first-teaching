@@ -16,6 +16,7 @@ interface KnowledgeChunk {
     sectionTitle: string;
     snippet: string;
     highlight: string;
+    keyphrase?: string;
   };
 }
 
@@ -32,6 +33,7 @@ export interface CitationReference {
   sectionTitle: string;
   highlight: string;
   snippet: string;
+  keyphrase?: string;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -112,6 +114,8 @@ If the CONTEXT does not contain the requested information, respond explicitly:
 Every factual or interpretive statement must be supported by a citation in the format [#number], 
 corresponding to the context entry from which it derives.
 
+Ensure that the answer is in the same language as the question. And ensure that all words that are not in English (in your response) are italicized and rendered correctly and clearly. 
+
 When composing your response:
 - Write in a **measured, contemplative tone** befitting a work of sacred or philosophical study. 
 - Favor clarity and resonance over verbosity.
@@ -137,13 +141,25 @@ function mapCitations(answer: string, chunks: KnowledgeChunkWithNorm[]): Citatio
   const seen = new Set<number>();
   const references: CitationReference[] = [];
 
+  console.log(`[AI] Mapping citations from answer with ${matches.length} matches`);
+  console.log(`[AI] Available chunks: ${chunks.length}`);
+
   matches.forEach((match) => {
     const marker = parseInt(match[1], 10);
-    if (Number.isNaN(marker) || seen.has(marker)) return;
-    const chunk = chunks[marker - 1];
-    if (!chunk) return;
+    if (Number.isNaN(marker) || seen.has(marker)) {
+      console.log(`[AI] Skipping marker ${marker} - invalid or already seen`);
+      return;
+    }
+    
+    const chunkIndex = marker - 1;
+    const chunk = chunks[chunkIndex];
+    if (!chunk) {
+      console.log(`[AI] No chunk found for marker ${marker} (index ${chunkIndex})`);
+      return;
+    }
+    
     seen.add(marker);
-    references.push({
+    const reference = {
       marker,
       volumeNumber: chunk.metadata.volumeNumber,
       chapterId: chunk.metadata.chapterId,
@@ -152,7 +168,18 @@ function mapCitations(answer: string, chunks: KnowledgeChunkWithNorm[]): Citatio
       sectionTitle: chunk.metadata.sectionTitle,
       highlight: chunk.metadata.highlight,
       snippet: chunk.metadata.snippet,
+      keyphrase: chunk.metadata.keyphrase,
+    };
+    
+    console.log(`[AI] Mapped marker ${marker} to:`, {
+      volume: reference.volumeNumber,
+      chapter: reference.chapterTitle,
+      section: reference.sectionTitle,
+      sectionId: reference.sectionId,
+      highlight: reference.highlight.substring(0, 50) + '...'
     });
+    
+    references.push(reference);
   });
 
   return references.sort((a, b) => a.marker - b.marker);

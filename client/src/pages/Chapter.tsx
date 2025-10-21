@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation, useRoute } from "wouter";
+import { useLocation, useRoute, useSearch } from "wouter";
 import { Search as SearchIcon, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChapterSidebar from "@/components/ChapterSidebar";
@@ -17,6 +17,7 @@ import type { Footnote } from "@shared/schema";
 export default function Chapter() {
   const [, params] = useRoute("/v/:volumeNumber/:id");
   const [location, setLocation] = useLocation();
+  const search = useSearch();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedFootnote, setSelectedFootnote] = useState<Footnote | null>(null);
   const [textSize, setTextSize] = useState(() => {
@@ -28,9 +29,16 @@ export default function Chapter() {
   const [highlightMatches, setHighlightMatches] = useState(0);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
 
-  const searchParams = new URLSearchParams(location.split("?")[1]);
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
   const sectionParam = searchParams.get("s");
-  const highlightParam = searchParams.get("h");
+  const highlightRawParam = searchParams.get("h");
+  const highlightParam =
+    highlightRawParam && highlightRawParam.trim().length > 0 ? highlightRawParam : null;
+  const highlightInstanceParam = searchParams.get("hi");
+  const highlightInstance = highlightInstanceParam ? parseInt(highlightInstanceParam, 10) : null;
+  console.log(`[Chapter] URL: ${location}`);
+  console.log(`[Chapter] search: ?${search}`);
+  console.log(`[Chapter] searchParams:`, Object.fromEntries(searchParams.entries()));
 
   const volumeNumber = params?.volumeNumber ? parseInt(params.volumeNumber, 10) : NaN;
   const chapterId = params?.id ?? null;
@@ -49,29 +57,44 @@ export default function Chapter() {
   );
 
   useEffect(() => {
+    console.log(`[Chapter] sectionParam:`, sectionParam);
+    console.log(`[Chapter] firstSectionId:`, firstSectionId);
     if (sectionParam) {
+      console.log(`[Chapter] Setting currentSectionId to:`, sectionParam);
       setCurrentSectionId(sectionParam);
     } else if (firstSectionId) {
+      console.log(`[Chapter] Setting currentSectionId to firstSectionId:`, firstSectionId);
       setCurrentSectionId(firstSectionId);
     }
   }, [sectionParam, firstSectionId]);
 
   useEffect(() => {
-    if (highlightParam && highlightParam.trim().length > 0) {
-      setHighlightTerm(highlightParam.trim());
+    console.log(`[Chapter] highlightParam:`, highlightParam ? `"${highlightParam.substring(0, 50)}..."` : 'null');
+    console.log(`[Chapter] highlightRawParam:`, highlightRawParam ? `"${highlightRawParam.substring(0, 50)}..."` : 'null');
+    if (highlightParam && highlightParam.length > 0) {
+      setHighlightTerm(highlightParam);
     } else {
       setHighlightTerm(null);
     }
-  }, [highlightParam]);
+  }, [highlightParam, highlightRawParam]);
 
   useEffect(() => {
+    console.log(`[Chapter] highlightTerm:`, highlightTerm ? `"${highlightTerm.substring(0, 50)}..."` : 'null');
+    console.log(`[Chapter] highlightInstance:`, highlightInstance);
+    
     if (highlightTerm) {
-      setHighlightIndex(0);
+      const index =
+        typeof highlightInstance === "number" && Number.isFinite(highlightInstance)
+          ? Math.max(0, highlightInstance)
+          : 0;
+      console.log(`[Chapter] Setting highlight index to ${index} for term: "${highlightTerm.substring(0, 50)}..."`);
+      setHighlightIndex(index);
     } else {
+      console.log(`[Chapter] No highlight term, clearing highlights`);
       setHighlightIndex(null);
       setHighlightMatches(0);
     }
-  }, [highlightTerm]);
+  }, [highlightTerm, highlightInstance]);
 
   useEffect(() => {
     localStorage.setItem("textSize", textSize.toString());
@@ -97,6 +120,10 @@ export default function Chapter() {
 
   const currentSection = chapter.sections.find((s) => s.id === currentSectionId) ?? null;
   const currentSectionIndex = chapter.sections.findIndex((s) => s.id === currentSectionId);
+  
+  console.log(`[Chapter] currentSectionId:`, currentSectionId);
+  console.log(`[Chapter] currentSection:`, currentSection ? currentSection.title : 'null');
+  console.log(`[Chapter] currentSectionIndex:`, currentSectionIndex);
   const prevSection =
     currentSectionIndex > 0 ? chapter.sections[currentSectionIndex - 1] : null;
   const nextSection =
@@ -112,7 +139,8 @@ export default function Chapter() {
     volumeNo: number,
     chapId: string,
     sectionId: string,
-    highlight?: string
+    highlight?: string,
+    highlightIndexOverride?: number
   ) => {
     setCurrentSectionId(sectionId);
     const params = new URLSearchParams();
@@ -120,11 +148,17 @@ export default function Chapter() {
     const trimmedHighlight = highlight?.trim();
     if (trimmedHighlight) {
       params.set("h", trimmedHighlight);
+      if (typeof highlightIndexOverride === "number" && highlightIndexOverride >= 0) {
+        params.set("hi", String(highlightIndexOverride));
+      }
     }
     const query = params.toString();
     const path = `/v/${volumeNo}/${chapId}${query ? `?${query}` : ""}`;
     setLocation(path);
     setHighlightTerm(trimmedHighlight ?? null);
+    if (typeof highlightIndexOverride === "number") {
+      setHighlightIndex(Math.max(0, highlightIndexOverride));
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

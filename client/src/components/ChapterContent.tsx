@@ -132,20 +132,25 @@ export default function ChapterContent({
     clearHighlights();
 
     const term = highlightTerm?.trim();
-    if (!term) return;
+    if (!term) {
+      console.log(`[ChapterContent] No highlight term provided`);
+      return;
+    }
 
-    const candidates = Array.from(
-      new Set(
-        [term, ...term.split(/\s+/)]
-          .map((token) => token.trim())
-          .filter((token) => token.length > 0)
-          .map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-      )
-    ).filter(Boolean);
+    console.log(`[ChapterContent] Highlighting term: "${term.substring(0, 100)}..."`);
+    const normalizedTerm = term.replace(/[\s\u00A0]+/g, " ").trim();
+    if (!normalizedTerm) {
+      console.log(`[ChapterContent] Normalized term is empty`);
+      return;
+    }
+    
+    console.log(`[ChapterContent] Normalized term: "${normalizedTerm.substring(0, 100)}..."`);
 
-    if (!candidates.length) return;
+    const pattern = normalizedTerm
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\s+/g, "\\s+");
 
-    const regexes = candidates.map((pattern) => new RegExp(pattern, "gi"));
+    const regex = new RegExp(pattern, "gi");
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     const createdMarks: HTMLElement[] = [];
 
@@ -157,18 +162,16 @@ export default function ChapterContent({
         continue;
       }
 
+      regex.lastIndex = 0;
       const matches: Array<{ start: number; end: number }> = [];
+      let match: RegExpExecArray | null;
 
-      regexes.forEach((regex) => {
-        regex.lastIndex = 0;
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(textContent)) !== null) {
-          matches.push({ start: match.index, end: match.index + match[0].length });
-          if (match.index === regex.lastIndex) {
-            regex.lastIndex += 1;
-          }
+      while ((match = regex.exec(textContent)) !== null) {
+        matches.push({ start: match.index, end: match.index + match[0].length });
+        if (match.index === regex.lastIndex) {
+          regex.lastIndex += 1;
         }
-      });
+      }
 
       if (!matches.length) continue;
 
@@ -205,8 +208,11 @@ export default function ChapterContent({
     }
 
     if (createdMarks.length > 0) {
+      console.log(`[ChapterContent] Created ${createdMarks.length} highlight marks`);
       highlightRefs.current = createdMarks;
       onHighlightMatches?.(createdMarks.length);
+    } else {
+      console.log(`[ChapterContent] No highlight marks created - term not found in content`);
     }
 
     return clearHighlights;

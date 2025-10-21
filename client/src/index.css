@@ -386,6 +386,35 @@
   isolation: isolate;
 }
 
+.dark .chapter-prose blockquote,
+.dark .scripture-quote,
+.dark .chapter-prose p.auto-blockquote {
+  border-left-color: hsl(42 85% 65% / 0.9);
+  background: linear-gradient(135deg, hsla(42, 30%, 28%, 0.92), hsla(45, 20%, 20%, 0.88));
+  box-shadow:
+    0 24px 50px -30px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px hsla(42, 40%, 70%, 0.25);
+  color: hsl(45 28% 92%);
+}
+
+.dark .chapter-prose blockquote::before,
+.dark .scripture-quote::before,
+.dark .chapter-prose p.auto-blockquote::before {
+  color: hsla(42, 40%, 70%, 0.45);
+}
+
+.dark .chapter-prose blockquote::after,
+.dark .scripture-quote::after,
+.dark .chapter-prose p.auto-blockquote::after {
+  border-color: hsla(42, 30%, 70%, 0.35);
+}
+
+.dark .chapter-prose blockquote cite,
+.dark .scripture-quote cite,
+.dark .chapter-prose p.auto-blockquote cite {
+  color: hsl(45 25% 85%);
+}
+
 .chapter-prose blockquote::before,
 .scripture-quote::before,
 .chapter-prose p.auto-blockquote::before {

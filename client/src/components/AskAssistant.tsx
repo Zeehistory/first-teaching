@@ -25,35 +25,69 @@ interface AskResponse {
 
 const PANEL_WIDTH = 360;
 
-function parseAnswer(answer: string, onClick: (marker: number) => void) {
-  const segments: Array<string | JSX.Element> = [];
-  let lastIndex = 0;
-  const citationRegex = /\[#(\d+)\]/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = citationRegex.exec(answer)) !== null) {
-    const start = match.index;
-    if (start > lastIndex) {
-      segments.push(answer.slice(lastIndex, start));
+function renderAnswerWithCitations(answer: string, onClick: (marker: number, event: React.MouseEvent) => void): React.ReactNode {
+  console.log(`[Render] Starting to render answer:`, answer.substring(0, 100) + '...');
+  
+  const parts = answer.split(/(\[#\d+\])/g);
+  const elements: React.ReactNode[] = [];
+  
+  parts.forEach((part, index) => {
+    if (part.match(/^\[#(\d+)\]$/)) {
+      const marker = parseInt(part.slice(2, -1), 10);
+      console.log(`[Render] Creating citation button for marker ${marker} at index ${index}`);
+      
+      elements.push(
+        <button
+          key={`citation-${marker}-${index}`}
+          type="button"
+          onClick={(event) => {
+            console.log(`[Render] Citation button ${marker} clicked!`);
+            event.preventDefault();
+            event.stopPropagation();
+            onClick(marker, event);
+          }}
+          className="mx-0.5 inline-flex items-center justify-center rounded-full border-2 border-red-500 bg-yellow-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-red-800 hover:border-red-600 hover:bg-yellow-300 cursor-pointer"
+          style={{ pointerEvents: 'auto', zIndex: 9999 }}
+        >
+          #{marker}
+        </button>
+      );
+    } else if (part.trim()) {
+      // Render markdown for text parts
+      elements.push(...renderMarkdownFragment(part, `text-${index}`));
     }
-    const marker = parseInt(match[1], 10);
-    segments.push(
-      <button
-        key={`${marker}-${start}`}
-        onClick={() => onClick(marker)}
-        className="mx-0.5 inline-flex items-center justify-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:border-primary/60 hover:bg-primary/15"
-      >
-        #{marker}
-      </button>
-    );
-    lastIndex = citationRegex.lastIndex;
-  }
+  });
+  
+  console.log(`[Render] Created ${elements.length} elements`);
+  return <>{elements}</>;
+}
 
-  if (lastIndex < answer.length) {
-    segments.push(answer.slice(lastIndex));
-  }
+function renderMarkdownFragment(fragment: string, keyPrefix: string): React.ReactNode[] {
+  if (!fragment) return [];
+  const tokens = fragment.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\n)/);
+  const nodes: React.ReactNode[] = [];
 
-  return segments;
+  tokens.forEach((token, index) => {
+    if (!token) return;
+    const key = `${keyPrefix}-${index}`;
+    if (token === "\n") {
+      nodes.push(<br key={key} />);
+    } else if (token.startsWith("**") && token.endsWith("**")) {
+      nodes.push(<strong key={key}>{token.slice(2, -2)}</strong>);
+    } else if (token.startsWith("*") && token.endsWith("*")) {
+      nodes.push(<em key={key}>{token.slice(1, -1)}</em>);
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      nodes.push(
+        <code key={key} className="rounded bg-muted px-1 py-0.5 text-[0.85em]">
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else {
+      nodes.push(<span key={key}>{token}</span>);
+    }
+  });
+
+  return nodes;
 }
 
 export default function AskAssistant() {
@@ -113,22 +147,53 @@ export default function AskAssistant() {
   };
 
   const handleCitation = useCallback(
-    (marker: number) => {
+    (marker: number, event?: React.MouseEvent) => {
       if (!lastResponse) return;
       const reference = lastResponse.references.find((ref) => ref.marker === marker);
-      if (!reference) return;
+      if (!reference) {
+        console.log(`[Client] No reference found for marker ${marker}`);
+        return;
+      }
 
+      console.log(`[Client] Clicking citation ${marker}:`, {
+        volume: reference.volumeNumber,
+        chapter: reference.chapterTitle,
+        section: reference.sectionTitle,
+        highlight: reference.highlight.substring(0, 50) + '...'
+      });
+
+      // determine which occurrence index this specific reference refers to
+      const priorSame = lastResponse.references.filter((ref) =>
+        ref.marker < marker &&
+        ref.volumeNumber === reference.volumeNumber &&
+        ref.chapterId === reference.chapterId &&
+        ref.sectionId === reference.sectionId &&
+        ref.highlight === reference.highlight
+      ).length;
+      
+      console.log(`[Client] Prior same references: ${priorSame}, using hi=${priorSame}`);
+      
       const highlight = encodeURIComponent(reference.highlight);
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
       setOpen(false);
-      setLocation(`/v/${reference.volumeNumber}/${reference.chapterId}?s=${reference.sectionId}&h=${highlight}`);
+      // include hi (highlight instance) so the reader lands on the exact match
+      const url = `/v/${reference.volumeNumber}/${reference.chapterId}?s=${reference.sectionId}&h=${highlight}&hi=${priorSame}`;
+      console.log(`[Client] Navigating to: ${url}`);
+      setLocation(url);
     },
     [lastResponse, setLocation]
   );
 
   const renderedAnswer = useMemo(() => {
     if (!lastResponse?.answer) return null;
-    return parseAnswer(lastResponse.answer, handleCitation);
-  }, [lastResponse?.answer, handleCitation]);
+    console.log(`[Render] Rendering answer with ${lastResponse.references.length} references:`, 
+      lastResponse.references.map(r => ({ marker: r.marker, chapter: r.chapterTitle, section: r.sectionTitle }))
+    );
+    return renderAnswerWithCitations(lastResponse.answer, handleCitation);
+  }, [lastResponse?.answer, lastResponse?.references, handleCitation]);
 
   const adjustHeight = useCallback(() => {
     if (!textareaRef.current) return;
@@ -179,25 +244,32 @@ export default function AskAssistant() {
 
                 {lastResponse && askMutation.status !== "pending" ? (
                   <div className="space-y-6">
-                    <div className="rounded-md border border-border/60 bg-muted/20 px-5 py-4 text-sm leading-relaxed text-foreground" style={{ whiteSpace: "pre-wrap" }}>
-                      {renderedAnswer ?? lastResponse.answer}
+                    <div
+                      className="max-w-none rounded-md border border-border/60 bg-muted/15 px-5 py-5 text-base leading-relaxed text-foreground/90"
+                      dir={/[\u0590-\u08FF]/.test(lastResponse.answer) ? "rtl" : "auto"}
+                      style={{ pointerEvents: 'auto' }}
+                    >
+                      {renderedAnswer}
                     </div>
 
                     {lastResponse.references.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-xs uppercase tracking-[0.28em] text-muted-foreground">References</div>
+                      <div className="space-y-3">
+                        <div className="text-[10px] uppercase tracking-[0.35em] text-muted-foreground">References</div>
                         <div className="space-y-2">
                           {lastResponse.references.map((reference) => (
                             <button
                               key={reference.marker}
-                              onClick={() => handleCitation(reference.marker)}
-                              className="w-full rounded-md border border-border/70 bg-background px-4 py-3 text-left text-sm text-foreground transition hover:border-primary/40 hover:bg-primary/5"
+                              onClick={() => {
+                                console.log(`[Reference Card] Clicking reference card for marker ${reference.marker}`);
+                                handleCitation(reference.marker);
+                              }}
+                              className="w-full rounded-md border border-border/60 bg-background/80 px-4 py-3 text-left text-[0.95rem] text-foreground transition hover:border-primary/40 hover:bg-primary/5"
                             >
-                              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-primary">
-                                <Badge variant="secondary">#{reference.marker}</Badge>
+                              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-primary/80">
+                                <Badge variant="secondary" className="rounded-sm px-1 py-0 text-[10px]">#{reference.marker}</Badge>
                                 <span className="truncate">Volume {reference.volumeNumber}</span>
                               </div>
-                              <div className="mt-1 text-sm font-heading">{reference.chapterTitle}</div>
+                              <div className="mt-1 font-heading text-foreground">{reference.chapterTitle}</div>
                               <div className="text-xs text-muted-foreground">{reference.sectionTitle}</div>
                             </button>
                           ))}
@@ -221,31 +293,31 @@ export default function AskAssistant() {
             </ScrollArea>
 
             <form onSubmit={handleSubmit} className="border-t border-border px-5 py-4">
-              <div className="relative overflow-hidden rounded-3xl border border-border bg-muted/25 px-4 py-3">
-                <Textarea
-                  id="ask-question"
-                  value={question}
-                  onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="Ask within this volume…"
-                  ref={textareaRef}
-                  className="min-h-[56px] w-full resize-none border-none bg-transparent pr-14 text-sm leading-relaxed focus-visible:ring-0"
-                />
-                <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-                  <span>Responses cite the passage they quote.</span>
-                  <div className="relative">
-                    <Button
-                      type="submit"
-                      disabled={askMutation.status === "pending"}
-                      className="h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-                    >
-                      {askMutation.status === "pending" ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ArrowRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                <div className="flex items-end gap-3">
+                  <Textarea
+                    id="ask-question"
+                    value={question}
+                    onChange={(event) => setQuestion(event.target.value)}
+                    placeholder="Ask anything…"
+                    ref={textareaRef}
+                    className="min-h-[56px] w-full resize-none border-none bg-transparent text-[1.05rem] leading-relaxed text-foreground focus-visible:ring-0"
+                    dir={question && /[\u0590-\u08FF]/.test(question) ? "rtl" : "auto"}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={askMutation.status === "pending"}
+                    className="h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                    aria-label="Send question"
+                  >
+                    {askMutation.status === "pending" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
+                <div className="mt-2 text-[11px] text-muted-foreground">This AI companion can make mistakes. Check important info.</div>
               </div>
             </form>
           </aside>

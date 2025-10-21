@@ -20,6 +20,7 @@ interface KnowledgeChunkInput {
     sectionTitle: string;
     snippet: string;
     highlight: string;
+    keyphrase: string;
   };
 }
 
@@ -77,7 +78,12 @@ function collectChunks(): KnowledgeChunkInput[] {
         paragraphs.forEach((paragraph, index) => {
           const chunks = chunkParagraph(paragraph);
           chunks.forEach((chunk, chunkIndex) => {
-            const snippet = chunk.length > 220 ? `${chunk.slice(0, 220).trim()}…` : chunk;
+            const normalized = chunk.replace(/[\s\u00A0]+/g, " ").trim();
+            const rawHighlight = normalized;
+            const snippet = normalized.length > 200
+              ? `${normalized.slice(0, normalized.lastIndexOf(" ", 180)).trim()}…`
+              : normalized;
+            const keyphrase = normalized.split(" ").slice(0, 12).join(" ");
             entries.push({
               id: `${book.volumeNumber}:${chapter.id}:${section.id}:${index}:${chunkIndex}`,
               text: chunk,
@@ -89,7 +95,8 @@ function collectChunks(): KnowledgeChunkInput[] {
                 sectionId: section.id,
                 sectionTitle: section.title,
                 snippet,
-                highlight: snippet,
+                highlight: rawHighlight,
+                keyphrase,
               },
             });
           });
