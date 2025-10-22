@@ -479,6 +479,10 @@
   @apply align-super text-xs;
 }
 
+.footnote-marker-focus {
+  @apply bg-primary/10 ring-2 ring-primary/40 rounded-sm transition;
+}
+
 .chapter-prose sup[data-footnote] {
   position: relative;
   top: -0.2em;

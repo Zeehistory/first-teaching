@@ -25,42 +25,9 @@ interface AskResponse {
 
 const PANEL_WIDTH = 360;
 
-function renderAnswerWithCitations(answer: string, onClick: (marker: number, event: React.MouseEvent) => void): React.ReactNode {
-  console.log(`[Render] Starting to render answer:`, answer.substring(0, 100) + '...');
-  
-  const parts = answer.split(/(\[#\d+\])/g);
-  const elements: React.ReactNode[] = [];
-  
-  parts.forEach((part, index) => {
-    if (part.match(/^\[#(\d+)\]$/)) {
-      const marker = parseInt(part.slice(2, -1), 10);
-      console.log(`[Render] Creating citation button for marker ${marker} at index ${index}`);
-      
-      elements.push(
-        <button
-          key={`citation-${marker}-${index}`}
-          type="button"
-          onClick={(event) => {
-            console.log(`[Render] Citation button ${marker} clicked!`);
-            event.preventDefault();
-            event.stopPropagation();
-            onClick(marker, event);
-          }}
-          className="mx-0.5 inline-flex items-center justify-center rounded-full border-2 border-red-500 bg-yellow-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-red-800 hover:border-red-600 hover:bg-yellow-300 cursor-pointer"
-          style={{ pointerEvents: 'auto', zIndex: 9999 }}
-        >
-          #{marker}
-        </button>
-      );
-    } else if (part.trim()) {
-      // Render markdown for text parts
-      elements.push(...renderMarkdownFragment(part, `text-${index}`));
-    }
-  });
-  
-  console.log(`[Render] Created ${elements.length} elements`);
-  return <>{elements}</>;
-}
+type AnswerToken =
+  | { type: "text"; content: string; start: number; end: number }
+  | { type: "citation"; marker: number; showAt: number };
 
 function renderMarkdownFragment(fragment: string, keyPrefix: string): React.ReactNode[] {
   if (!fragment) return [];
@@ -90,11 +57,87 @@ function renderMarkdownFragment(fragment: string, keyPrefix: string): React.Reac
   return nodes;
 }
 
+function tokenizeAnswer(answer: string): AnswerToken[] {
+  const parts = answer.split(/(\[#\d+\])/g);
+  const tokens: AnswerToken[] = [];
+  let charCount = 0;
+
+  parts.forEach((part) => {
+    if (!part) return;
+    const citationMatch = part.match(/^\[#(\d+)\]$/);
+    if (citationMatch) {
+      tokens.push({
+        type: "citation",
+        marker: parseInt(citationMatch[1], 10),
+        showAt: charCount,
+      });
+    } else {
+      tokens.push({
+        type: "text",
+        content: part,
+        start: charCount,
+        end: charCount + part.length,
+      });
+      charCount += part.length;
+    }
+  });
+
+  return tokens;
+}
+
+function renderAnswerTokens(
+  tokens: AnswerToken[],
+  visibleChars: number | undefined,
+  onClick: (marker: number, event: React.MouseEvent) => void
+): React.ReactNode {
+  if (!tokens.length) return null;
+
+  const elements: React.ReactNode[] = [];
+  const limit = typeof visibleChars === "number" ? visibleChars : Number.POSITIVE_INFINITY;
+
+  tokens.forEach((token, index) => {
+    if (token.type === "text") {
+      const available =
+        typeof visibleChars === "number"
+          ? Math.max(0, Math.min(token.content.length, limit - token.start))
+          : token.content.length;
+
+      if (available > 0) {
+        const text = token.content.slice(0, available);
+        elements.push(...renderMarkdownFragment(text, `text-${index}`));
+      }
+    } else if (token.type === "citation") {
+      const shouldReveal = limit >= token.showAt;
+      if (shouldReveal) {
+        elements.push(
+          <button
+            type="button"
+            key={`citation-${token.marker}-${index}`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onClick(token.marker, event);
+            }}
+            className="mx-0.5 inline-flex items-center justify-center rounded-full border-2 border-red-500 bg-yellow-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-red-800 hover:border-red-600 hover:bg-yellow-300 cursor-pointer"
+            style={{ pointerEvents: "auto", zIndex: 9999 }}
+          >
+            #{token.marker}
+          </button>
+        );
+      }
+    }
+  });
+
+  return <>{elements}</>;
+}
+
 export default function AskAssistant() {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [location, setLocation] = useLocation();
   const [lastResponse, setLastResponse] = useState<AskResponse | null>(null);
+  const [answerTokens, setAnswerTokens] = useState<AnswerToken[]>([]);
+  const [animatedChars, setAnimatedChars] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -143,6 +186,9 @@ export default function AskAssistant() {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!question.trim()) return;
+    setLastResponse(null);
+    setAnswerTokens([]);
+    setAnimatedChars(0);
     askMutation.mutate(question.trim());
   };
 
@@ -188,12 +234,15 @@ export default function AskAssistant() {
   );
 
   const renderedAnswer = useMemo(() => {
-    if (!lastResponse?.answer) return null;
-    console.log(`[Render] Rendering answer with ${lastResponse.references.length} references:`, 
-      lastResponse.references.map(r => ({ marker: r.marker, chapter: r.chapterTitle, section: r.sectionTitle }))
+    if (!answerTokens.length) return null;
+    const totalChars = answerTokens.reduce(
+      (sum, token) => (token.type === "text" ? sum + token.content.length : sum),
+      0
     );
-    return renderAnswerWithCitations(lastResponse.answer, handleCitation);
-  }, [lastResponse?.answer, lastResponse?.references, handleCitation]);
+    const isAnimating = animatedChars < totalChars;
+    const visibleChars = isAnimating ? animatedChars : undefined;
+    return renderAnswerTokens(answerTokens, visibleChars, handleCitation);
+  }, [answerTokens, animatedChars, handleCitation]);
 
   const adjustHeight = useCallback(() => {
     if (!textareaRef.current) return;
@@ -205,6 +254,38 @@ export default function AskAssistant() {
   useEffect(() => {
     adjustHeight();
   }, [question, adjustHeight]);
+
+  useEffect(() => {
+    if (lastResponse?.answer) {
+      setAnswerTokens(tokenizeAnswer(lastResponse.answer));
+      setAnimatedChars(0);
+    }
+  }, [lastResponse?.answer]);
+
+  useEffect(() => {
+    if (!answerTokens.length) return;
+    const totalChars = answerTokens.reduce(
+      (sum, token) => (token.type === "text" ? sum + token.content.length : sum),
+      0
+    );
+    if (totalChars === 0) {
+      setAnimatedChars(0);
+      return;
+    }
+
+    const step = Math.max(1, Math.round(totalChars / 160));
+    const interval = window.setInterval(() => {
+      setAnimatedChars((prev) => {
+        if (prev >= totalChars) {
+          window.clearInterval(interval);
+          return totalChars;
+        }
+        return Math.min(totalChars, prev + step);
+      });
+    }, 20);
+
+    return () => window.clearInterval(interval);
+  }, [answerTokens]);
 
   return (
     <>
