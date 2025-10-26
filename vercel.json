@@ -1,13 +1,4 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "builds": [
-    { "src": "dist/index.js", "use": "@vercel/node" },
-    { "src": "dist/public/**/*", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "dist/index.js" },
-    { "src": "/(.*)", "dest": "dist/index.js" }
-  ]
+  "outputDirectory": "dist/public"
 }
-
