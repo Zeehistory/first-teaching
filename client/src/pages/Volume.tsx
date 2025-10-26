@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import HomePage from "@/components/HomePage";
 import SearchOverlay from "@/components/SearchOverlay";
@@ -12,6 +12,10 @@ export default function Volume() {
 
   const volumeNumber = params?.volumeNumber ? parseInt(params.volumeNumber, 10) : NaN;
   const volume = volumes.find((entry) => entry.number === volumeNumber);
+  const availableBooks = useMemo(
+    () => volumes.filter((entry) => entry.data).map((entry) => entry.data!),
+    []
+  );
 
   if (!volume) {
     return (
@@ -59,6 +63,7 @@ export default function Volume() {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         bookData={volume.data}
+        availableVolumes={availableBooks}
         onResultClick={(volumeNo, chapterId, sectionId, term) => {
           const params = new URLSearchParams();
           params.set("s", sectionId);

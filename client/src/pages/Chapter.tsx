@@ -56,6 +56,10 @@ export default function Chapter() {
   const volume = volumes.find((entry) => entry.number === volumeNumber && entry.data);
   const bookData = volume?.data;
   const chapter = bookData?.chapters.find((c) => c.id === chapterId) ?? null;
+  const availableBooks = useMemo(
+    () => volumes.filter((entry) => entry.data).map((entry) => entry.data!),
+    []
+  );
 
   const firstSectionId =
     chapter?.sections.find((section) => section.content.trim().length > 0)?.id ??
@@ -640,6 +644,8 @@ export default function Chapter() {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         bookData={bookData}
+        currentChapter={chapter}
+        availableVolumes={availableBooks}
         onResultClick={(volumeNo, chapterId, sectionId, term) =>
           handleSectionClick(volumeNo, chapterId, sectionId, term)
         }
