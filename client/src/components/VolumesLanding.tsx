@@ -101,12 +101,16 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
                     {status.label}
                   </span>
                   {isAvailable ? (
-                    <Button onClick={() => onSelectVolume(volume.number)} size="sm" className="gap-2">
+                    <Button
+                      onClick={() => onSelectVolume(volume.number)}
+                      size="sm"
+                      className="gap-2 rounded-full px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:shadow-md hover:brightness-105 transition-all duration-150"
+                    >
                       <Book className="h-4 w-4" />
                       Open Volume
                     </Button>
                   ) : (
-                    <Button size="sm" variant="outline" disabled>
+                    <Button size="sm" variant="outline" disabled className="rounded-full">
                       {status.label}
                     </Button>
                   )}
