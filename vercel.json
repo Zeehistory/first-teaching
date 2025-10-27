@@ -2,6 +2,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "routes": [
-    { "src": "/(.*)", "dest": "api/_middleware" }
+    { "src": "^/api/ai/ask$", "dest": "api/ai/ask.ts" },
+    { "src": "^/$", "dest": "api/index.ts" },
+    { "src": "^/v/.*$", "dest": "api/index.ts" }
   ]
 }
