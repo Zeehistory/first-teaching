@@ -168,9 +168,13 @@ export default function AskAssistant() {
 
   const askMutation = useMutation<AskResponse, Error, string>({
     mutationFn: async (prompt: string) => {
+      const token = localStorage.getItem("ft_auth_b64");
       const response = await fetch("/api/ai/ask", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Basic ${token}` } : {}),
+        },
         body: JSON.stringify({ question: prompt }),
       });
       if (!response.ok) {
