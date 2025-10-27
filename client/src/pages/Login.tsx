@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { login, isAuthed, Credentials } from "@/lib/auth";
+import { login, isAuthed } from "@/lib/auth";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -36,7 +36,7 @@ export default function Login() {
               className="w-full rounded-full border border-border bg-background px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="reader"
+              placeholder="Username"
               autoFocus
             />
           </div>
@@ -47,18 +47,15 @@ export default function Login() {
               className="w-full rounded-full border border-border bg-background px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="the-f1rst-teaching-2025!"
+              placeholder="Password"
             />
           </div>
           {error && <div className="text-sm text-destructive">{error}</div>}
           <Button type="submit" className="w-full rounded-full shadow-sm hover:shadow-md">Enter</Button>
         </form>
 
-        <div className="mt-6 text-xs text-muted-foreground text-center">
-          Hint: {Credentials.USERNAME} / {Credentials.PASSWORD}
-        </div>
+        
       </Card>
     </div>
   );
 }
-

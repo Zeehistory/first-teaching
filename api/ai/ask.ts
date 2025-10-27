@@ -63,20 +63,6 @@ export default async function handler(req: Req, res: Res) {
   }
 
   try {
-    // Basic Auth check
-    const user = process.env.BASIC_USER || "reader";
-    const pass = process.env.BASIC_PASS || "the-first-teaching-testing-2025";
-    const enabled = (process.env.BASIC_AUTH || "on").toLowerCase() !== "off";
-
-    if (enabled) {
-      const header = req.headers["authorization"] || "";
-      const token = typeof header === "string" && header.startsWith("Basic ") ? header.slice(6) : "";
-      const [u, p] = token ? Buffer.from(token, "base64").toString().split(":") : ["", ""];
-      if (u !== user || p !== pass) {
-        return unauthorized(res);
-      }
-    }
-
     const question = (req.body?.question ?? "").toString().trim();
     if (!question) {
       return res.status(400).json({ message: "Question is required" });
