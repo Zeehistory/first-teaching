@@ -118,7 +118,7 @@ function renderAnswerTokens(
               event.stopPropagation();
               onClick(token.marker, event);
             }}
-            className="mx-0.5 inline-flex items-center justify-center rounded-full border-2 border-red-500 bg-yellow-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-red-800 hover:border-red-600 hover:bg-yellow-300 cursor-pointer"
+            className="mx-0.5 ai-citation"
             style={{ pointerEvents: "auto", zIndex: 9999 }}
           >
             #{token.marker}
@@ -349,7 +349,7 @@ export default function AskAssistant() {
                               className="w-full rounded-md border border-border/60 bg-background/80 px-4 py-3 text-left text-[0.95rem] text-foreground transition hover:border-primary/40 hover:bg-primary/5"
                             >
                               <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-primary/80">
-                                <Badge variant="secondary" className="rounded-sm px-1 py-0 text-[10px]">#{reference.marker}</Badge>
+                                <span className="ai-citation">#{reference.marker}</span>
                                 <span className="truncate">Volume {reference.volumeNumber}</span>
                               </div>
                               <div className="mt-1 font-heading text-foreground">{reference.chapterTitle}</div>

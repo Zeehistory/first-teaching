@@ -69,10 +69,19 @@ export default function ChapterContent({
     const container = contentRef.current;
     if (!container) return;
 
+    const findFootnoteHost = (e: Event): HTMLElement | null => {
+      const path = (e.composedPath?.() || []) as Array<EventTarget>;
+      for (const node of path) {
+        if (node && node instanceof HTMLElement) {
+          const el = node.closest?.("[data-footnote]") as HTMLElement | null;
+          if (el && container.contains(el)) return el;
+        }
+      }
+      return null;
+    };
+
     const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target) return;
-      const footnoteEl = target.closest<HTMLElement>("[data-footnote]");
+      const footnoteEl = findFootnoteHost(event);
       if (!footnoteEl) return;
       const footnoteNumber = parseInt(footnoteEl.dataset.footnote ?? "", 10);
       if (Number.isNaN(footnoteNumber)) return;
@@ -104,10 +113,11 @@ export default function ChapterContent({
       marker.setAttribute("aria-label", `Read footnote ${marker.dataset.footnote}`);
     });
 
-    container.addEventListener("click", handleClick);
+    // Capture on document to ensure it works in production regardless of bubbling quirks
+    document.addEventListener("click", handleClick, true);
     container.addEventListener("keydown", handleKeyDown);
     return () => {
-      container.removeEventListener("click", handleClick);
+      document.removeEventListener("click", handleClick, true);
       container.removeEventListener("keydown", handleKeyDown);
     };
   }, [section, onFootnoteClick]);

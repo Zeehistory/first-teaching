@@ -3,12 +3,14 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { login, isAuthed } from "@/lib/auth";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAuthed()) setLocation("/");
@@ -42,13 +44,24 @@ export default function Login() {
           </div>
           <div className="space-y-1">
             <label className="text-sm text-muted-foreground">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-full border border-border bg-background px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="w-full rounded-full border border-border bg-background px-4 py-2 pr-11 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                aria-label="Password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition hover:text-foreground hover:border-primary/40"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           {error && <div className="text-sm text-destructive">{error}</div>}
           <Button type="submit" className="w-full rounded-full shadow-sm hover:shadow-md">Enter</Button>

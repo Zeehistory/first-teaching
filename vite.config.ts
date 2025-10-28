@@ -4,6 +4,8 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  // Ensure absolute asset paths in production so Vercel routes don't swallow them
+  base: "/",
   plugins: [
     react(),
     runtimeErrorOverlay(),
