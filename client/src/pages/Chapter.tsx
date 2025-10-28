@@ -573,6 +573,14 @@ export default function Chapter() {
                 >
                   <SearchIcon className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation("/glossary")}
+                  className="hidden sm:inline-flex"
+                >
+                  Glossary
+                </Button>
                 <ThemeToggle />
               </div>
             </header>

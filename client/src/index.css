@@ -504,6 +504,32 @@
   transition: background-color 150ms ease, transform 150ms ease;
 }
 
+/* Glossary markers: inline superscript chips in a distinct color */
+.chapter-prose sup[data-glossary] {
+  position: relative;
+  top: -0.2em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.3rem;
+  margin: 0 0.1rem 0 0.2rem;
+  border-radius: 9999px;
+  min-height: 1.1rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+  background: hsl(262, 90%, 94%);
+  color: hsl(262, 52%, 30%);
+  border: 1px solid hsl(262, 70%, 72%);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.chapter-prose sup[data-glossary]:hover { background: hsl(262, 95%, 92%); transform: translateY(-1px); }
+.chapter-prose sup[data-glossary]:active { transform: translateY(0); }
+
 .chapter-prose sup[data-footnote]:hover {
   background: hsl(185, 45%, 82%);
   transform: translateY(-1px);

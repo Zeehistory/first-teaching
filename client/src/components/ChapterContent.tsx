@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Section, Footnote } from "@shared/schema";
 import OrnamentalDivider from "./OrnamentalDivider";
+import { glossary } from "@shared/glossary";
 
 interface ChapterContentProps {
   section: Section;
@@ -25,6 +26,7 @@ export default function ChapterContent({
 }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const highlightRefs = useRef<HTMLElement[]>([]);
+  const glossaryBuilt = useRef(false);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -121,6 +123,88 @@ export default function ChapterContent({
       container.removeEventListener("keydown", handleKeyDown);
     };
   }, [section, onFootnoteClick]);
+
+  // Inject glossary markers by wrapping term occurrences with <sup data-glossary="slug">
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container) return;
+    if (glossaryBuilt.current) return;
+
+    const terms = glossary.map((g) => ({
+      slug: g.slug,
+      title: g.title,
+      // Build a regex for whole-word match (case-insensitive), allow diacritics near letters
+      re: new RegExp(`(^|[^A-Za-z])(${g.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?=[^A-Za-z]|$)`, "gi"),
+    }));
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const toProcess: Text[] = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text;
+      if (!node.data.trim()) continue;
+      if (node.parentElement?.closest("sup[data-footnote], sup[data-glossary], mark[data-highlight]")) continue;
+      toProcess.push(node);
+    }
+
+    toProcess.forEach((textNode) => {
+      const txt = textNode.data;
+      let changed = false;
+      const frag = document.createDocumentFragment();
+      let cursor = 0;
+      let nextIndex = Infinity;
+      let found: { start: number; end: number; slug: string; text: string } | null = null;
+
+      const findNext = (startAt: number) => {
+        let best: { start: number; end: number; slug: string; text: string } | null = null;
+        terms.forEach((t) => {
+          t.re.lastIndex = startAt;
+          const m = t.re.exec(txt);
+          if (m) {
+            const s = m.index + (m[1] ? m[1].length : 0);
+            const e = s + m[2].length;
+            if (!best || s < best.start) best = { start: s, end: e, slug: t.slug, text: m[2] };
+          }
+        });
+        return best;
+      };
+
+      while ((found = findNext(cursor))) {
+        const { start, end, slug, text } = found;
+        if (start > cursor) frag.appendChild(document.createTextNode(txt.slice(cursor, start)));
+        const sup = document.createElement("sup");
+        sup.dataset.glossary = slug;
+        sup.textContent = text;
+        frag.appendChild(sup);
+        cursor = end;
+        changed = true;
+        nextIndex = end;
+        // avoid infinite loops
+        if (nextIndex <= cursor) break;
+      }
+
+      if (changed) {
+        if (cursor < txt.length) frag.appendChild(document.createTextNode(txt.slice(cursor)));
+        textNode.parentNode?.replaceChild(frag, textNode);
+      }
+    });
+
+    glossaryBuilt.current = true;
+
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const el = target.closest("sup[data-glossary]") as HTMLElement | null;
+      if (!el) return;
+      const slug = el.dataset.glossary;
+      if (!slug) return;
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.assign(`/glossary#${slug}`);
+    };
+
+    container.addEventListener("click", onClick);
+    return () => container.removeEventListener("click", onClick);
+  }, [section.id]);
 
   useEffect(() => {
     const container = contentRef.current;

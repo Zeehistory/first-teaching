@@ -87,28 +87,37 @@ export default function HomePage({
         </div>
 
         <div className="mb-8">
-          <h3 className="text-2xl font-heading font-medium text-center mb-8">
-            Table of Contents
-          </h3>
+          <h3 className="text-2xl font-heading font-medium text-center mb-5">Table of Contents</h3>
+          <p className="mx-auto max-w-2xl text-center text-sm text-muted-foreground">
+            Compact view. Hover for a quick summary. Click a tile to open the chapter.
+          </p>
         </div>
 
-        <div className="space-y-4">
-          {bookData.chapters.map((chapter) => (
+        <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-2 gap-4">
+          {bookData.chapters.map((chapter, idx) => (
             <Card
               key={chapter.id}
-              className="p-6 hover-elevate active-elevate-2 cursor-pointer"
+              className="group p-4 hover-elevate active-elevate-2 cursor-pointer"
               onClick={() => onChapterClick(chapter.id)}
               data-testid={`chapter-card-${chapter.id}`}
+              title={chapter.description}
             >
-              <div className="mb-3">
-                <h2 className="text-xl md:text-2xl font-heading font-medium mb-2">
-                  {chapter.title}
-                </h2>
-                <p className="text-muted-foreground leading-relaxed">
-                  {chapter.description}
-                </p>
-                <div className="mt-3 text-sm text-primary font-sans">
-                  {chapter.sections.length} section{chapter.sections.length !== 1 ? "s" : ""}
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border bg-muted/40 font-heading text-sm text-foreground/80">
+                  {idx + 1}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-lg font-heading font-medium leading-snug break-words">
+                      {chapter.title}
+                    </h2>
+                    <span className="inline-flex flex-shrink-0 items-center rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-sans text-muted-foreground">
+                      {chapter.sections.length} sec
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground/90">
+                    {chapter.description}
+                  </p>
                 </div>
               </div>
             </Card>
