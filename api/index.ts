@@ -10,6 +10,8 @@ export default async function handler(_req: Req, res: Res) {
   try {
     const html = fs.readFileSync(indexPath, "utf-8");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    // Avoid any CDN or browser caching that could hold onto an older shell
+    res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
     return res.status(200).send(html);
   } catch (e) {
     return res.status(500).send("Index not found. Build may have failed.");

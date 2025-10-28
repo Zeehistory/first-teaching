@@ -233,15 +233,8 @@ export default function AskAssistant() {
       params.set("hi", String(priorSame));
       const url = `/v/${reference.volumeNumber}/${reference.chapterId}?${params.toString()}`;
       console.log(`[Client] Navigating to: ${url}`);
-      // Primary: SPA navigation
-      setLocation(url);
-      // Fallback: ensure navigation in hardened prod (Vercel) even if SPA is blocked
-      setTimeout(() => {
-        const current = `${window.location.pathname}${window.location.search}`;
-        if (current !== url) {
-          window.location.assign(url);
-        }
-      }, 50);
+      // Use hard navigation for reliability on Vercel
+      window.location.assign(url);
     },
     [lastResponse, setLocation]
   );
