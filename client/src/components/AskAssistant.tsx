@@ -221,16 +221,27 @@ export default function AskAssistant() {
       
       console.log(`[Client] Prior same references: ${priorSame}, using hi=${priorSame}`);
       
-      const highlight = encodeURIComponent(reference.highlight);
       if (event) {
         event.preventDefault();
         event.stopPropagation();
       }
       setOpen(false);
-      // include hi (highlight instance) so the reader lands on the exact match
-      const url = `/v/${reference.volumeNumber}/${reference.chapterId}?s=${reference.sectionId}&h=${highlight}&hi=${priorSame}`;
+      // Build URL safely; let URLSearchParams handle encoding
+      const params = new URLSearchParams();
+      params.set("s", reference.sectionId);
+      params.set("h", reference.highlight);
+      params.set("hi", String(priorSame));
+      const url = `/v/${reference.volumeNumber}/${reference.chapterId}?${params.toString()}`;
       console.log(`[Client] Navigating to: ${url}`);
+      // Primary: SPA navigation
       setLocation(url);
+      // Fallback: ensure navigation in hardened prod (Vercel) even if SPA is blocked
+      setTimeout(() => {
+        const current = `${window.location.pathname}${window.location.search}`;
+        if (current !== url) {
+          window.location.assign(url);
+        }
+      }, 50);
     },
     [lastResponse, setLocation]
   );
@@ -341,6 +352,7 @@ export default function AskAssistant() {
                         <div className="space-y-2">
                           {lastResponse.references.map((reference) => (
                             <button
+                              type="button"
                               key={reference.marker}
                               onClick={() => {
                                 console.log(`[Reference Card] Clicking reference card for marker ${reference.marker}`);
