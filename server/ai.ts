@@ -41,7 +41,12 @@ export interface CitationReference {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const KNOWLEDGE_PATH = path.join(__dirname, "data/knowledge-index.json");
+const KNOWLEDGE_CANDIDATES = [
+  path.join(__dirname, "data/knowledge-index.json"),
+  path.join(process.cwd(), "server", "data", "knowledge-index.json"),
+];
+
+const KNOWLEDGE_PATH = KNOWLEDGE_CANDIDATES.find((candidate) => fs.existsSync(candidate)) ?? KNOWLEDGE_CANDIDATES[0];
 
 let knowledgeBase: KnowledgeChunkWithNorm[] = [];
 
@@ -60,10 +65,11 @@ function cosineSimilarity(a: number[], aNorm: number, b: number[], bNorm: number
 
 function loadKnowledgeBase(): KnowledgeChunkWithNorm[] {
   if (!fs.existsSync(KNOWLEDGE_PATH)) {
-    console.warn("Knowledge index not found – run npm run build:knowledge to generate it.");
+    console.warn(`Knowledge index not found at ${KNOWLEDGE_PATH} – run npm run build:knowledge to generate it.`);
     return [];
   }
 
+  console.log(`[AI] Loading knowledge index from ${KNOWLEDGE_PATH}`);
   const parsed: KnowledgeChunk[] = JSON.parse(fs.readFileSync(KNOWLEDGE_PATH, "utf-8"));
   return parsed.map((chunk) => ({
     ...chunk,

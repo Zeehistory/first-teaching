@@ -7,5 +7,10 @@
     { "src": "^/login$", "dest": "api/index.ts" },
     { "src": "^/glossary$", "dest": "api/index.ts" },
     { "src": "^/v/.*$", "dest": "api/index.ts" }
-  ]
+  ],
+  "functions": {
+    "api/ai/ask.ts": {
+      "includeFiles": "server/data/knowledge-index.json"
+    }
+  }
 }
