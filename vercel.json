@@ -10,10 +10,7 @@
   ],
   "functions": {
     "api/ai/ask.ts": {
-      "includeFiles": [
-        "server/data/knowledge-index.json",
-        "api/_lib/**"
-      ]
+      "includeFiles": "server/data/knowledge-index.json|api/_lib/**"
     }
   }
 }
