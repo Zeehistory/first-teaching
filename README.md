@@ -13,7 +13,7 @@ An interactive study environment for **“The First Teaching of the Last Message
 ## Project Structure
 
 - `server/` — Express API, Vite integration for dev, and optional basic auth.
-- `api/` — Serverless endpoints for deployment (Vercel). `api/_lib/assistant.ts` mirrors the Express AI route.
+- `api/` — Serverless endpoints for deployment (Vercel). They reuse the shared AI helper.
 - `client/` — Vite + React (Wouter router, TanStack Query, Tailwind) for the reader experience.
 - `content/` — Source documents used to build the knowledge index.
 - `scripts/` — Helpers such as `build-embeddings.ts` to refresh the AI knowledge base.
@@ -35,14 +35,14 @@ Create a `.env` file in the project root or export variables in your shell befor
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `OPENAI_API_KEY` | ✅ | — | Used by `api/_lib/assistant.ts` (and Express mirror) to generate embeddings and answer questions. |
+| `OPENAI_API_KEY` | ✅ | — | Used by `shared/assistant.ts` to generate embeddings and answer questions. |
 | `PORT` | ❌ | `5000` | Express listen port (API + client in production). |
 | `HOST` | ❌ | `127.0.0.1` | Bind host. |
 | `BASIC_USER` | ❌ | `reader` | Username for optional HTTP basic auth. |
 | `BASIC_PASS` | ❌ | `the-first-teaching-testing-2025` | Password for basic auth. |
 | `BASIC_AUTH` | ❌ | `on` | Set to `off` to disable basic auth in development. |
 
-> ℹ️ The AI assistant will refuse to start without `OPENAI_API_KEY`. If you only want to browse the static content, you can temporarily comment out the client creation in `api/_lib/assistant.ts`, but the preferred approach is supplying the key.
+> ℹ️ The AI assistant will refuse to start without `OPENAI_API_KEY`. If you only want to browse the static content, you can temporarily comment out the client creation in `shared/assistant.ts`, but the preferred approach is supplying the key.
 
 ---
 
@@ -85,7 +85,7 @@ Visit the Vite URL (default `http://localhost:5173`). The frontend proxies API c
 ## AI Assistant Pipeline (Local & Serverless)
 
 1. **Knowledge base** — `npm run build:knowledge` (via `scripts/build-embeddings.ts`) chunks the volumes, generates OpenAI embeddings, and writes `server/data/knowledge-index.json`.
-2. **Runtime helper** — `api/_lib/assistant.ts` loads the knowledge index, annotates duplicate passages with occurrence indices, and performs semantic retrieval + chat completion with `gpt-4o-mini`.
+2. **Runtime helper** — `shared/assistant.ts` loads the knowledge index, annotates duplicate passages with occurrence indices, and performs semantic retrieval + chat completion with `gpt-4o-mini`.
 3. **Express vs. Vercel** — Express (development) and the serverless function both import the same helper so behaviour stays in sync.
 4. **Citations** — Responses return `marker`, `sectionId`, `highlight`, and the exact occurrence index; the client converts each `#` button into a deep-link with `s`, `h`, and `hi` query params for precise highlighting inside the chapter reader.
 
