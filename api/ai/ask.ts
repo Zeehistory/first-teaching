@@ -1,4 +1,4 @@
-import { answerQuestion } from "../../server/ai";
+import { answerQuestion } from "../../shared/assistant";
 
 type Req = any;
 type Res = any;

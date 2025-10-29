@@ -34,14 +34,14 @@ Create a `.env` file in the project root or export variables in your shell befor
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `OPENAI_API_KEY` | ✅ | — | Used by `server/ai.ts` to generate embeddings and answer questions. |
+| `OPENAI_API_KEY` | ✅ | — | Used by `shared/assistant.ts` to generate embeddings and answer questions. |
 | `PORT` | ❌ | `5000` | Express listen port (API + client in production). |
 | `HOST` | ❌ | `127.0.0.1` | Bind host. |
 | `BASIC_USER` | ❌ | `reader` | Username for optional HTTP basic auth. |
 | `BASIC_PASS` | ❌ | `the-first-teaching-testing-2025` | Password for basic auth. |
 | `BASIC_AUTH` | ❌ | `on` | Set to `off` to disable basic auth in development. |
 
-> ℹ️ The AI assistant will refuse to start without `OPENAI_API_KEY`. If you only want to browse the static content, you can temporarily comment out the client creation in `server/ai.ts`, but the preferred approach is supplying the key.
+> ℹ️ The AI assistant will refuse to start without `OPENAI_API_KEY`. If you only want to browse the static content, you can temporarily comment out the client creation in `shared/assistant.ts`, but the preferred approach is supplying the key.
 
 ---
 
