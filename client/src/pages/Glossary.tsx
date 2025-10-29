@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { glossary } from "@shared/glossary";
+import { ArrowLeft } from "lucide-react";
 
 export default function Glossary() {
   const [, setLocation] = useLocation();
@@ -15,8 +16,25 @@ export default function Glossary() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
-      <header className="mb-8 text-center">
-        <h1 className="text-3xl font-heading font-semibold">The Teaching Glossary</h1>
+      <header className="mb-8">
+        <div className="mb-3 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                window.history.back();
+              } else {
+                setLocation("/v/1");
+              }
+            }}
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground transition hover:border-primary/50 hover:text-primary"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+        </div>
+        <h1 className="text-3xl text-center font-heading font-semibold">The Teaching Glossary</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Titles only. Entries’ bodies are placeholders and will be replaced later.
         </p>

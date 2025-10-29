@@ -1,4 +1,4 @@
-import { answerQuestion } from "../../shared/assistant";
+import { answerQuestion } from "../_lib/assistant";
 
 type Req = any;
 type Res = any;

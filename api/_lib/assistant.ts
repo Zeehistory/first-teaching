@@ -43,7 +43,7 @@ const __dirname = path.dirname(__filename);
 
 const KNOWLEDGE_CANDIDATES = [
   path.join(process.cwd(), "server", "data", "knowledge-index.json"),
-  path.join(__dirname, "..", "server", "data", "knowledge-index.json"),
+  path.join(__dirname, "../../server/data/knowledge-index.json"),
 ];
 
 const KNOWLEDGE_PATH = KNOWLEDGE_CANDIDATES.find((candidate) => fs.existsSync(candidate)) ?? KNOWLEDGE_CANDIDATES[0];
