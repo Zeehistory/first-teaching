@@ -16,6 +16,7 @@ interface CitationReference {
   sectionTitle: string;
   highlight: string;
   snippet: string;
+  occurrenceIndex?: number;
 }
 
 interface AskResponse {
@@ -210,17 +211,6 @@ export default function AskAssistant() {
         highlight: reference.highlight.substring(0, 50) + '...'
       });
 
-      // determine which occurrence index this specific reference refers to
-      const priorSame = lastResponse.references.filter((ref) =>
-        ref.marker < marker &&
-        ref.volumeNumber === reference.volumeNumber &&
-        ref.chapterId === reference.chapterId &&
-        ref.sectionId === reference.sectionId &&
-        ref.highlight === reference.highlight
-      ).length;
-      
-      console.log(`[Client] Prior same references: ${priorSame}, using hi=${priorSame}`);
-      
       if (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -230,7 +220,9 @@ export default function AskAssistant() {
       const params = new URLSearchParams();
       params.set("s", reference.sectionId);
       params.set("h", reference.highlight);
-      params.set("hi", String(priorSame));
+      const occurrenceIndex = typeof reference.occurrenceIndex === "number" ? reference.occurrenceIndex : 0;
+      console.log(`[Client] Using occurrenceIndex=${occurrenceIndex}`);
+      params.set("hi", String(occurrenceIndex));
       const url = `/v/${reference.volumeNumber}/${reference.chapterId}?${params.toString()}`;
       console.log(`[Client] Navigating to: ${url}`);
       // Use hard navigation for reliability on Vercel

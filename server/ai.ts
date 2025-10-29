@@ -17,6 +17,7 @@ interface KnowledgeChunk {
     snippet: string;
     highlight: string;
     keyphrase?: string;
+    occurrenceIndex?: number;
   };
 }
 
@@ -34,6 +35,7 @@ export interface CitationReference {
   highlight: string;
   snippet: string;
   keyphrase?: string;
+  occurrenceIndex: number;
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,6 +72,7 @@ function loadKnowledgeBase(): KnowledgeChunkWithNorm[] {
 }
 
 knowledgeBase = loadKnowledgeBase();
+annotateOccurrenceIndices(knowledgeBase);
 
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -117,6 +120,7 @@ Before you write:
 When answering:
 - Provide a direct, text-grounded response. Summarize or quote the relevant portions of the passages in your own words.
 - Support **every** factual or interpretive statement with a citation in the format [#number], corresponding to the CONTEXT entry. ALWAYS double to make sure that the CONTEXT entry matches the citation you are trying to make. 
+- Use only citation markers that appear in CONTEXT (e.g., [#1], [#2], ...). Never create your own numbering or reference non-existent entries.
 - Remain in the same language as the QUESTION. Words that are not in English must be italicized and correctly rendered.
 - Write in a **measured, contemplative tone** befitting sacred or philosophical study.
 - Favor clarity and resonance over verbosity.
@@ -170,6 +174,7 @@ function mapCitations(answer: string, chunks: KnowledgeChunkWithNorm[]): Citatio
       highlight: chunk.metadata.highlight,
       snippet: chunk.metadata.snippet,
       keyphrase: chunk.metadata.keyphrase,
+      occurrenceIndex: chunk.metadata.occurrenceIndex ?? 0,
     };
     
     console.log(`[AI] Mapped marker ${marker} to:`, {
@@ -184,6 +189,17 @@ function mapCitations(answer: string, chunks: KnowledgeChunkWithNorm[]): Citatio
   });
 
   return references.sort((a, b) => a.marker - b.marker);
+}
+
+function annotateOccurrenceIndices(chunks: KnowledgeChunkWithNorm[]) {
+  const counters = new Map<string, number>();
+  chunks.forEach((chunk) => {
+    const meta = chunk.metadata;
+    const key = `${meta.volumeNumber}:${meta.chapterId}:${meta.sectionId}:${meta.highlight}`;
+    const count = counters.get(key) ?? 0;
+    meta.occurrenceIndex = count;
+    counters.set(key, count + 1);
+  });
 }
 
 export async function answerQuestion(question: string): Promise<{ answer: string; references: CitationReference[] }> {
