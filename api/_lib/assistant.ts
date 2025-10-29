@@ -1,1 +1,1 @@
-export * from "../../shared/assistant";
+export { answerQuestion } from "../../shared/assistant";

@@ -1,4 +1,15 @@
+import * as assistantModule from "../_lib/assistant";
 import { answerQuestion } from "../_lib/assistant";
+
+const assistantModuleKeys = Object.keys(assistantModule);
+if (assistantModuleKeys.length === 0) {
+  console.warn("[DEBUG] Assistant module appears empty; bundler may have tree-shaken it.");
+} else {
+  console.log("[DEBUG] Assistant module keys:", assistantModuleKeys);
+}
+
+console.log("[DEBUG] process.cwd():", typeof process !== "undefined" ? process.cwd() : "<no process>");
+console.log("[DEBUG] import.meta.url:", import.meta.url);
 
 type Req = any;
 type Res = any;
