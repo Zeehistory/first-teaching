@@ -1,5 +1,5 @@
-import * as assistantModule from "../assistant-core";
-import { answerQuestion } from "../assistant-core";
+import * as assistantModule from "../assistant-core.ts";
+import { answerQuestion } from "../assistant-core.ts";
 
 const assistantModuleKeys = Object.keys(assistantModule);
 if (assistantModuleKeys.length === 0) {

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { answerQuestion } from "../api/assistant-core";
+import { answerQuestion } from "../api/assistant-core.ts";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
