@@ -130,13 +130,21 @@ export default function ChapterContent({
     if (!container) return;
     if (glossaryBuilt.current) return;
 
-    const terms = glossary.map((g) => ({
-      slug: g.slug,
-      index: g.index,
-      title: g.title,
-      // Whole-word-ish match, case-insensitive
-      re: new RegExp(`(^|[^A-Za-z])(${g.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?=[^A-Za-z]|$)`, "gi"),
-    }));
+    // Build matchers for both full title and a shortened variant (strip parenthetical
+    // parts like transliterations), since the text often uses the short form
+    // (e.g., "Functional Certitude").
+    const stripParens = (s: string) => s.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const terms = glossary.map((g) => {
+      const full = g.title.trim();
+      const short = stripParens(full);
+      const variants = Array.from(new Set([full, short]));
+      const res = variants.map((v) =>
+        new RegExp(`(^|[^A-Za-z])(${escape(v)})(?=[^A-Za-z]|$)`, "gi"),
+      );
+      return { slug: g.slug, index: g.index, title: g.title, res };
+    });
 
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     const toProcess: Text[] = [];
@@ -157,13 +165,15 @@ export default function ChapterContent({
       const findNext = (startAt: number) => {
         let best: { start: number; end: number; slug: string; text: string; index: number } | null = null;
         terms.forEach((t) => {
-          t.re.lastIndex = startAt;
-          const m = t.re.exec(txt);
-          if (m) {
-            const s = m.index + (m[1] ? m[1].length : 0);
-            const e = s + m[2].length;
-            if (!best || s < best.start) best = { start: s, end: e, slug: t.slug, text: m[2], index: t.index };
-          }
+          t.res.forEach((re) => {
+            re.lastIndex = startAt;
+            const m = re.exec(txt);
+            if (m) {
+              const s = m.index + (m[1] ? m[1].length : 0);
+              const e = s + m[2].length;
+              if (!best || s < best.start) best = { start: s, end: e, slug: t.slug, text: m[2], index: t.index };
+            }
+          });
         });
         return best;
       };
@@ -202,7 +212,11 @@ export default function ChapterContent({
     };
 
     container.addEventListener("click", onClick);
-    return () => container.removeEventListener("click", onClick);
+    return () => {
+      container.removeEventListener("click", onClick);
+      // Reset so a new section rebuilds markers
+      glossaryBuilt.current = false;
+    };
   }, [section.id]);
 
   useEffect(() => {

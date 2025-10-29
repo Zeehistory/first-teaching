@@ -4,6 +4,8 @@
   "routes": [
     { "src": "^/api/ai/ask$", "dest": "api/ai/ask.ts" },
     { "src": "^/$", "dest": "api/index.ts" },
+    { "src": "^/login$", "dest": "api/index.ts" },
+    { "src": "^/glossary$", "dest": "api/index.ts" },
     { "src": "^/v/.*$", "dest": "api/index.ts" }
   ]
 }
