@@ -1,4 +1,4 @@
-import { Book, Library, Sparkles } from "lucide-react";
+import { Book, Library, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Volume } from "@shared/schema";
@@ -58,6 +58,19 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
           <div className="mt-8 text-sm text-muted-foreground">
             Authored by <span className="font-medium text-foreground">{overview.author}</span>
           </div>
+
+          <div className="mt-8">
+            <Button
+              variant="outline"
+              className="rounded-full gap-2"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("start-onboarding-tour", { detail: { step: 0 } }));
+              }}
+            >
+              <Wand2 className="h-4 w-4" />
+              Take a Quick Tour
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -105,6 +118,7 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
                       onClick={() => onSelectVolume(volume.number)}
                       size="sm"
                       className="gap-2 rounded-full px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:shadow-md hover:brightness-105 transition-all duration-150"
+                      data-tour="open-volume"
                     >
                       <Book className="h-4 w-4" />
                       Open Volume

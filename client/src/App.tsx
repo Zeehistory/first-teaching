@@ -14,6 +14,7 @@ import { isAuthed } from "@/lib/auth";
 import { useLocation } from "wouter";
 import AskAssistant from "@/components/AskAssistant";
 import MobileBlocker from "@/components/MobileBlocker";
+import OnboardingTour from "@/components/OnboardingTour";
 
 function ProtectedRoute({ component: Comp }: { component: any }) {
   const [, setLocation] = useLocation();
@@ -44,6 +45,7 @@ function App() {
         <ThemeProvider>
           <Toaster />
           <MobileBlocker />
+          <OnboardingTour />
           <Router />
           <AskAssistant />
         </ThemeProvider>

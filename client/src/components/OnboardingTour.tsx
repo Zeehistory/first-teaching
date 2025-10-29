@@ -1,0 +1,329 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Sparkles, ArrowRight, MousePointer2, Map, Search, BookOpen, Wand2, MoonStar } from "lucide-react";
+
+type Step = {
+  id: string;
+  title: string;
+  description: string;
+  target?: string; // CSS selector
+  ensureRoute?: (path: string) => boolean; // gate by route
+  autoClickTarget?: boolean; // click the target when user hits Next
+};
+
+const STORAGE_KEY_ACTIVE = "ft_onboarding_active_v1";
+const STORAGE_KEY_STEP = "ft_onboarding_step_v1";
+const STORAGE_KEY_SEEN = "ft_onboarding_seen_v1";
+
+function isElementVisible(el: Element | null) {
+  if (!el) return false;
+  const rect = (el as HTMLElement).getBoundingClientRect();
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.bottom >= 0 &&
+    rect.right >= 0 &&
+    rect.top <= (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.left <= (window.innerWidth || document.documentElement.clientWidth)
+  );
+}
+
+export default function OnboardingTour() {
+  const [active, setActive] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    // if already seen, don’t auto-start
+    const seen = window.localStorage.getItem(STORAGE_KEY_SEEN) === "true";
+    if (seen) return false;
+    // resume if previously active
+    return window.localStorage.getItem(STORAGE_KEY_ACTIVE) === "true";
+  });
+  const [index, setIndex] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const saved = window.localStorage.getItem(STORAGE_KEY_STEP);
+    const parsed = saved ? parseInt(saved, 10) : 0;
+    return Number.isFinite(parsed) ? parsed : 0;
+  });
+
+  // Allow manual start via custom event from UI
+  useEffect(() => {
+    const handleStart = (e: Event) => {
+      const custom = e as CustomEvent<{ step?: number; resetSeen?: boolean }>;
+      if (typeof window !== "undefined") {
+        if (custom.detail?.resetSeen) window.localStorage.removeItem(STORAGE_KEY_SEEN);
+        window.localStorage.setItem(STORAGE_KEY_ACTIVE, "true");
+      }
+      setIndex(typeof custom.detail?.step === "number" ? custom.detail!.step! : 0);
+      setActive(true);
+    };
+    window.addEventListener("start-onboarding-tour", handleStart as EventListener);
+    return () => window.removeEventListener("start-onboarding-tour", handleStart as EventListener);
+  }, []);
+
+  // Define steps. Some steps are route-gated and/or target elements.
+  const steps: Step[] = useMemo(
+    () => [
+      {
+        id: "welcome",
+        title: "Welcome to First Teaching",
+        description:
+          "Let’s take a quick, elegant tour of the library and its reading tools.",
+        ensureRoute: () => true,
+      },
+      {
+        id: "open-volume",
+        title: "Open a Volume",
+        description:
+          "Browse the curriculum and open a volume to begin.",
+        target: '[data-tour="open-volume"]',
+        ensureRoute: (path) => path === "/",
+        autoClickTarget: true,
+      },
+      {
+        id: "search-volume",
+        title: "Search the Volume",
+        description:
+          "Use powerful search to find passages across all chapters.",
+        target: '[data-tour="home-search"]',
+        ensureRoute: (path) => /^\/v\/[\d]+$/.test(path),
+      },
+      {
+        id: "open-chapter",
+        title: "Open a Chapter",
+        description:
+          "Chapters are organized with concise summaries—click one to start reading.",
+        target: '[data-testid^="chapter-card-"]',
+        ensureRoute: (path) => /^\/v\/[\d]+$/.test(path),
+        autoClickTarget: true,
+      },
+      {
+        id: "reading-tools",
+        title: "Reading Tools",
+        description:
+          "In any chapter, use search, the AI assistant, theme toggle, and text size controls to tailor your study.",
+        // we'll prioritize search button in chapter header if present
+        target: '[data-tour="chapter-search"], [data-tour="assistant-button"], [data-tour="theme-toggle"], [data-tour="text-size-control"]',
+        ensureRoute: (path) => /^\/v\/[\d]+\/.+/.test(path),
+      },
+    ],
+    []
+  );
+
+  const currentStep = steps[index];
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep localStorage in sync
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY_ACTIVE, active ? "true" : "false");
+    window.localStorage.setItem(STORAGE_KEY_STEP, String(index));
+  }, [active, index]);
+
+  // Recompute target rect when step changes or on resize/scroll
+  useEffect(() => {
+    const compute = () => {
+      if (!currentStep?.target) {
+        setTargetRect(null);
+        return;
+      }
+      const el = document.querySelector(currentStep.target) as HTMLElement | null;
+      if (el) {
+        if (!isElementVisible(el)) {
+          try {
+            el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+          } catch {}
+        }
+        setTargetRect(el.getBoundingClientRect());
+      } else {
+        setTargetRect(null);
+      }
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(document.documentElement);
+    window.addEventListener("scroll", compute, true);
+    window.addEventListener("resize", compute);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("scroll", compute, true);
+      window.removeEventListener("resize", compute);
+    };
+  }, [currentStep?.target]);
+
+  // Start tour automatically once authenticated and landing page loads (first visit only)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const seen = window.localStorage.getItem(STORAGE_KEY_SEEN) === "true";
+    const authed = !!window.localStorage.getItem("ft_auth_b64");
+    if (!seen && authed && !active) {
+      // Start shortly after mount for a smooth entrance
+      const t = window.setTimeout(() => setActive(true), 400);
+      return () => window.clearTimeout(t);
+    }
+  }, []); // run once
+
+  // Ensure we are on the right route for the current step; if not, just wait until navigation
+  const onCorrectRoute = useMemo(() => {
+    if (!currentStep || !currentStep.ensureRoute) return true;
+    return currentStep.ensureRoute(window.location.pathname);
+  }, [currentStep]);
+
+  function handleSkip() {
+    setActive(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY_SEEN, "true");
+      window.localStorage.removeItem(STORAGE_KEY_ACTIVE);
+    }
+  }
+
+  function gotoNext() {
+    if (!currentStep) return;
+    // If step wants to auto click its target to demonstrate navigation/action
+    if (currentStep.autoClickTarget && currentStep.target) {
+      const el = document.querySelector<HTMLElement>(currentStep.target);
+      if (el) el.click();
+    }
+    if (index < steps.length - 1) {
+      setIndex(index + 1);
+    } else {
+      // Done
+      handleSkip();
+    }
+  }
+
+  if (!active || !currentStep) return null;
+
+  // Decide card placement: if targetRect present, place near it; else center
+  const margin = 14;
+  const cardWidth = 360;
+  let cardStyle: React.CSSProperties = { maxWidth: cardWidth };
+  if (targetRect) {
+    const preferBelow = targetRect.bottom + 200 < window.innerHeight; // rough space check
+    const top = preferBelow ? targetRect.bottom + margin : Math.max(margin, targetRect.top - 180);
+    let left = Math.min(
+      Math.max(margin, targetRect.left + targetRect.width / 2 - cardWidth / 2),
+      window.innerWidth - cardWidth - margin
+    );
+    cardStyle = {
+      position: "fixed",
+      top,
+      left,
+      width: cardWidth,
+      zIndex: 60,
+    } as React.CSSProperties;
+  } else {
+    cardStyle = {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: cardWidth,
+      zIndex: 60,
+    } as React.CSSProperties;
+  }
+
+  const Icon = currentStep.id === "welcome"
+    ? Sparkles
+    : currentStep.id === "open-volume"
+    ? Map
+    : currentStep.id === "search-volume"
+    ? Search
+    : currentStep.id === "open-chapter"
+    ? BookOpen
+    : currentStep.id === "reading-tools"
+    ? Wand2
+    : MousePointer2;
+
+  return (
+    <div ref={overlayRef} className="pointer-events-auto">
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-50 bg-transparent pointer-events-none" />
+
+      {/* Highlight ring over target */}
+      {targetRect && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{
+            top: targetRect.top - 8,
+            left: targetRect.left - 8,
+            width: targetRect.width + 16,
+            height: targetRect.height + 16,
+            borderRadius: 12,
+            boxShadow:
+              "0 0 0 9999px rgba(0,0,0,0.45), 0 0 0 2px rgba(99,102,241,0.65), 0 10px 30px rgba(0,0,0,0.25)",
+            transition: "all 0.18s ease",
+          }}
+        />
+      )}
+
+      {/* Floating card */}
+      <Card
+        className="z-60 relative overflow-hidden border-border/70 bg-card/95 shadow-2xl"
+        style={cardStyle}
+      >
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/60 to-primary/30" />
+        <div className="p-5">
+          <div className="mb-3 flex items-center gap-2 text-primary">
+            <Icon className="h-5 w-5" />
+            <div className="text-[10px] font-semibold uppercase tracking-[0.35em]">Quick Tour</div>
+          </div>
+          <h3 className="mb-2 text-xl font-heading font-semibold leading-tight">
+            {currentStep.title}
+          </h3>
+          <p className="mb-4 text-sm text-muted-foreground leading-relaxed">
+            {currentStep.description}
+          </p>
+
+          {/* Hints for the reading tools step */}
+          {currentStep.id === "reading-tools" && (
+            <div className="mb-3 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
+                <Search className="h-3.5 w-3.5 text-foreground/70" />
+                Search
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
+                <Sparkles className="h-3.5 w-3.5 text-foreground/70" />
+                Ask Al
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
+                <MoonStar className="h-3.5 w-3.5 text-foreground/70" />
+                Theme
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
+                A⇵
+                Text Size
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-muted-foreground/80">
+              Step {index + 1} of {steps.length}
+              {!onCorrectRoute && <span className="ml-2">Navigate to continue…</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground"
+              >
+                Skip
+              </button>
+              <Button size="sm" className="rounded-full" onClick={gotoNext} disabled={!onCorrectRoute}>
+                {index < steps.length - 1 ? (
+                  <>
+                    Next
+                    <ArrowRight className="ml-1 h-4 w-4" />
+                  </>
+                ) : (
+                  "Finish"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}

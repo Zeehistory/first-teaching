@@ -80,6 +80,7 @@ export default function HomePage({
             onClick={onSearchClick}
             data-testid="button-open-search"
             className="gap-2"
+            data-tour="home-search"
           >
             <SearchIcon className="h-4 w-4" />
             Search All Chapters
@@ -130,9 +131,6 @@ export default function HomePage({
             <br />
             Look for page numbers throughout the text to find corresponding sections in your printed copy.
             <br />
-            <span className="italic mt-2 block">
-              "Read, mark, learn, and inwardly digest"
-            </span>
           </p>
         </div>
       </div>

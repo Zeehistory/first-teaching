@@ -124,7 +124,7 @@ export default function ChapterContent({
     };
   }, [section, onFootnoteClick]);
 
-  // Inject glossary markers by wrapping term occurrences with <sup data-glossary="slug">
+  // Inject glossary markers by appending numbered chips after term occurrences
   useEffect(() => {
     const container = contentRef.current;
     if (!container) return;
@@ -132,8 +132,9 @@ export default function ChapterContent({
 
     const terms = glossary.map((g) => ({
       slug: g.slug,
+      index: g.index,
       title: g.title,
-      // Build a regex for whole-word match (case-insensitive), allow diacritics near letters
+      // Whole-word-ish match, case-insensitive
       re: new RegExp(`(^|[^A-Za-z])(${g.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?=[^A-Za-z]|$)`, "gi"),
     }));
 
@@ -151,35 +152,33 @@ export default function ChapterContent({
       let changed = false;
       const frag = document.createDocumentFragment();
       let cursor = 0;
-      let nextIndex = Infinity;
-      let found: { start: number; end: number; slug: string; text: string } | null = null;
+      let found: { start: number; end: number; slug: string; text: string; index: number } | null = null;
 
       const findNext = (startAt: number) => {
-        let best: { start: number; end: number; slug: string; text: string } | null = null;
+        let best: { start: number; end: number; slug: string; text: string; index: number } | null = null;
         terms.forEach((t) => {
           t.re.lastIndex = startAt;
           const m = t.re.exec(txt);
           if (m) {
             const s = m.index + (m[1] ? m[1].length : 0);
             const e = s + m[2].length;
-            if (!best || s < best.start) best = { start: s, end: e, slug: t.slug, text: m[2] };
+            if (!best || s < best.start) best = { start: s, end: e, slug: t.slug, text: m[2], index: t.index };
           }
         });
         return best;
       };
 
       while ((found = findNext(cursor))) {
-        const { start, end, slug, text } = found;
+        const { start, end, slug, text, index } = found;
         if (start > cursor) frag.appendChild(document.createTextNode(txt.slice(cursor, start)));
+        // Keep the original text, then add a numbered chip
+        frag.appendChild(document.createTextNode(text));
         const sup = document.createElement("sup");
         sup.dataset.glossary = slug;
-        sup.textContent = text;
+        sup.textContent = String(index);
         frag.appendChild(sup);
         cursor = end;
         changed = true;
-        nextIndex = end;
-        // avoid infinite loops
-        if (nextIndex <= cursor) break;
       }
 
       if (changed) {

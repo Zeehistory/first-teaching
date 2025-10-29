@@ -494,11 +494,13 @@ export default function Chapter() {
               </div>
 
               <div className="flex items-center gap-2">
-                <TextSizeControl
-                  textSize={textSize}
-                  onIncrease={() => setTextSize((s) => Math.min(s + 2, 22))}
-                  onDecrease={() => setTextSize((s) => Math.max(s - 2, 14))}
-                />
+                <div data-tour="text-size-control">
+                  <TextSizeControl
+                    textSize={textSize}
+                    onIncrease={() => setTextSize((s) => Math.min(s + 2, 22))}
+                    onDecrease={() => setTextSize((s) => Math.max(s - 2, 14))}
+                  />
+                </div>
               {highlightTerm && highlightMatches > 0 && highlightGlobalIndex !== null && (
                 <div className="flex items-center gap-2 rounded-full border border-border bg-background/80 px-3 py-1 text-xs font-sans text-muted-foreground shadow-sm sm:hidden">
                   <span className="tracking-wide">
@@ -534,6 +536,7 @@ export default function Chapter() {
                     onClick={handleAssistantButton}
                     aria-label="Open study assistant"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition hover:border-primary/50 hover:text-primary"
+                    data-tour="assistant-button"
                   >
                     <AssistantMark className="h-4 w-4" />
                   </button>
@@ -570,6 +573,7 @@ export default function Chapter() {
                   size="icon"
                   onClick={() => setIsSearchOpen(true)}
                   data-testid="button-search"
+                  data-tour="chapter-search"
                 >
                   <SearchIcon className="h-4 w-4" />
                 </Button>
@@ -581,7 +585,9 @@ export default function Chapter() {
                 >
                   Glossary
                 </Button>
-                <ThemeToggle />
+                <span data-tour="theme-toggle">
+                  <ThemeToggle />
+                </span>
               </div>
             </header>
 

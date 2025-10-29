@@ -30,13 +30,13 @@ export default function Glossary() {
             className="rounded-xl border border-border bg-background/80 p-4 shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border bg-muted/40 font-heading text-sm text-foreground/80">
+              <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border bg-amber-100 text-amber-900 font-heading text-sm">
                 {entry.index}
               </span>
               <div>
                 <h2 className="text-lg font-heading font-medium">{entry.title}</h2>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  Placeholder content to be supplied.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer feugiat, mi nec faucibus mattis, ligula magna fringilla lectus, a viverra eros arcu in nunc. Suspendisse potenti. Donec sed nunc at arcu cursus varius.
                 </div>
               </div>
             </div>
@@ -56,4 +56,3 @@ export default function Glossary() {
     </div>
   );
 }
-
