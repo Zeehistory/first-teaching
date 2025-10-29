@@ -155,6 +155,8 @@ export default function ChapterContent({
       toProcess.push(node);
     }
 
+    const usedSlugs = new Set<string>();
+
     toProcess.forEach((textNode) => {
       const txt = textNode.data;
       let changed = false;
@@ -181,14 +183,17 @@ export default function ChapterContent({
       while ((found = findNext(cursor))) {
         const { start, end, slug, text, index } = found;
         if (start > cursor) frag.appendChild(document.createTextNode(txt.slice(cursor, start)));
-        // Keep the original text, then add a numbered chip
+        // Keep the original text, then add a numbered chip only once per slug
         frag.appendChild(document.createTextNode(text));
-        const sup = document.createElement("sup");
-        sup.dataset.glossary = slug;
-        sup.textContent = String(index);
-        frag.appendChild(sup);
+        if (!usedSlugs.has(slug)) {
+          const sup = document.createElement("sup");
+          sup.dataset.glossary = slug;
+          sup.textContent = String(index);
+          frag.appendChild(sup);
+          usedSlugs.add(slug);
+          changed = true;
+        }
         cursor = end;
-        changed = true;
       }
 
       if (changed) {
