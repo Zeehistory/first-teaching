@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Section, Footnote } from "@shared/schema";
 import { glossary } from "@shared/glossary";
 import OrnamentalDivider from "./OrnamentalDivider";
 import SectionAudioPlayer from "./SectionAudioPlayer";
+import ImageCatalogue from "./ImageCatalogue";
+import { imageCatalogue } from "@/data/imageCatalogue";
+
+const ENABLE_GLOSSARY_CHIPS = false;
 
 function htmlToPlainText(content: string) {
   const text = (() => {
@@ -68,6 +72,13 @@ export default function ChapterContent({
     const seconds = Math.round((wordCount / 165) * 60);
     return Math.min(1200, Math.max(180, seconds));
   }, [section.content, section.id]);
+
+  const showImageCatalogue = section.id === "note-of-thanks";
+  const sanitizedContent = useMemo(() => {
+    if (!showImageCatalogue) return section.content;
+    const withoutImages = section.content.replace(/<p>Image\s\d+[^<]*<\/p>/g, "");
+    return withoutImages.replace(/<p><em>Unused[^]+$/m, "");
+  }, [section.content, showImageCatalogue]);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -258,6 +269,7 @@ export default function ChapterContent({
 
   // Inject glossary markers by appending numbered chips after term occurrences
   useEffect(() => {
+    if (!ENABLE_GLOSSARY_CHIPS) return;
     const container = contentRef.current;
     if (!container) return;
     if (glossaryBuilt.current) return;
@@ -620,8 +632,10 @@ export default function ChapterContent({
         className="chapter-prose max-w-none leading-relaxed mt-4 space-y-6"
         style={{ fontSize: `${textSize}px` }}
         data-testid="chapter-text-content"
-        dangerouslySetInnerHTML={{ __html: section.content }}
+        dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       />
+
+      {showImageCatalogue && <ImageCatalogue items={imageCatalogue} />}
 
       {section.footnotes.length > 0 && (
         <div className="mt-16 pt-8 border-t border-border">
