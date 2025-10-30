@@ -556,6 +556,28 @@
   box-shadow: 0 0 0 2px hsla(48, 70%, 60%, 0.5);
 }
 
+.chapter-prose mark.note-highlight,
+.chapter-prose mark[data-reader-note],
+.chapter-prose mark.user-highlight {
+  background: linear-gradient(135deg, hsla(48, 96%, 84%, 0.95), hsla(45, 92%, 76%, 0.95));
+  color: var(--foreground);
+  padding: 0 0.22em;
+  border-radius: 0.35em;
+  box-shadow: 0 0 0 1px hsla(45, 80%, 58%, 0.4), 0 6px 18px -12px rgba(155, 120, 20, 0.4);
+  cursor: pointer;
+  transition: box-shadow 200ms ease, background-color 200ms ease;
+}
+
+.chapter-prose mark[data-reader-note]:hover,
+.chapter-prose mark.user-highlight:hover {
+  box-shadow: 0 0 0 2px hsla(45, 85%, 62%, 0.45);
+}
+
+.chapter-prose mark[data-reader-note].note-highlight-focus,
+.chapter-prose mark.user-highlight.note-highlight-focus {
+  box-shadow: 0 0 0 3px hsla(45, 85%, 62%, 0.55);
+}
+
 @keyframes highlight-glow {
   0% {
     background: hsla(48, 95%, 80%, 1);

@@ -67,7 +67,7 @@ export default function OnboardingTour() {
         id: "welcome",
         title: "Welcome to First Teaching",
         description:
-          "Let’s take a quick, elegant tour of the library and its reading tools.",
+          "Let's take a quick, elegant tour of the library and its reading tools.",
         ensureRoute: () => true,
       },
       {
@@ -103,6 +103,22 @@ export default function OnboardingTour() {
           "In any chapter, use search, the AI assistant, theme toggle, and text size controls to tailor your study.",
         // we'll prioritize search button in chapter header if present
         target: '[data-tour="chapter-search"], [data-tour="assistant-button"], [data-tour="theme-toggle"], [data-tour="text-size-control"]',
+        ensureRoute: (path) => /^\/v\/[\d]+\/.+/.test(path),
+      },
+      {
+        id: "audio-preview",
+        title: "Listen While Reading",
+        description:
+          "Each section now offers a soft audio companion. It's a calm preview—lovely for exploration, but not yet the final classroom recording.",
+        target: '[data-tour="section-audio"]',
+        ensureRoute: (path) => /^\/v\/[\d]+\/.+/.test(path),
+      },
+      {
+        id: "notes-preview",
+        title: "Demo Notes",
+        description:
+          "Highlight any sentence to open the notes pane. Capture thoughts on the fly and revisit them alongside the text.",
+        target: '[data-tour="notes-toggle"]',
         ensureRoute: (path) => /^\/v\/[\d]+\/.+/.test(path),
       },
     ],

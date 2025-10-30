@@ -1,6 +1,7 @@
 import { Home, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { hasRenderableContent } from "@/lib/content";
 import type { Chapter } from "@shared/schema";
 
 interface ChapterSidebarProps {
@@ -52,24 +53,39 @@ export default function ChapterSidebar({
                       currentChapterId === chapter.id &&
                       currentSectionId === section.id;
                     const indentLevel = Math.max(0, section.level - baseLevel);
+                    const isDisabled = !hasRenderableContent(section.content);
+                    const showCaret = !isDisabled;
                     return (
                       <button
                         key={section.id}
-                        onClick={() => onSectionClick(volumeNumber, chapter.id, section.id)}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors hover-elevate active-elevate-2 ${
+                        type="button"
+                        onClick={
+                          isDisabled
+                            ? undefined
+                            : () => onSectionClick(volumeNumber, chapter.id, section.id)
+                        }
+                        disabled={isDisabled}
+                        aria-disabled={isDisabled}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground"
+                            : isDisabled
+                              ? "text-sidebar-foreground/80 cursor-not-allowed"
+                              : "text-sidebar-foreground hover-elevate active-elevate-2"
                         }`}
                         style={{ paddingLeft: `${12 + indentLevel * 16}px` }}
                         data-testid={`section-link-${section.id}`}
                       >
                         <div className="flex items-center gap-2">
-                          <ChevronRight
-                            className={`h-3 w-3 flex-shrink-0 transition-transform ${
-                              isActive ? "rotate-90" : ""
-                            }`}
-                          />
+                          {showCaret ? (
+                            <ChevronRight
+                              className={`h-3 w-3 flex-shrink-0 transition-transform ${
+                                isActive ? "rotate-90" : ""
+                              }`}
+                            />
+                          ) : (
+                            <span className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+                          )}
                           <span className="line-clamp-2">{section.title}</span>
                         </div>
                         {section.pageReference && (

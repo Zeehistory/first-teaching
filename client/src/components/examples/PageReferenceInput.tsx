@@ -7,8 +7,8 @@ export default function PageReferenceInputExample() {
       <PageReferenceInput
         volumeNumber={volumeOneData.volumeNumber}
         chapters={volumeOneData.chapters}
-        onNavigate={(volumeNumber, chapterId, sectionId) => {
-          console.log("Navigate to:", volumeNumber, chapterId, sectionId);
+        onNavigate={(volumeNumber, chapterId, sectionId, footnote) => {
+          console.log("Navigate to:", volumeNumber, chapterId, sectionId, footnote?.number);
         }}
       />
     </div>

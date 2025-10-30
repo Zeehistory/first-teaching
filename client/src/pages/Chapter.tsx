@@ -1,12 +1,21 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useRoute, useSearch } from "wouter";
-import { Search as SearchIcon, ArrowLeft, ArrowRight, X } from "lucide-react";
+import {
+  Search as SearchIcon,
+  ArrowLeft,
+  ArrowRight,
+  X,
+  PenSquare,
+  Menu,
+  ChevronLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import ChapterSidebar from "@/components/ChapterSidebar";
 import ChapterContent from "@/components/ChapterContent";
 import SearchOverlay from "@/components/SearchOverlay";
 import FootnotePanel from "@/components/FootnotePanel";
-import FootnotePreviewSidebar from "@/components/FootnotePreviewSidebar";
 import SearchResultNavigator from "@/components/SearchResultNavigator";
 import ReadingProgress from "@/components/ReadingProgress";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -14,9 +23,27 @@ import TextSizeControl from "@/components/TextSizeControl";
 import PageReferenceInput from "@/components/PageReferenceInput";
 import { volumes } from "@/lib/volumes";
 import { buildSectionHierarchy } from "@/lib/sectionHierarchy";
+import { hasRenderableContent } from "@/lib/content";
 import type { Footnote } from "@shared/schema";
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+interface ReaderNote {
+  id: string;
+  anchorId: string;
+  sectionId: string;
+  excerpt: string;
+  note: string;
+  createdAt: number;
+}
+
+interface SelectionContext {
+  sectionId: string;
+  excerpt: string;
+  rect: { top: number; left: number; width: number; height: number; bottom: number };
+}
+
+const createNoteId = () => `note-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
 
 export default function Chapter() {
   const [, params] = useRoute("/v/:volumeNumber/:id");
@@ -37,7 +64,26 @@ export default function Chapter() {
     Array<{ sectionId: string; count: number; start: number }>
   >([]);
   const [showAssistantIntro, setShowAssistantIntro] = useState(false);
-  const [showFootnoteSidebar, setShowFootnoteSidebar] = useState(true);
+  const [leftPaneMode, setLeftPaneMode] = useState<"navigation" | "notes">("navigation");
+  const [notes, setNotes] = useState<ReaderNote[]>([]);
+  const [studyPaneCollapsed, setStudyPaneCollapsed] = useState(false);
+  const [selectionContext, setSelectionContext] = useState<SelectionContext | null>(null);
+  const [pendingNote, setPendingNote] = useState<{
+    sectionId: string;
+    excerpt: string;
+    rect: { top: number; left: number; width: number; height: number; bottom: number };
+  } | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const pendingRangeRef = useRef<Range | null>(null);
+  const pendingFootnoteRef = useRef<Footnote | null>(null);
+
+  const clearSelection = useCallback(() => {
+    pendingRangeRef.current = null;
+    setSelectionContext(null);
+    if (typeof window !== "undefined") {
+      window.getSelection()?.removeAllRanges();
+    }
+  }, []);
 
   const searchParams = useMemo(() => new URLSearchParams(search), [search]);
   const sectionParam = searchParams.get("s");
@@ -62,6 +108,7 @@ export default function Chapter() {
   );
 
   const firstSectionId =
+    chapter?.sections.find((section) => hasRenderableContent(section.content))?.id ??
     chapter?.sections.find((section) => section.content.trim().length > 0)?.id ??
     chapter?.sections[0]?.id ??
     null;
@@ -181,6 +228,72 @@ export default function Chapter() {
     return undefined;
   }, []);
 
+  useEffect(() => {
+    if (!pendingNote) return;
+    const updateRect = () => {
+      if (!pendingRangeRef.current) return;
+      const rect = pendingRangeRef.current.getBoundingClientRect();
+      if (!rect || Number.isNaN(rect.top)) return;
+      setPendingNote((prev) => {
+        if (!prev) return prev;
+        const nextRect = {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          bottom: rect.bottom,
+        };
+        const same =
+          Math.abs(prev.rect.top - nextRect.top) < 0.5 &&
+          Math.abs(prev.rect.left - nextRect.left) < 0.5 &&
+          Math.abs(prev.rect.width - nextRect.width) < 0.5 &&
+          Math.abs(prev.rect.height - nextRect.height) < 0.5;
+        return same ? prev : { ...prev, rect: nextRect };
+      });
+    };
+
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [pendingNote]);
+
+  useEffect(() => {
+    if (!selectionContext) return;
+    const updateRect = () => {
+      if (!pendingRangeRef.current) return;
+      const rect = pendingRangeRef.current.getBoundingClientRect();
+      if (!rect || Number.isNaN(rect.top)) return;
+      setSelectionContext((prev) => {
+        if (!prev) return prev;
+        const nextRect = {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          bottom: rect.bottom,
+        };
+        const same =
+          Math.abs(prev.rect.top - nextRect.top) < 0.5 &&
+          Math.abs(prev.rect.left - nextRect.left) < 0.5 &&
+          Math.abs(prev.rect.width - nextRect.width) < 0.5 &&
+          Math.abs(prev.rect.height - nextRect.height) < 0.5;
+        return same ? prev : { ...prev, rect: nextRect };
+      });
+    };
+
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [selectionContext]);
+
   const dismissAssistantIntro = useCallback(() => {
     setShowAssistantIntro(false);
     if (typeof window !== "undefined") {
@@ -213,6 +326,137 @@ export default function Chapter() {
     },
     [focusFootnoteMarker]
   );
+
+  useEffect(() => {
+    if (!selectedFootnote) return;
+    const timer = window.setTimeout(() => focusFootnoteMarker(selectedFootnote), 80);
+    return () => window.clearTimeout(timer);
+  }, [selectedFootnote, focusFootnoteMarker, currentSectionId]);
+
+  useEffect(() => {
+    if (!selectedFootnote) return;
+    if (selectedFootnote.sectionId !== currentSectionId) {
+      setSelectedFootnote(null);
+    }
+  }, [currentSectionId, selectedFootnote]);
+
+  useEffect(() => {
+    if (!pendingFootnoteRef.current) return;
+    const pending = pendingFootnoteRef.current;
+    if (!pending) return;
+    if (currentSectionId !== pending.sectionId) return;
+    setSelectedFootnote(pending);
+    pendingFootnoteRef.current = null;
+  }, [currentSectionId]);
+
+  const handleRequestNote = useCallback(
+    (payload: {
+      sectionId: string;
+      excerpt: string;
+      rect: { top: number; left: number; width: number; height: number; bottom: number };
+      range: Range;
+    }) => {
+      try {
+        pendingRangeRef.current = payload.range.cloneRange?.() ?? payload.range;
+      } catch {
+        pendingRangeRef.current = payload.range;
+      }
+      setSelectionContext({
+        sectionId: payload.sectionId,
+        excerpt: payload.excerpt,
+        rect: payload.rect,
+      });
+      setPendingNote(null);
+      setNoteDraft("");
+    },
+    []
+  );
+
+  const handleCancelNote = useCallback(() => {
+    setPendingNote(null);
+    setNoteDraft("");
+    clearSelection();
+  }, [clearSelection]);
+
+  const applySelectionHighlight = useCallback(() => {
+    const range = pendingRangeRef.current;
+    if (!range || !selectionContext) return;
+    try {
+      const wrapper = document.createElement("mark");
+      wrapper.dataset.userHighlight = "true";
+      wrapper.classList.add("user-highlight");
+      const contents = range.extractContents();
+      wrapper.appendChild(contents);
+      range.insertNode(wrapper);
+    } catch (error) {
+      console.error("[Chapter] Unable to apply highlight", error);
+    }
+    clearSelection();
+  }, [selectionContext, clearSelection]);
+
+  const handleStartNote = useCallback(() => {
+    if (!selectionContext) return;
+    setPendingNote(selectionContext);
+    setSelectionContext(null);
+    if (typeof window !== "undefined") {
+      window.getSelection()?.removeAllRanges();
+    }
+  }, [selectionContext]);
+
+  const focusNoteHighlight = useCallback((noteId: string) => {
+    if (typeof document === "undefined") return;
+    const marker = document.querySelector<HTMLElement>(`mark[data-reader-note="${noteId}"]`);
+    if (!marker) return;
+    marker.scrollIntoView({ behavior: "smooth", block: "center" });
+    marker.classList.add("note-highlight-focus");
+    window.setTimeout(() => {
+      marker.classList.remove("note-highlight-focus");
+    }, 2200);
+  }, []);
+
+  const handleSaveNote = useCallback(() => {
+    const draft = noteDraft.trim();
+    if (!draft || !pendingNote || !pendingRangeRef.current) return;
+    const range = pendingRangeRef.current;
+    const noteId = createNoteId();
+
+    try {
+      const wrapper = document.createElement("mark");
+      wrapper.dataset.readerNote = noteId;
+      wrapper.id = noteId;
+      wrapper.classList.add("note-highlight");
+      const contents = range.extractContents();
+      wrapper.appendChild(contents);
+      range.insertNode(wrapper);
+      const selection = typeof window !== "undefined" ? window.getSelection() : null;
+      selection?.removeAllRanges();
+
+      const newNote: ReaderNote = {
+        id: noteId,
+        anchorId: noteId,
+        sectionId: pendingNote.sectionId,
+        excerpt: pendingNote.excerpt,
+        note: draft,
+        createdAt: Date.now(),
+      };
+
+      setNotes((prev) => [newNote, ...prev]);
+      setPendingNote(null);
+      pendingRangeRef.current = null;
+      setNoteDraft("");
+      setLeftPaneMode("notes");
+
+      window.setTimeout(() => {
+        wrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+        wrapper.classList.add("note-highlight-focus");
+        window.setTimeout(() => wrapper.classList.remove("note-highlight-focus"), 2200);
+      }, 60);
+    } catch (error) {
+      console.error("[Chapter] Unable to attach note highlight", error);
+    } finally {
+      clearSelection();
+    }
+  }, [noteDraft, pendingNote, setLeftPaneMode, setNotes, clearSelection]);
 
   const clearHighlights = useCallback(() => {
     setHighlightTerm(null);
@@ -351,6 +595,8 @@ export default function Chapter() {
     highlight?: string,
     highlightIndexOverride?: number
   ) => {
+    clearSelection();
+    setPendingNote(null);
     setCurrentSectionId(sectionId);
     const params = new URLSearchParams();
     params.set("s", sectionId);
@@ -384,6 +630,28 @@ export default function Chapter() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleExtensionNavigate = useCallback(
+    (
+      volumeNo: number,
+      chapId: string,
+      sectionId: string,
+      footnote: Footnote | null
+    ) => {
+      if (footnote) {
+        pendingFootnoteRef.current = footnote;
+        if (currentSectionId === footnote.sectionId) {
+          pendingFootnoteRef.current = null;
+          setSelectedFootnote(footnote);
+        }
+      } else {
+        pendingFootnoteRef.current = null;
+        setSelectedFootnote(null);
+      }
+      handleSectionClick(volumeNo, chapId, sectionId);
+    },
+    [handleSectionClick, currentSectionId]
+  );
+
   return (
     <>
       <ReadingProgress />
@@ -403,18 +671,91 @@ export default function Chapter() {
             className="absolute inset-0 bg-background/70 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="relative h-full w-full max-w-[320px]">
-            <ChapterSidebar
-              volumeNumber={bookData.volumeNumber}
-              chapters={bookData.chapters}
-              currentChapterId={chapterId}
-              currentSectionId={currentSectionId}
-              onHomeClick={(volumeNo) => setLocation(`/v/${volumeNo}`)}
-              onSectionClick={(volumeNo, chapId, sectionId) => {
-                handleSectionClick(volumeNo, chapId, sectionId);
-                setSidebarOpen(false);
-              }}
-            />
+          <div className="relative flex h-full w-full max-w-[360px] flex-col border-l border-border bg-background">
+            <div className="flex flex-col gap-2 border-b border-border px-4 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                Study Pane
+              </div>
+              <div className="grid grid-cols-2 gap-2" data-tour="notes-toggle">
+                <button
+                  type="button"
+                  onClick={() => setLeftPaneMode("navigation")}
+                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                    leftPaneMode === "navigation"
+                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
+                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Navigate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLeftPaneMode("notes")}
+                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                    leftPaneMode === "notes"
+                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
+                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Notes
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {leftPaneMode === "navigation" ? (
+                <ChapterSidebar
+                  volumeNumber={bookData.volumeNumber}
+                  chapters={bookData.chapters}
+                  currentChapterId={chapterId}
+                  currentSectionId={currentSectionId}
+                  onHomeClick={(volumeNo) => {
+                    setLocation(`/v/${volumeNo}`);
+                    setSidebarOpen(false);
+                  }}
+                  onSectionClick={(volumeNo, chapId, sectionId) => {
+                    handleSectionClick(volumeNo, chapId, sectionId);
+                    setSidebarOpen(false);
+                  }}
+                />
+              ) : (
+                <div className="flex h-full flex-col">
+                  <div className="flex-1 overflow-y-auto px-4 py-4">
+                    {notes.length === 0 ? (
+                      <p className="text-sm leading-relaxed text-muted-foreground/80">
+                        Highlight any sentence to capture a thought. We&apos;ll keep it here just while you&apos;re in this chapter.
+                      </p>
+                    ) : (
+                      <ul className="space-y-3 text-sm">
+                        {notes.map((note) => (
+                          <li key={note.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                focusNoteHighlight(note.anchorId);
+                                setSidebarOpen(false);
+                              }}
+                              className="group w-full rounded-xl border border-border bg-background/80 p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                            >
+                              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground/70">
+                                <span>Note</span>
+                                <span>{new Date(note.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              </div>
+                              <p className="mt-2 text-foreground/90">{note.note}</p>
+                              <blockquote className="mt-3 border-l-2 border-border/70 pl-3 text-xs italic text-muted-foreground/80">
+                                “{note.excerpt}”
+                              </blockquote>
+                              <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-primary/70">
+                                Jump to highlight →
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               type="button"
               aria-label="Close navigation"
@@ -427,14 +768,109 @@ export default function Chapter() {
         </div>
       )}
 
-      <div className="chapter-shell flex h-screen overflow-hidden">
-        {currentSection && showFootnoteSidebar && (
-          <FootnotePreviewSidebar
-            footnotes={currentSection.footnotes}
-            activeFootnoteId={selectedFootnote?.id ?? null}
-            onSelect={handleFootnoteOpen}
-            onHide={() => setShowFootnoteSidebar(false)}
-          />
+      <div className="chapter-shell relative flex h-screen overflow-hidden">
+        {!studyPaneCollapsed && (
+          <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-border bg-muted/10">
+            <div className="border-b border-border px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                  Study Pane
+                </div>
+                <button
+                  type="button"
+                  aria-label="Collapse study pane"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition hover:text-foreground"
+                  onClick={() => setStudyPaneCollapsed(true)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2" data-tour="notes-toggle">
+                <button
+                  type="button"
+                  onClick={() => setLeftPaneMode("navigation")}
+                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                    leftPaneMode === "navigation"
+                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
+                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Navigate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLeftPaneMode("notes")}
+                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                    leftPaneMode === "notes"
+                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
+                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Notes
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {leftPaneMode === "navigation" ? (
+                <div className="h-full">
+                  <ChapterSidebar
+                    volumeNumber={bookData.volumeNumber}
+                    chapters={bookData.chapters}
+                    currentChapterId={chapterId}
+                    currentSectionId={currentSectionId}
+                    onHomeClick={(volumeNo) => setLocation(`/v/${volumeNo}`)}
+                    onSectionClick={(volumeNo, chapId, sectionId) =>
+                      handleSectionClick(volumeNo, chapId, sectionId)
+                    }
+                  />
+                </div>
+              ) : (
+                <div className="flex h-full flex-col">
+                  <div className="flex-1 overflow-y-auto px-4 py-4">
+                    {notes.length === 0 ? (
+                      <p className="text-sm leading-relaxed text-muted-foreground/80">
+                        Highlight any sentence to capture a thought. We&apos;ll keep it here just while you&apos;re in this chapter.
+                      </p>
+                    ) : (
+                      <ul className="space-y-3 text-sm">
+                        {notes.map((note) => (
+                          <li key={note.id}>
+                            <button
+                              type="button"
+                              onClick={() => focusNoteHighlight(note.anchorId)}
+                              className="group w-full rounded-xl border border-border bg-background/80 p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                            >
+                              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground/70">
+                                <span>Note</span>
+                                <span>{new Date(note.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              </div>
+                              <p className="mt-2 text-foreground/90">{note.note}</p>
+                              <blockquote className="mt-3 border-l-2 border-border/70 pl-3 text-xs italic text-muted-foreground/80">
+                                “{note.excerpt}”
+                              </blockquote>
+                              <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-primary/70">
+                                Jump to highlight →
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+        {studyPaneCollapsed && (
+          <button
+            type="button"
+            aria-label="Expand study pane"
+            className="hidden lg:flex absolute left-4 top-4 z-30 h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:border-primary/40"
+            onClick={() => setStudyPaneCollapsed(false)}
+          >
+            <Menu className="h-4 w-4" />
+          </button>
         )}
         <div className="flex-1 flex overflow-hidden">
           <div className="flex flex-1 flex-col overflow-hidden">
@@ -464,33 +900,20 @@ export default function Chapter() {
                 <PageReferenceInput
                   volumeNumber={bookData.volumeNumber}
                   chapters={bookData.chapters}
-                  onNavigate={(volumeNo, chapterId, sectionId) =>
-                    handleSectionClick(volumeNo, chapterId, sectionId)
-                  }
+                  onNavigate={handleExtensionNavigate}
                 />
-                {!showFootnoteSidebar && currentSection?.footnotes.length ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFootnoteSidebar(true)}
-                    className="hidden lg:inline-flex items-center gap-2"
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M13 3v10L8 9l-5 4V3" />
-                    </svg>
-                Footnotes
-                  </Button>
-                ) : null}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden"
+                  aria-label="Open notes pane"
+                  onClick={() => {
+                    setLeftPaneMode("notes");
+                    setSidebarOpen(true);
+                  }}
+                >
+                  <PenSquare className="h-4 w-4" />
+                </Button>
               </div>
 
               <div className="flex items-center gap-2">
@@ -601,6 +1024,7 @@ export default function Chapter() {
                   sectionTrail={sectionTrail}
                   currentHighlightIndex={highlightLocalIndex}
                   onFootnoteClick={handleFootnoteOpen}
+                  onRequestNote={handleRequestNote}
                 />
               )}
 
@@ -647,10 +1071,7 @@ export default function Chapter() {
             </main>
           </div>
 
-          <FootnotePanel
-            footnote={selectedFootnote}
-            onClose={() => setSelectedFootnote(null)}
-          />
+          <FootnotePanel footnote={selectedFootnote} onClose={() => setSelectedFootnote(null)} />
         </div>
       </div>
 
@@ -664,7 +1085,151 @@ export default function Chapter() {
           handleSectionClick(volumeNo, chapterId, sectionId, term)
         }
       />
+      {selectionContext && !pendingNote && (
+        <SelectionToolbar
+          rect={selectionContext.rect}
+          onHighlight={applySelectionHighlight}
+          onAddNote={handleStartNote}
+          onDismiss={clearSelection}
+        />
+      )}
+      {pendingNote && (
+        <NoteComposer
+          rect={pendingNote.rect}
+          excerpt={pendingNote.excerpt}
+          value={noteDraft}
+          onChange={(value) => setNoteDraft(value)}
+          onCancel={handleCancelNote}
+          onSave={handleSaveNote}
+          disableSave={noteDraft.trim().length === 0}
+        />
+      )}
     </>
+  );
+}
+
+interface NoteComposerProps {
+  rect: { top: number; left: number; width: number; height: number; bottom: number };
+  excerpt: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  disableSave: boolean;
+}
+
+function NoteComposer({
+  rect,
+  excerpt,
+  value,
+  onChange,
+  onSave,
+  onCancel,
+  disableSave,
+}: NoteComposerProps) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => textareaRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (typeof document === "undefined" || typeof window === "undefined") return null;
+
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const width = Math.min(360, viewportWidth - 32);
+  const preferBelow = rect.bottom + 260 <= viewportHeight;
+  const top = preferBelow ? rect.bottom + 16 : Math.max(16, rect.top - 240);
+  const left = Math.min(
+    Math.max(rect.left + rect.width / 2 - width / 2, 16),
+    viewportWidth - width - 16
+  );
+
+  return createPortal(
+    <div
+      className="fixed z-50 w-[min(360px,calc(100vw-32px))] rounded-2xl border border-border bg-background/95 p-5 shadow-2xl backdrop-blur"
+      style={{ top, left, width }}
+      role="dialog"
+      aria-label="Add a note"
+    >
+      <div className="text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground/70">
+        Quick note
+      </div>
+      <p className="mt-2 text-xs italic text-muted-foreground/80 line-clamp-4">“{excerpt}”</p>
+      <Textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Capture your insight..."
+        className="mt-3 min-h-[120px] resize-none"
+      />
+      <div className="mt-3 flex items-center gap-2">
+        <Button
+          type="button"
+          onClick={onSave}
+          disabled={disableSave}
+          className="flex-1"
+        >
+          Save note
+        </Button>
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+interface SelectionToolbarProps {
+  rect: { top: number; left: number; width: number; height: number; bottom: number };
+  onHighlight: () => void;
+  onAddNote: () => void;
+  onDismiss: () => void;
+}
+
+function SelectionToolbar({ rect, onHighlight, onAddNote, onDismiss }: SelectionToolbarProps) {
+  if (typeof document === "undefined" || typeof window === "undefined") return null;
+
+  const viewportWidth = window.innerWidth;
+  const toolbarWidth = 240;
+  const preferredTop = rect.top - 56;
+  const top = preferredTop > 16 ? preferredTop : Math.min(rect.bottom + 12, window.innerHeight - 64);
+  const centeredLeft = rect.left + rect.width / 2 - toolbarWidth / 2;
+  const left = Math.min(Math.max(centeredLeft, 16), viewportWidth - toolbarWidth - 16);
+
+  return createPortal(
+    <div
+      className="fixed z-50 flex h-11 items-center gap-1 rounded-full border border-border bg-background/95 px-2 shadow-2xl backdrop-blur"
+      style={{ top, left, width: toolbarWidth }}
+      role="toolbar"
+    >
+      <button
+        type="button"
+        onClick={onHighlight}
+        className="flex-1 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+      >
+        Highlight
+      </button>
+      <span className="h-6 w-px bg-border" aria-hidden="true" />
+      <button
+        type="button"
+        onClick={onAddNote}
+        className="flex-1 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+      >
+        Add Note
+      </button>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="rounded-full px-2 py-1 text-muted-foreground transition hover:text-foreground"
+        aria-label="Dismiss selection"
+      >
+        x
+      </button>
+    </div>,
+    document.body
   );
 }
 

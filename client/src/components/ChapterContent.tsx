@@ -1,7 +1,28 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Section, Footnote } from "@shared/schema";
-import OrnamentalDivider from "./OrnamentalDivider";
 import { glossary } from "@shared/glossary";
+import OrnamentalDivider from "./OrnamentalDivider";
+import SectionAudioPlayer from "./SectionAudioPlayer";
+
+function htmlToPlainText(content: string) {
+  const text = (() => {
+    if (typeof window !== "undefined") {
+      const temp = window.document.createElement("div");
+      temp.innerHTML = content;
+      return temp.textContent ?? "";
+    }
+    return content.replace(/<[^>]+>/g, " ");
+  })();
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function extractFootnoteSnippet(content: string, limit = 180) {
+  const text = htmlToPlainText(content);
+
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit).trimEnd()}…`;
+}
 
 interface ChapterContentProps {
   section: Section;
@@ -12,6 +33,12 @@ interface ChapterContentProps {
   currentHighlightIndex: number | null;
   onHighlightMatches?: (count: number) => void;
   onFootnoteClick: (footnote: Footnote) => void;
+  onRequestNote?: (payload: {
+    sectionId: string;
+    excerpt: string;
+    rect: { top: number; left: number; width: number; height: number; bottom: number };
+    range: Range;
+  }) => void;
 }
 
 export default function ChapterContent({
@@ -23,10 +50,24 @@ export default function ChapterContent({
   currentHighlightIndex,
   onHighlightMatches,
   onFootnoteClick,
+  onRequestNote,
 }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const highlightRefs = useRef<HTMLElement[]>([]);
   const glossaryBuilt = useRef(false);
+  const [hoveredFootnote, setHoveredFootnote] = useState<{
+    footnote: Footnote;
+    rect: DOMRect;
+  } | null>(null);
+  const hoverTimeoutRef = useRef<number | null>(null);
+  const hoveredMarkerRef = useRef<HTMLElement | null>(null);
+  const estimatedAudioDuration = useMemo(() => {
+    const text = htmlToPlainText(section.content);
+    const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    if (wordCount === 0) return 300;
+    const seconds = Math.round((wordCount / 165) * 60);
+    return Math.min(1200, Math.max(180, seconds));
+  }, [section.content, section.id]);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -71,6 +112,13 @@ export default function ChapterContent({
     const container = contentRef.current;
     if (!container) return;
 
+    const cancelHoverTimeout = () => {
+      if (hoverTimeoutRef.current !== null) {
+        window.clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+    };
+
     const findFootnoteHost = (e: Event): HTMLElement | null => {
       const path = (e.composedPath?.() || []) as Array<EventTarget>;
       for (const node of path) {
@@ -108,21 +156,105 @@ export default function ChapterContent({
       }
     };
 
+    function handleMouseEnter(this: HTMLElement) {
+      cancelHoverTimeout();
+      const footnoteNumber = parseInt(this.dataset.footnote ?? "", 10);
+      if (Number.isNaN(footnoteNumber)) return;
+      const footnote = section.footnotes.find((f) => f.number === footnoteNumber);
+      if (!footnote) return;
+      hoveredMarkerRef.current = this;
+      setHoveredFootnote({
+        footnote,
+        rect: this.getBoundingClientRect(),
+      });
+    }
+
+    function handleMouseLeave() {
+      cancelHoverTimeout();
+      hoverTimeoutRef.current = window.setTimeout(() => {
+        hoveredMarkerRef.current = null;
+        setHoveredFootnote(null);
+        hoverTimeoutRef.current = null;
+      }, 120);
+    }
+
+    function handleFocus(this: HTMLElement) {
+      handleMouseEnter.call(this);
+    }
+
+    function handleBlur() {
+      cancelHoverTimeout();
+      hoverTimeoutRef.current = window.setTimeout(() => {
+        hoveredMarkerRef.current = null;
+        setHoveredFootnote(null);
+        hoverTimeoutRef.current = null;
+      }, 80);
+    }
+
     const markers = container.querySelectorAll<HTMLElement>("sup[data-footnote]");
     markers.forEach((marker) => {
       marker.setAttribute("role", "button");
       marker.setAttribute("tabindex", "0");
       marker.setAttribute("aria-label", `Read footnote ${marker.dataset.footnote}`);
+      marker.addEventListener("mouseenter", handleMouseEnter);
+      marker.addEventListener("mouseleave", handleMouseLeave);
+      marker.addEventListener("focus", handleFocus);
+      marker.addEventListener("blur", handleBlur);
     });
 
     // Capture on document to ensure it works in production regardless of bubbling quirks
     document.addEventListener("click", handleClick, true);
     container.addEventListener("keydown", handleKeyDown);
     return () => {
+      cancelHoverTimeout();
       document.removeEventListener("click", handleClick, true);
       container.removeEventListener("keydown", handleKeyDown);
+      markers.forEach((marker) => {
+        marker.removeEventListener("mouseenter", handleMouseEnter);
+        marker.removeEventListener("mouseleave", handleMouseLeave);
+        marker.removeEventListener("focus", handleFocus);
+        marker.removeEventListener("blur", handleBlur);
+      });
     };
   }, [section, onFootnoteClick]);
+
+  useEffect(() => {
+    if (!hoveredFootnote) return;
+    const footnoteNumber = hoveredFootnote.footnote.number;
+
+    const updateRect = () => {
+      const container = contentRef.current;
+      if (!container) return;
+      const marker = container.querySelector<HTMLElement>(
+        `sup[data-footnote="${footnoteNumber}"]`
+      );
+      if (!marker) {
+        hoveredMarkerRef.current = null;
+        setHoveredFootnote(null);
+        return;
+      }
+      hoveredMarkerRef.current = marker;
+      const rect = marker.getBoundingClientRect();
+      setHoveredFootnote((prev) => {
+        if (!prev || prev.footnote.number !== footnoteNumber) return prev;
+        const sameRect =
+          Math.abs(prev.rect.top - rect.top) < 0.5 &&
+          Math.abs(prev.rect.left - rect.left) < 0.5 &&
+          Math.abs(prev.rect.width - rect.width) < 0.5 &&
+          Math.abs(prev.rect.height - rect.height) < 0.5;
+        if (sameRect) return prev;
+        return { ...prev, rect };
+      });
+    };
+
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [hoveredFootnote]);
 
   // Inject glossary markers by appending numbered chips after term occurrences
   useEffect(() => {
@@ -346,8 +478,103 @@ export default function ChapterContent({
     }
   }, [currentHighlightIndex]);
 
+  useEffect(() => {
+    if (!onRequestNote) return;
+    const container = contentRef.current;
+    if (!container) return;
+
+    const handleSelection = () => {
+      if (typeof window === "undefined") return;
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) return;
+      const anchorNode = selection.anchorNode;
+      const focusNode = selection.focusNode;
+      if (!anchorNode || !focusNode) return;
+      if (!container.contains(anchorNode) || !container.contains(focusNode)) return;
+
+      let range: Range;
+      try {
+        range = selection.getRangeAt(0).cloneRange();
+      } catch {
+        return;
+      }
+
+      const excerpt = range.toString().trim();
+      if (!excerpt || excerpt.length < 3) return;
+
+      const startAncestor =
+        (range.startContainer as Element | null)?.closest?.("mark[data-reader-note]") ??
+        range.startContainer.parentElement?.closest("mark[data-reader-note]");
+      const endAncestor =
+        (range.endContainer as Element | null)?.closest?.("mark[data-reader-note]") ??
+        range.endContainer.parentElement?.closest("mark[data-reader-note]");
+      if (startAncestor || endAncestor) return;
+
+      const rect = range.getBoundingClientRect();
+      if ((rect.width === 0 && rect.height === 0) || Number.isNaN(rect.top)) return;
+
+      onRequestNote({
+        sectionId: section.id,
+        excerpt,
+        rect: {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          bottom: rect.bottom,
+        },
+        range,
+      });
+    };
+
+    const handleMouseUp = () => window.setTimeout(handleSelection, 20);
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const navigationKeys = ["Shift", "Alt", "Meta", "Control", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
+      if (navigationKeys.includes(event.key)) return;
+      window.setTimeout(handleSelection, 20);
+    };
+
+    container.addEventListener("mouseup", handleMouseUp);
+    container.addEventListener("keyup", handleKeyUp);
+    return () => {
+      container.removeEventListener("mouseup", handleMouseUp);
+      container.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [onRequestNote, section.id]);
+
+  const hoverPreviewNode = useMemo(() => {
+    if (!hoveredFootnote) return null;
+    if (typeof window === "undefined") return null;
+
+    const spacing = 12;
+    const viewportWidth = window.innerWidth;
+    const baseWidth = 320;
+    const width = Math.min(baseWidth, Math.max(240, viewportWidth - 32));
+    const centeredLeft =
+      hoveredFootnote.rect.left + hoveredFootnote.rect.width / 2 - width / 2;
+    const left = Math.min(Math.max(centeredLeft, 16), viewportWidth - width - 16);
+    const top = hoveredFootnote.rect.bottom + spacing;
+    const preview = extractFootnoteSnippet(hoveredFootnote.footnote.content);
+
+    return createPortal(
+      <div
+        className="pointer-events-none fixed z-50 max-w-[90vw] rounded-xl border border-border bg-background/95 px-4 py-3 shadow-2xl backdrop-blur transition-opacity"
+        style={{ top, left, width }}
+        role="status"
+        aria-live="polite"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground/70">
+          Footnote {hoveredFootnote.footnote.number}
+        </div>
+        <p className="mt-2 text-sm leading-snug text-muted-foreground/90">{preview}</p>
+      </div>,
+      document.body
+    );
+  }, [hoveredFootnote]);
+
   return (
-    <article className="max-w-3xl mx-auto px-6 py-10">
+    <>
+      <article className="max-w-3xl mx-auto px-6 py-10">
       <div className="mb-6 space-y-3">
         {sectionTrail.length > 0 && (
           <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-sans uppercase tracking-[0.35em] text-muted-foreground">
@@ -369,6 +596,15 @@ export default function ChapterContent({
             {section.title}
           </p>
         )}
+      </div>
+
+      <div className="mt-6">
+        <SectionAudioPlayer
+          sectionId={section.id}
+          sectionTitle={section.title}
+          chapterTitle={chapterTitle}
+          estimatedDuration={estimatedAudioDuration}
+        />
       </div>
 
       <OrnamentalDivider className="my-6" />
@@ -410,5 +646,7 @@ export default function ChapterContent({
         </div>
       )}
     </article>
+      {hoverPreviewNode}
+    </>
   );
 }
