@@ -4,10 +4,17 @@ import type { Section, Footnote } from "@shared/schema";
 import { glossary } from "@shared/glossary";
 import OrnamentalDivider from "./OrnamentalDivider";
 import SectionAudioPlayer from "./SectionAudioPlayer";
-import ImageCatalogue from "./ImageCatalogue";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { imageCatalogue } from "@/data/imageCatalogue";
+import type { GalleryItem } from "@/data/imageCatalogue";
 
 const ENABLE_GLOSSARY_CHIPS = false;
+
+const INLINE_IMAGE_CONFIG: Record<string, { itemId: string; variant: "default" | "floated" }> = {
+  "2": { itemId: "image-tarbha", variant: "default" },
+  "13": { itemId: "image-13", variant: "floated" },
+};
+const IMAGE_SECTION_ID = "list-of-images";
 
 function htmlToPlainText(content: string) {
   const text = (() => {
@@ -43,6 +50,7 @@ interface ChapterContentProps {
     rect: { top: number; left: number; width: number; height: number; bottom: number };
     range: Range;
   }) => void;
+  sectionMarkupOverride?: string;
 }
 
 export default function ChapterContent({
@@ -55,6 +63,7 @@ export default function ChapterContent({
   onHighlightMatches,
   onFootnoteClick,
   onRequestNote,
+  sectionMarkupOverride,
 }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const highlightRefs = useRef<HTMLElement[]>([]);
@@ -65,6 +74,15 @@ export default function ChapterContent({
   } | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
   const hoveredMarkerRef = useRef<HTMLElement | null>(null);
+  const [inlineImageHosts, setInlineImageHosts] = useState<HTMLElement[]>([]);
+
+  const inlineImageItems = useMemo(() => {
+    const map = new Map<string, GalleryItem>();
+    imageCatalogue.forEach((item) => {
+      map.set(item.id, item);
+    });
+    return map;
+  }, []);
   const estimatedAudioDuration = useMemo(() => {
     const text = htmlToPlainText(section.content);
     const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0;
@@ -73,12 +91,42 @@ export default function ChapterContent({
     return Math.min(1200, Math.max(180, seconds));
   }, [section.content, section.id]);
 
-  const showImageCatalogue = section.id === "note-of-thanks";
-  const sanitizedContent = useMemo(() => {
+  const showImageCatalogue = section.id === IMAGE_SECTION_ID;
+
+  const baseContent = useMemo(() => {
     if (!showImageCatalogue) return section.content;
-    const withoutImages = section.content.replace(/<p>Image\s\d+[^<]*<\/p>/g, "");
-    return withoutImages.replace(/<p><em>Unused[^]+$/m, "");
+    return section.content.replace(/<p><em>Unused[^]+$/m, "");
   }, [section.content, showImageCatalogue]);
+
+  const contentWithInlineImages = useMemo(() => {
+    if (!showImageCatalogue) return baseContent;
+    let html = baseContent;
+    Object.entries(INLINE_IMAGE_CONFIG).forEach(([imageNumber, config]) => {
+      const regex = new RegExp(`(<p[^>]*>\\s*Image\\s*${imageNumber}:)`, "i");
+      if (!regex.test(html)) return;
+      const placeholder = `<div class="inline-image-host" data-inline-image="${config.itemId}" data-inline-variant="${config.variant}"></div>`;
+      html = html.replace(regex, `${placeholder}$1`);
+    });
+    return html;
+  }, [baseContent, showImageCatalogue]);
+
+  const sanitizedContent = useMemo(() => {
+    if (sectionMarkupOverride) return sectionMarkupOverride;
+    return contentWithInlineImages;
+  }, [contentWithInlineImages, sectionMarkupOverride]);
+
+  useEffect(() => {
+    if (!showImageCatalogue) {
+      setInlineImageHosts([]);
+      return;
+    }
+    const container = contentRef.current;
+    if (!container) return;
+    const mounts = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-inline-image]")
+    );
+    setInlineImageHosts(mounts);
+  }, [sanitizedContent, showImageCatalogue]);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -584,6 +632,22 @@ export default function ChapterContent({
     );
   }, [hoveredFootnote]);
 
+  const inlineImagePortals = showImageCatalogue
+    ? inlineImageHosts
+        .map((host) => {
+          const itemId = host.dataset.inlineImage ?? "";
+          const variant =
+            (host.dataset.inlineVariant as "default" | "floated" | undefined) ?? "default";
+          const item = inlineImageItems.get(itemId);
+          if (!item) return null;
+          return createPortal(
+            <InlineImageFigure item={item} variant={variant} />,
+            host
+          );
+        })
+        .filter(Boolean)
+    : [];
+
   return (
     <>
       <article className="max-w-3xl mx-auto px-6 py-10">
@@ -635,8 +699,6 @@ export default function ChapterContent({
         dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       />
 
-      {showImageCatalogue && <ImageCatalogue items={imageCatalogue} />}
-
       {section.footnotes.length > 0 && (
         <div className="mt-16 pt-8 border-t border-border">
           <h3 className="text-xl font-heading font-medium mb-6">Footnotes</h3>
@@ -660,7 +722,78 @@ export default function ChapterContent({
         </div>
       )}
     </article>
+      {inlineImagePortals}
       {hoverPreviewNode}
     </>
+  );
+}
+
+function InlineImageFigure({
+  item,
+  variant,
+}: {
+  item: GalleryItem;
+  variant: "default" | "floated";
+}) {
+  const modalSrc = item.modalImageSrc ?? item.imageSrc;
+
+  if (variant === "floated") {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            className="group relative float-right ml-6 mb-3 w-full max-w-[220px] overflow-hidden rounded-2xl border border-border/60 bg-background shadow-sm transition hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 md:max-w-xs"
+          >
+            <img
+              src={item.imageSrc}
+              alt={item.subtitle ?? item.title}
+              className="w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            />
+          </button>
+        </DialogTrigger>
+        <InlineImageLightbox item={item} modalSrc={modalSrc} />
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="group relative mx-auto mb-6 block max-w-xl overflow-hidden rounded-3xl border border-border/60 shadow-sm transition hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <img
+            src={item.imageSrc}
+            alt={item.subtitle ?? item.title}
+            className="w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+          />
+        </button>
+      </DialogTrigger>
+      <InlineImageLightbox item={item} modalSrc={modalSrc} />
+    </Dialog>
+  );
+}
+
+function InlineImageLightbox({ item, modalSrc }: { item: GalleryItem; modalSrc: string }) {
+  return (
+    <DialogContent className="max-w-4xl overflow-hidden rounded-3xl border border-border bg-background/95 p-0">
+      <DialogHeader className="space-y-2 px-6 pt-6">
+        <DialogTitle className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground/80">
+          {item.subtitle ?? item.title}
+        </DialogTitle>
+      </DialogHeader>
+      <img
+        src={modalSrc}
+        alt={item.subtitle ?? item.title}
+        className="w-full max-h-[70vh] object-contain bg-muted/40"
+      />
+      {item.description && (
+        <div className="px-6 pb-6 pt-4 text-sm leading-relaxed text-muted-foreground/90">
+          {item.description}
+        </div>
+      )}
+    </DialogContent>
   );
 }

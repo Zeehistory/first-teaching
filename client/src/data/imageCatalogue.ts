@@ -11,7 +11,7 @@ export type GalleryItem = {
   description?: string;
   imageSrc: string;
   modalImageSrc?: string;
-  layout?: "default" | "split";
+  layout?: "default" | "split" | "floated";
   footnote?: GalleryFootnote;
 };
 
@@ -28,14 +28,15 @@ export const imageCatalogue: GalleryItem[] = [
   {
     id: "image-tarbha",
     title: "Inserted Portrait",
-    subtitle: "Tarbha Waale Baba",
+    subtitle: "Image 2",
     description:
-      "A quiet study in devotion to craft, capturing the patient hands that preserve tradition.",
+      "Al-Sayyid ‘Abd-al-Shakūr, compliments of Ithar Abusheikha.",
     imageSrc: "/images/tarbha-waale-baba.jpg",
+    modalImageSrc: "/images/tarbha-waale-baba.jpg",
   },
   {
-    id: "image-2",
-    title: "Image 2",
+    id: "[EXAMPLE]image-2",
+    title: "[EXAMPLE] Image 2",
     subtitle: "Al-Sayyid ‘Abd-al-Shakūr",
     description:
       "A portrait of the beloved teacher whose humility and presence anchored the community.",
@@ -53,13 +54,13 @@ export const imageCatalogue: GalleryItem[] = [
   },
   {
     id: "image-13",
-    title: "Image 13",
+    title: "[EXAMPLE] Image 13",
     subtitle: "Cornell over Cayuga Valley",
     description:
       "“The unexamined life is not worth having any man live it.” — Socrates. Reflections across Cayuga Lake at dawn.",
     imageSrc: "/images/cayuga-valley.jpg",
     modalImageSrc: "/images/cayuga-valley-detail.jpg",
-    layout: "split",
+    layout: "floated",
     footnote: {
       id: "fn-13",
       label: "fn 13",

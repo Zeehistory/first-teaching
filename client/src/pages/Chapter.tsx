@@ -5,10 +5,10 @@ import {
   Search as SearchIcon,
   ArrowLeft,
   ArrowRight,
-  X,
   PenSquare,
   Menu,
   ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +31,13 @@ const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\
 interface ReaderNote {
   id: string;
   anchorId: string;
+  volumeNumber: number;
+  volumeTitle: string;
+  chapterId: string;
+  chapterTitle: string;
   sectionId: string;
+  sectionTitle: string;
+  sectionTrail: string[];
   excerpt: string;
   note: string;
   createdAt: number;
@@ -45,6 +51,42 @@ interface SelectionContext {
 
 const createNoteId = () => `note-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
 
+const ROMAN_NUMERAL_TABLE: Array<{ value: number; numeral: string }> = [
+  { value: 1000, numeral: "M" },
+  { value: 900, numeral: "CM" },
+  { value: 500, numeral: "D" },
+  { value: 400, numeral: "CD" },
+  { value: 100, numeral: "C" },
+  { value: 90, numeral: "XC" },
+  { value: 50, numeral: "L" },
+  { value: 40, numeral: "XL" },
+  { value: 10, numeral: "X" },
+  { value: 9, numeral: "IX" },
+  { value: 5, numeral: "V" },
+  { value: 4, numeral: "IV" },
+  { value: 1, numeral: "I" },
+];
+
+const toRoman = (value: number): string => {
+  if (value <= 0) return String(value);
+  let remaining = value;
+  let result = "";
+  ROMAN_NUMERAL_TABLE.forEach(({ value: arabic, numeral }) => {
+    while (remaining >= arabic) {
+      result += numeral;
+      remaining -= arabic;
+    }
+  });
+  return result || String(value);
+};
+
+const formatNoteLocation = (note: ReaderNote) => {
+  const volumeLabel = `Volume ${toRoman(note.volumeNumber)}`;
+  const primary = `${volumeLabel} · ${note.volumeTitle}`;
+  const trail = [note.chapterTitle, ...note.sectionTrail].filter(Boolean).join(" › ");
+  return { primary, trail };
+};
+
 export default function Chapter() {
   const [, params] = useRoute("/v/:volumeNumber/:id");
   const [location, setLocation] = useLocation();
@@ -55,7 +97,6 @@ export default function Chapter() {
     const saved = localStorage.getItem("textSize");
     return saved ? parseInt(saved, 10) : 18;
   });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [highlightTerm, setHighlightTerm] = useState<string | null>(null);
   const [highlightMatches, setHighlightMatches] = useState(0);
   const [highlightLocalIndex, setHighlightLocalIndex] = useState<number | null>(null);
@@ -66,6 +107,7 @@ export default function Chapter() {
   const [showAssistantIntro, setShowAssistantIntro] = useState(false);
   const [leftPaneMode, setLeftPaneMode] = useState<"navigation" | "notes">("navigation");
   const [notes, setNotes] = useState<ReaderNote[]>([]);
+  const [sectionMarkupOverrides, setSectionMarkupOverrides] = useState<Record<string, string>>({});
   const [studyPaneCollapsed, setStudyPaneCollapsed] = useState(false);
   const [selectionContext, setSelectionContext] = useState<SelectionContext | null>(null);
   const [pendingNote, setPendingNote] = useState<{
@@ -76,6 +118,7 @@ export default function Chapter() {
   const [noteDraft, setNoteDraft] = useState("");
   const pendingRangeRef = useRef<Range | null>(null);
   const pendingFootnoteRef = useRef<Footnote | null>(null);
+  const pendingNoteFocusRef = useRef<string | null>(null);
 
   const clearSelection = useCallback(() => {
     pendingRangeRef.current = null;
@@ -92,6 +135,7 @@ export default function Chapter() {
     highlightRawParam && highlightRawParam.trim().length > 0 ? highlightRawParam : null;
   const highlightInstanceParam = searchParams.get("hi");
   const highlightInstance = highlightInstanceParam ? parseInt(highlightInstanceParam, 10) : null;
+  const noteParam = searchParams.get("note");
   console.log(`[Chapter] URL: ${location}`);
   console.log(`[Chapter] search: ?${search}`);
   console.log(`[Chapter] searchParams:`, Object.fromEntries(searchParams.entries()));
@@ -105,6 +149,11 @@ export default function Chapter() {
   const availableBooks = useMemo(
     () => volumes.filter((entry) => entry.data).map((entry) => entry.data!),
     []
+  );
+
+  const sectionHierarchy = useMemo(
+    () => buildSectionHierarchy(chapter?.sections ?? []),
+    [chapter]
   );
 
   const firstSectionId =
@@ -403,20 +452,152 @@ export default function Chapter() {
     }
   }, [selectionContext]);
 
-  const focusNoteHighlight = useCallback((noteId: string) => {
-    if (typeof document === "undefined") return;
-    const marker = document.querySelector<HTMLElement>(`mark[data-reader-note="${noteId}"]`);
-    if (!marker) return;
+  const handleSectionClick = useCallback(
+    (
+      volumeNo: number,
+      chapId: string,
+      sectionId: string,
+      highlight?: string,
+      highlightIndexOverride?: number,
+      noteAnchorId?: string
+    ) => {
+      if (currentSectionId) {
+        const container = document.querySelector<HTMLElement>(
+          '[data-testid="chapter-text-content"]'
+        );
+        if (container) {
+          setSectionMarkupOverrides((prev) => {
+            if (prev[currentSectionId] === container.innerHTML) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [currentSectionId]: container.innerHTML,
+            };
+          });
+        }
+      }
+      clearSelection();
+      setPendingNote(null);
+      setCurrentSectionId(sectionId);
+      const params = new URLSearchParams();
+      params.set("s", sectionId);
+      if (noteAnchorId) {
+        params.set("note", noteAnchorId);
+      }
+      const trimmedHighlight = highlight?.trim();
+      if (trimmedHighlight) {
+        params.set("h", trimmedHighlight);
+        if (typeof highlightIndexOverride === "number" && highlightIndexOverride >= 0) {
+          params.set("hi", String(highlightIndexOverride));
+        }
+      }
+      const query = params.toString();
+      const path = `/v/${volumeNo}/${chapId}${query ? `?${query}` : ""}`;
+      setLocation(path);
+      setHighlightTerm(trimmedHighlight ?? null);
+      if (typeof highlightIndexOverride === "number") {
+        if (highlightTerm) {
+          const metaEntry = highlightSectionsMeta.find((entry) => entry.sectionId === sectionId);
+          if (metaEntry) {
+            const clampedLocal = Math.max(0, Math.min(highlightIndexOverride, metaEntry.count - 1));
+            setHighlightLocalIndex(clampedLocal);
+            setHighlightGlobalIndex(metaEntry.start + clampedLocal);
+          } else {
+            setHighlightLocalIndex(Math.max(0, highlightIndexOverride));
+            setHighlightGlobalIndex(null);
+          }
+        } else {
+          setHighlightLocalIndex(Math.max(0, highlightIndexOverride));
+          setHighlightGlobalIndex(Math.max(0, highlightIndexOverride));
+        }
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [
+      clearSelection,
+      highlightSectionsMeta,
+      highlightTerm,
+      setHighlightGlobalIndex,
+      setHighlightLocalIndex,
+      setHighlightTerm,
+      setLocation,
+      currentSectionId,
+      setSectionMarkupOverrides,
+    ]
+  );
+
+  const scrollToNoteMarker = useCallback((anchorId: string) => {
+    if (typeof document === "undefined") return false;
+    const marker = document.querySelector<HTMLElement>(`mark[data-reader-note="${anchorId}"]`);
+    if (!marker) return false;
     marker.scrollIntoView({ behavior: "smooth", block: "center" });
     marker.classList.add("note-highlight-focus");
     window.setTimeout(() => {
       marker.classList.remove("note-highlight-focus");
     }, 2200);
+    return true;
   }, []);
+
+  const focusNoteHighlight = useCallback((note: ReaderNote) => {
+    if (!note) return;
+    const isSameVolume = note.volumeNumber === bookData?.volumeNumber;
+    const isSameChapter = note.chapterId === chapterId;
+
+    if (!isSameVolume || !isSameChapter) {
+      if (currentSectionId) {
+        const container = document.querySelector<HTMLElement>(
+          '[data-testid="chapter-text-content"]'
+        );
+        if (container) {
+          setSectionMarkupOverrides((prev) => {
+            if (prev[currentSectionId] === container.innerHTML) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [currentSectionId]: container.innerHTML,
+            };
+          });
+        }
+      }
+      const params = new URLSearchParams();
+      params.set("s", note.sectionId);
+      params.set("note", note.anchorId);
+      setLocation(`/v/${note.volumeNumber}/${note.chapterId}?${params.toString()}`);
+      return;
+    }
+
+    if (note.sectionId !== currentSectionId) {
+      pendingNoteFocusRef.current = note.anchorId;
+      handleSectionClick(
+        note.volumeNumber,
+        note.chapterId,
+        note.sectionId,
+        undefined,
+        undefined,
+        note.anchorId
+      );
+      return;
+    }
+
+    const focused = scrollToNoteMarker(note.anchorId);
+    if (!focused) {
+      pendingNoteFocusRef.current = note.anchorId;
+    }
+  }, [
+    bookData?.volumeNumber,
+    chapterId,
+    currentSectionId,
+    handleSectionClick,
+    scrollToNoteMarker,
+    setLocation,
+    setSectionMarkupOverrides,
+  ]);
 
   const handleSaveNote = useCallback(() => {
     const draft = noteDraft.trim();
-    if (!draft || !pendingNote || !pendingRangeRef.current) return;
+    if (!draft || !pendingNote || !pendingRangeRef.current || !bookData || !chapter) return;
     const range = pendingRangeRef.current;
     const noteId = createNoteId();
 
@@ -431,10 +612,25 @@ export default function Chapter() {
       const selection = typeof window !== "undefined" ? window.getSelection() : null;
       selection?.removeAllRanges();
 
+      const sectionAncestors = sectionHierarchy.trails.get(pendingNote.sectionId) ?? [];
+      const resolvedSection =
+        chapter.sections.find((section) => section.id === pendingNote.sectionId) ?? null;
+      const sectionTitle = resolvedSection?.title ?? pendingNote.sectionId;
+      const sectionTrailTitles = [
+        ...sectionAncestors.map((section) => section.title),
+        sectionTitle,
+      ].filter(Boolean);
+
       const newNote: ReaderNote = {
         id: noteId,
         anchorId: noteId,
+        volumeNumber: bookData.volumeNumber,
+        volumeTitle: bookData.volumeTitle,
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
         sectionId: pendingNote.sectionId,
+        sectionTitle,
+        sectionTrail: sectionTrailTitles,
         excerpt: pendingNote.excerpt,
         note: draft,
         createdAt: Date.now(),
@@ -446,6 +642,21 @@ export default function Chapter() {
       setNoteDraft("");
       setLeftPaneMode("notes");
 
+      const container = document.querySelector<HTMLElement>(
+        '[data-testid="chapter-text-content"]'
+      );
+      if (container) {
+        setSectionMarkupOverrides((prev) => {
+          if (prev[pendingNote.sectionId] === container.innerHTML) {
+            return prev;
+          }
+          return {
+            ...prev,
+            [pendingNote.sectionId]: container.innerHTML,
+          };
+        });
+      }
+
       window.setTimeout(() => {
         wrapper.scrollIntoView({ behavior: "smooth", block: "center" });
         wrapper.classList.add("note-highlight-focus");
@@ -456,7 +667,39 @@ export default function Chapter() {
     } finally {
       clearSelection();
     }
-  }, [noteDraft, pendingNote, setLeftPaneMode, setNotes, clearSelection]);
+  }, [
+    noteDraft,
+    pendingNote,
+    setLeftPaneMode,
+    setNotes,
+    clearSelection,
+    bookData,
+    chapter,
+    sectionHierarchy,
+    setSectionMarkupOverrides,
+  ]);
+
+  useEffect(() => {
+    if (!pendingNoteFocusRef.current) return;
+    const anchorId = pendingNoteFocusRef.current;
+    const timer = window.setTimeout(() => {
+      if (scrollToNoteMarker(anchorId)) {
+        pendingNoteFocusRef.current = null;
+      }
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [currentSectionId, notes, scrollToNoteMarker]);
+
+  useEffect(() => {
+    if (!noteParam) return;
+    pendingNoteFocusRef.current = noteParam;
+    const timer = window.setTimeout(() => {
+      if (scrollToNoteMarker(noteParam)) {
+        pendingNoteFocusRef.current = null;
+      }
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [noteParam, scrollToNoteMarker]);
 
   const clearHighlights = useCallback(() => {
     setHighlightTerm(null);
@@ -568,9 +811,6 @@ export default function Chapter() {
       </div>
     );
   }
-
-  const sectionHierarchy = useMemo(() => buildSectionHierarchy(chapter.sections), [chapter]);
-
   const currentSection = chapter.sections.find((s) => s.id === currentSectionId) ?? null;
   const currentSectionIndex = chapter.sections.findIndex((s) => s.id === currentSectionId);
   
@@ -587,48 +827,6 @@ export default function Chapter() {
   const sectionTrail = currentSection
     ? sectionHierarchy.trails.get(currentSection.id) ?? []
     : [];
-
-  const handleSectionClick = (
-    volumeNo: number,
-    chapId: string,
-    sectionId: string,
-    highlight?: string,
-    highlightIndexOverride?: number
-  ) => {
-    clearSelection();
-    setPendingNote(null);
-    setCurrentSectionId(sectionId);
-    const params = new URLSearchParams();
-    params.set("s", sectionId);
-    const trimmedHighlight = highlight?.trim();
-    if (trimmedHighlight) {
-      params.set("h", trimmedHighlight);
-      if (typeof highlightIndexOverride === "number" && highlightIndexOverride >= 0) {
-        params.set("hi", String(highlightIndexOverride));
-      }
-    }
-    const query = params.toString();
-    const path = `/v/${volumeNo}/${chapId}${query ? `?${query}` : ""}`;
-    setLocation(path);
-    setHighlightTerm(trimmedHighlight ?? null);
-    if (typeof highlightIndexOverride === "number") {
-      if (highlightTerm) {
-        const metaEntry = highlightSectionsMeta.find((entry) => entry.sectionId === sectionId);
-        if (metaEntry) {
-          const clampedLocal = Math.max(0, Math.min(highlightIndexOverride, metaEntry.count - 1));
-          setHighlightLocalIndex(clampedLocal);
-          setHighlightGlobalIndex(metaEntry.start + clampedLocal);
-        } else {
-          setHighlightLocalIndex(Math.max(0, highlightIndexOverride));
-          setHighlightGlobalIndex(null);
-        }
-      } else {
-        setHighlightLocalIndex(Math.max(0, highlightIndexOverride));
-        setHighlightGlobalIndex(Math.max(0, highlightIndexOverride));
-      }
-    }
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   const handleExtensionNavigate = useCallback(
     (
@@ -664,108 +862,6 @@ export default function Chapter() {
           onPrev={goToPrevHighlight}
           onClose={clearHighlights}
         />
-      )}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 flex">
-          <div
-            className="absolute inset-0 bg-background/70 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="relative flex h-full w-full max-w-[360px] flex-col border-l border-border bg-background">
-            <div className="flex flex-col gap-2 border-b border-border px-4 py-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                Study Pane
-              </div>
-              <div className="grid grid-cols-2 gap-2" data-tour="notes-toggle">
-                <button
-                  type="button"
-                  onClick={() => setLeftPaneMode("navigation")}
-                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
-                    leftPaneMode === "navigation"
-                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
-                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Navigate
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLeftPaneMode("notes")}
-                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
-                    leftPaneMode === "notes"
-                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
-                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Notes
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {leftPaneMode === "navigation" ? (
-                <ChapterSidebar
-                  volumeNumber={bookData.volumeNumber}
-                  chapters={bookData.chapters}
-                  currentChapterId={chapterId}
-                  currentSectionId={currentSectionId}
-                  onHomeClick={(volumeNo) => {
-                    setLocation(`/v/${volumeNo}`);
-                    setSidebarOpen(false);
-                  }}
-                  onSectionClick={(volumeNo, chapId, sectionId) => {
-                    handleSectionClick(volumeNo, chapId, sectionId);
-                    setSidebarOpen(false);
-                  }}
-                />
-              ) : (
-                <div className="flex h-full flex-col">
-                  <div className="flex-1 overflow-y-auto px-4 py-4">
-                    {notes.length === 0 ? (
-                      <p className="text-sm leading-relaxed text-muted-foreground/80">
-                        Highlight any sentence to capture a thought. We&apos;ll keep it here just while you&apos;re in this chapter.
-                      </p>
-                    ) : (
-                      <ul className="space-y-3 text-sm">
-                        {notes.map((note) => (
-                          <li key={note.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                focusNoteHighlight(note.anchorId);
-                                setSidebarOpen(false);
-                              }}
-                              className="group w-full rounded-xl border border-border bg-background/80 p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                            >
-                              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground/70">
-                                <span>Note</span>
-                                <span>{new Date(note.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                              </div>
-                              <p className="mt-2 text-foreground/90">{note.note}</p>
-                              <blockquote className="mt-3 border-l-2 border-border/70 pl-3 text-xs italic text-muted-foreground/80">
-                                “{note.excerpt}”
-                              </blockquote>
-                              <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-primary/70">
-                                Jump to highlight →
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              aria-label="Close navigation"
-              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition hover:text-foreground"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
       )}
 
       <div className="chapter-shell relative flex h-screen overflow-hidden">
@@ -832,28 +928,48 @@ export default function Chapter() {
                         Highlight any sentence to capture a thought. We&apos;ll keep it here just while you&apos;re in this chapter.
                       </p>
                     ) : (
-                      <ul className="space-y-3 text-sm">
-                        {notes.map((note) => (
-                          <li key={note.id}>
-                            <button
-                              type="button"
-                              onClick={() => focusNoteHighlight(note.anchorId)}
-                              className="group w-full rounded-xl border border-border bg-background/80 p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                            >
-                              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground/70">
-                                <span>Note</span>
-                                <span>{new Date(note.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                              </div>
-                              <p className="mt-2 text-foreground/90">{note.note}</p>
-                              <blockquote className="mt-3 border-l-2 border-border/70 pl-3 text-xs italic text-muted-foreground/80">
-                                “{note.excerpt}”
-                              </blockquote>
-                              <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.35em] text-primary/70">
-                                Jump to highlight →
-                              </span>
-                            </button>
-                          </li>
-                        ))}
+                      <ul className="space-y-4 text-sm">
+                        {notes.map((note) => {
+                          const { primary, trail } = formatNoteLocation(note);
+                          const timeLabel = new Date(note.createdAt)
+                            .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                            ?.replace(" am", " AM")
+                            ?.replace(" pm", " PM");
+                          return (
+                            <li key={note.id}>
+                              <button
+                                type="button"
+                                onClick={() => focusNoteHighlight(note)}
+                                className="group relative w-full overflow-hidden rounded-2xl border border-border/60 bg-background/90 px-5 py-5 text-left shadow-sm transition hover:border-primary/35 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                              >
+                                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground/60">
+                                  <span>Note</span>
+                                  <span className="font-sans tracking-[0.2em] text-muted-foreground/50">
+                                    {timeLabel}
+                                  </span>
+                                </div>
+                                <div className="pointer-events-none absolute left-5 right-5 top-8 rounded-lg border border-primary/20 bg-background/95 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.35em] text-[hsl(184,42%,32%)] opacity-0 shadow-sm transition-all duration-200 ease-out -translate-y-2 group-hover:translate-y-0 group-hover:opacity-100">
+                                  <span>{primary}</span>
+                                  {trail && (
+                                    <span className="mt-1.5 block text-[9px] font-medium tracking-[0.28em] text-muted-foreground/65">
+                                      {trail}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="mt-5 text-sm font-serif leading-relaxed text-foreground/90">
+                                  {note.note}
+                                </p>
+                                <blockquote className="mt-3 border-l border-primary/20 pl-4 text-xs italic text-muted-foreground/75">
+                                  “{note.excerpt}”
+                                </blockquote>
+                                <span className="mt-4 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-primary/75">
+                                  Jump to highlight
+                                  <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1" />
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
@@ -879,23 +995,15 @@ export default function Chapter() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setSidebarOpen((prev) => !prev)}
-                  data-testid="button-toggle-sidebar"
+                  onClick={() => setStudyPaneCollapsed((prev) => !prev)}
+                  aria-label={studyPaneCollapsed ? "Expand study pane" : "Collapse study pane"}
+                  data-testid="button-toggle-study-pane"
                 >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    className="text-foreground"
-                  >
-                    <path
-                      d="M2 3h12M2 8h12M2 13h12"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  {studyPaneCollapsed ? (
+                    <ChevronRight className="h-4 w-4" />
+                  ) : (
+                    <ChevronLeft className="h-4 w-4" />
+                  )}
                 </Button>
                 <PageReferenceInput
                   volumeNumber={bookData.volumeNumber}
@@ -906,10 +1014,10 @@ export default function Chapter() {
                   variant="ghost"
                   size="icon"
                   className="lg:hidden"
-                  aria-label="Open notes pane"
+                  aria-label="Show notes pane"
                   onClick={() => {
                     setLeftPaneMode("notes");
-                    setSidebarOpen(true);
+                    setStudyPaneCollapsed(false);
                   }}
                 >
                   <PenSquare className="h-4 w-4" />
@@ -1025,6 +1133,7 @@ export default function Chapter() {
                   currentHighlightIndex={highlightLocalIndex}
                   onFootnoteClick={handleFootnoteOpen}
                   onRequestNote={handleRequestNote}
+                  sectionMarkupOverride={sectionMarkupOverrides[currentSection.id]}
                 />
               )}
 
