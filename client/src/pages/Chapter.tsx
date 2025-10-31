@@ -24,6 +24,7 @@ import { volumes } from "@/lib/volumes";
 import { buildSectionHierarchy } from "@/lib/sectionHierarchy";
 import { hasRenderableContent } from "@/lib/content";
 import type { Footnote } from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -868,7 +869,7 @@ export default function Chapter() {
           <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-border bg-muted/10">
             <div className="border-b border-border px-4 py-4">
               <div className="flex items-center justify-between">
-                <div className="text-xs font-semibold tracking-[0.3em] text-muted-foreground">
+                <div className="text-s font-semibold tracking-[0.3em] text-muted-foreground">
                   Study Pane
                 </div>
                 <button
@@ -990,7 +991,7 @@ export default function Chapter() {
         <div className="flex-1 flex overflow-hidden">
           <div className="flex flex-1 flex-col overflow-hidden">
             <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
-              <div className="flex items-center gap-2">
+              <div className={cn("flex items-center gap-2", studyPaneCollapsed && "lg:ml-14")}>
                 <PageReferenceInput
                   volumeNumber={bookData.volumeNumber}
                   chapters={bookData.chapters}
