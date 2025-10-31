@@ -8,7 +8,6 @@ import {
   PenSquare,
   Menu,
   ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -992,23 +991,11 @@ export default function Chapter() {
           <div className="flex flex-1 flex-col overflow-hidden">
             <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setStudyPaneCollapsed((prev) => !prev)}
-                  aria-label={studyPaneCollapsed ? "Expand study pane" : "Collapse study pane"}
-                  data-testid="button-toggle-study-pane"
-                >
-                  {studyPaneCollapsed ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : (
-                    <ChevronLeft className="h-4 w-4" />
-                  )}
-                </Button>
                 <PageReferenceInput
                   volumeNumber={bookData.volumeNumber}
                   chapters={bookData.chapters}
                   onNavigate={handleExtensionNavigate}
+                  matchNavigationButton={studyPaneCollapsed}
                 />
                 <Button
                   variant="ghost"

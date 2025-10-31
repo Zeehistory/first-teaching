@@ -8,6 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { Chapter, Footnote } from "@shared/schema";
 
 interface PageReferenceInputProps {
@@ -19,12 +20,14 @@ interface PageReferenceInputProps {
     sectionId: string,
     footnote: Footnote | null
   ) => void;
+  matchNavigationButton?: boolean;
 }
 
 export default function PageReferenceInput({
   volumeNumber,
   chapters,
   onNavigate,
+  matchNavigationButton = false,
 }: PageReferenceInputProps) {
   const [open, setOpen] = useState(false);
   const [extensionValue, setExtensionValue] = useState("");
@@ -67,6 +70,7 @@ export default function PageReferenceInput({
           size="icon"
           data-testid="button-page-reference"
           aria-label="Find by extension number"
+          className={cn(matchNavigationButton && "h-10 w-10")}
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
