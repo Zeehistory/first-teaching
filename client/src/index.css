@@ -505,33 +505,6 @@
 }
 
 /* Glossary markers: inline superscript chips in a distinct color */
-.chapter-prose sup[data-glossary] {
-  position: relative;
-  top: -0.2em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.35rem;
-  height: 1.1rem;
-  padding: 0 0.35rem;
-  margin-left: 0.25rem;
-  border-radius: 9999px;
-  background: hsl(35, 100%, 90%);
-  color: hsl(20, 65%, 30%);
-  border: 1px solid hsl(35, 80%, 70%);
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 0.65rem;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  user-select: none;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.05) inset;
-  transition: background-color 150ms ease, transform 150ms ease;
-}
-
-.chapter-prose sup[data-glossary]:hover { background: hsl(35, 100%, 86%); transform: translateY(-1px); }
-.chapter-prose sup[data-glossary]:active { transform: translateY(0); }
-
 .chapter-prose sup[data-footnote]:hover {
   background: hsl(185, 45%, 82%);
   transform: translateY(-1px);
@@ -539,6 +512,33 @@
 
 .chapter-prose sup[data-footnote]:active {
   transform: translateY(0);
+}
+
+.chapter-prose .glossary-term-chip {
+  position: relative;
+  display: inline;
+  border-bottom: 1px dashed hsla(35, 78%, 48%, 0.55);
+  background-image: linear-gradient(120deg, hsla(35, 100%, 92%, 0.9), hsla(20, 90%, 85%, 0.65));
+  background-size: 100% 40%;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  padding: 0 0.15em;
+  border-radius: 0.25em;
+  color: inherit;
+  cursor: pointer;
+  transition: background-position 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+
+.chapter-prose .glossary-term-chip:hover,
+.chapter-prose .glossary-term-chip:focus-visible {
+  background-position: 0 0;
+  color: hsl(20, 65%, 30%);
+  box-shadow: 0 6px 18px -12px rgba(120, 80, 25, 0.65);
+  outline: none;
+}
+
+.chapter-prose .glossary-term-chip:focus-visible {
+  box-shadow: 0 0 0 2px hsla(35, 75%, 55%, 0.6);
 }
 
 .chapter-prose mark[data-highlight] {

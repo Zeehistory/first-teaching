@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Section, Footnote } from "@shared/schema";
-import { glossary } from "@shared/glossary";
+import { glossary, type GlossaryEntry } from "@shared/glossary";
 import OrnamentalDivider from "./OrnamentalDivider";
 import SectionAudioPlayer from "./SectionAudioPlayer";
+import FloatingAudioPlayer from "./FloatingAudioPlayer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { imageCatalogue } from "@/data/imageCatalogue";
 import type { GalleryItem } from "@/data/imageCatalogue";
-
-const ENABLE_GLOSSARY_CHIPS = false;
+import { useSectionAudioController } from "@/hooks/useSectionAudioController";
 
 const INLINE_IMAGE_CONFIG: Record<string, { itemId: string; variant: "default" | "floated" }> = {
   "2": { itemId: "image-tarbha", variant: "default" },
@@ -66,6 +66,7 @@ export default function ChapterContent({
   sectionMarkupOverride,
 }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const articleRef = useRef<HTMLElement | null>(null);
   const highlightRefs = useRef<HTMLElement[]>([]);
   const glossaryBuilt = useRef(false);
   const [hoveredFootnote, setHoveredFootnote] = useState<{
@@ -74,13 +75,25 @@ export default function ChapterContent({
   } | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
   const hoveredMarkerRef = useRef<HTMLElement | null>(null);
+  const glossaryHoverRef = useRef<HTMLElement | null>(null);
   const [inlineImageHosts, setInlineImageHosts] = useState<HTMLElement[]>([]);
+  const [glossaryPreview, setGlossaryPreview] = useState<{ entry: GlossaryEntry; rect: DOMRect } | null>(null);
+  const audioPlayerRef = useRef<HTMLDivElement | null>(null);
+  const [articleRect, setArticleRect] = useState<DOMRect | null>(null);
+  const [isAudioPlayerVisible, setIsAudioPlayerVisible] = useState(true);
+  const [audioDismissed, setAudioDismissed] = useState(false);
+  const [audioHasStarted, setAudioHasStarted] = useState(false);
 
   const inlineImageItems = useMemo(() => {
     const map = new Map<string, GalleryItem>();
     imageCatalogue.forEach((item) => {
       map.set(item.id, item);
     });
+    return map;
+  }, []);
+  const glossaryMap = useMemo(() => {
+    const map = new Map<string, GlossaryEntry>();
+    glossary.forEach((entry) => map.set(entry.slug, entry));
     return map;
   }, []);
   const estimatedAudioDuration = useMemo(() => {
@@ -90,6 +103,10 @@ export default function ChapterContent({
     const seconds = Math.round((wordCount / 165) * 60);
     return Math.min(1200, Math.max(180, seconds));
   }, [section.content, section.id]);
+  const audioController = useSectionAudioController({
+    sectionId: section.id,
+    duration: estimatedAudioDuration,
+  });
 
   const showImageCatalogue = section.id === IMAGE_SECTION_ID;
 
@@ -127,6 +144,37 @@ export default function ChapterContent({
     );
     setInlineImageHosts(mounts);
   }, [sanitizedContent, showImageCatalogue]);
+
+  useEffect(() => {
+    const target = audioPlayerRef.current;
+    if (!target) {
+      setIsAudioPlayerVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsAudioPlayerVisible(entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [section.id]);
+
+  useEffect(() => {
+    if (audioController.isPlaying || audioController.elapsed > 0) {
+      setAudioHasStarted(true);
+    } else {
+      setAudioHasStarted(false);
+    }
+  }, [audioController.isPlaying, audioController.elapsed]);
+
+  useEffect(() => {
+    if (!audioController.isPlaying && audioController.elapsed === 0) {
+      setAudioDismissed(false);
+    }
+  }, [audioController.isPlaying, audioController.elapsed]);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -315,27 +363,83 @@ export default function ChapterContent({
     };
   }, [hoveredFootnote]);
 
-  // Inject glossary markers by appending numbered chips after term occurrences
   useEffect(() => {
-    if (!ENABLE_GLOSSARY_CHIPS) return;
+    if (!glossaryPreview) return;
+
+    const updateRect = () => {
+      const host = glossaryHoverRef.current;
+      if (!host) return;
+      const rect = host.getBoundingClientRect();
+      setGlossaryPreview((prev) => {
+        if (!prev) return prev;
+        const sameRect =
+          Math.abs(prev.rect.top - rect.top) < 0.5 &&
+          Math.abs(prev.rect.left - rect.left) < 0.5 &&
+          Math.abs(prev.rect.width - rect.width) < 0.5 &&
+          Math.abs(prev.rect.height - rect.height) < 0.5;
+        if (sameRect) return prev;
+        return { ...prev, rect };
+      });
+    };
+
+    updateRect();
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [glossaryPreview]);
+
+  const recomputeArticleRect = useCallback(() => {
+    const el = articleRef.current;
+    if (!el) {
+      setArticleRect(null);
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    setArticleRect(rect);
+  }, []);
+
+  useEffect(() => {
+    const el = articleRef.current;
+    if (!el) {
+      setArticleRect(null);
+      return;
+    }
+    recomputeArticleRect();
+    const observer = new ResizeObserver(recomputeArticleRect);
+    observer.observe(el);
+    window.addEventListener("resize", recomputeArticleRect);
+    window.addEventListener("scroll", recomputeArticleRect, true);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", recomputeArticleRect);
+      window.removeEventListener("scroll", recomputeArticleRect, true);
+    };
+  }, [recomputeArticleRect, section.id]);
+
+  // Inject glossary markers by wrapping term occurrences in highlighted spans
+  useEffect(() => {
     const container = contentRef.current;
     if (!container) return;
     if (glossaryBuilt.current) return;
 
-    // Build matchers for both full title and a shortened variant (strip parenthetical
-    // parts like transliterations), since the text often uses the short form
-    // (e.g., "Functional Certitude").
     const stripParens = (s: string) => s.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
     const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     const terms = glossary.map((g) => {
       const full = g.title.trim();
       const short = stripParens(full);
-      const variants = Array.from(new Set([full, short]));
+      const variants = Array.from(
+        new Set(
+          [full, short].filter((entry) => entry.length > 0)
+        )
+      );
       const res = variants.map((v) =>
         new RegExp(`(^|[^A-Za-z])(${escape(v)})(?=[^A-Za-z]|$)`, "gi"),
       );
-      return { slug: g.slug, index: g.index, title: g.title, res };
+      return { slug: g.slug, title: g.title, res };
     });
 
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
@@ -343,21 +447,24 @@ export default function ChapterContent({
     while (walker.nextNode()) {
       const node = walker.currentNode as Text;
       if (!node.data.trim()) continue;
-      if (node.parentElement?.closest("sup[data-footnote], sup[data-glossary], mark[data-highlight]")) continue;
+      if (
+        node.parentElement?.closest(
+          "sup[data-footnote], mark[data-highlight], span[data-glossary-term]"
+        )
+      )
+        continue;
       toProcess.push(node);
     }
-
-    const usedSlugs = new Set<string>();
 
     toProcess.forEach((textNode) => {
       const txt = textNode.data;
       let changed = false;
       const frag = document.createDocumentFragment();
       let cursor = 0;
-      let found: { start: number; end: number; slug: string; text: string; index: number } | null = null;
+      let found: { start: number; end: number; slug: string; text: string; title: string } | null = null;
 
       const findNext = (startAt: number) => {
-        let best: { start: number; end: number; slug: string; text: string; index: number } | null = null;
+        let best: { start: number; end: number; slug: string; text: string; title: string } | null = null;
         terms.forEach((t) => {
           t.res.forEach((re) => {
             re.lastIndex = startAt;
@@ -365,7 +472,7 @@ export default function ChapterContent({
             if (m) {
               const s = m.index + (m[1] ? m[1].length : 0);
               const e = s + m[2].length;
-              if (!best || s < best.start) best = { start: s, end: e, slug: t.slug, text: m[2], index: t.index };
+              if (!best || s < best.start) best = { start: s, end: e, slug: t.slug, text: m[2], title: t.title };
             }
           });
         });
@@ -373,19 +480,20 @@ export default function ChapterContent({
       };
 
       while ((found = findNext(cursor))) {
-        const { start, end, slug, text, index } = found;
+        const { start, end, slug, text, title } = found;
         if (start > cursor) frag.appendChild(document.createTextNode(txt.slice(cursor, start)));
-        // Keep the original text, then add a numbered chip only once per slug
-        frag.appendChild(document.createTextNode(text));
-        if (!usedSlugs.has(slug)) {
-          const sup = document.createElement("sup");
-          sup.dataset.glossary = slug;
-          sup.textContent = String(index);
-          frag.appendChild(sup);
-          usedSlugs.add(slug);
-          changed = true;
-        }
+        const span = document.createElement("span");
+        span.textContent = text;
+        span.dataset.glossaryTerm = "true";
+        span.dataset.glossary = slug;
+        span.dataset.glossaryTitle = title;
+        span.classList.add("glossary-term-chip");
+        span.tabIndex = 0;
+        span.setAttribute("role", "button");
+        span.setAttribute("aria-label", `Open glossary entry for ${title}`);
+        frag.appendChild(span);
         cursor = end;
+        changed = true;
       }
 
       if (changed) {
@@ -396,25 +504,92 @@ export default function ChapterContent({
 
     glossaryBuilt.current = true;
 
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      const el = target.closest("sup[data-glossary]") as HTMLElement | null;
+    const openGlossary = (slug: string) => {
+      window.location.assign(`/glossary#${slug}`);
+    };
+
+    const getTermHost = (target: EventTarget | null): HTMLElement | null => {
+      if (!target || !(target instanceof HTMLElement)) return null;
+      return target.closest("[data-glossary-term]") as HTMLElement | null;
+    };
+
+    const showPreview = (el: HTMLElement) => {
+      const slug = el.dataset.glossary;
+      if (!slug) return;
+      const entry = glossaryMap.get(slug);
+      if (!entry) return;
+      glossaryHoverRef.current = el;
+      setGlossaryPreview({ entry, rect: el.getBoundingClientRect() });
+    };
+
+    const hidePreview = () => {
+      glossaryHoverRef.current = null;
+      setGlossaryPreview(null);
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const el = getTermHost(e.target);
       if (!el) return;
       const slug = el.dataset.glossary;
       if (!slug) return;
       e.preventDefault();
       e.stopPropagation();
-      window.location.assign(`/glossary#${slug}`);
+      openGlossary(slug);
     };
 
-    container.addEventListener("click", onClick);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const el = getTermHost(event.target);
+      if (!el) return;
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      const slug = el.dataset.glossary;
+      if (!slug) return;
+      openGlossary(slug);
+    };
+
+    const handlePointerOver = (event: PointerEvent) => {
+      const el = getTermHost(event.target);
+      if (!el) return;
+      showPreview(el);
+    };
+
+    const handlePointerOut = (event: PointerEvent) => {
+      const el = getTermHost(event.target);
+      if (!el) return;
+      const related = event.relatedTarget as HTMLElement | null;
+      if (related && el.contains(related)) return;
+      hidePreview();
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const el = getTermHost(event.target);
+      if (el) showPreview(el);
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      const el = getTermHost(event.target);
+      if (el) hidePreview();
+    };
+
+    container.addEventListener("click", handleClick);
+    container.addEventListener("keydown", handleKeyDown);
+    container.addEventListener("pointerover", handlePointerOver);
+    container.addEventListener("pointerout", handlePointerOut);
+    container.addEventListener("focusin", handleFocusIn);
+    container.addEventListener("focusout", handleFocusOut);
+
     return () => {
-      container.removeEventListener("click", onClick);
-      // Reset so a new section rebuilds markers
+      container.removeEventListener("click", handleClick);
+      container.removeEventListener("keydown", handleKeyDown);
+      container.removeEventListener("pointerover", handlePointerOver);
+      container.removeEventListener("pointerout", handlePointerOut);
+      container.removeEventListener("focusin", handleFocusIn);
+      container.removeEventListener("focusout", handleFocusOut);
+      setGlossaryPreview(null);
+      glossaryHoverRef.current = null;
       glossaryBuilt.current = false;
     };
-  }, [section.id]);
+  }, [section.id, sanitizedContent, glossaryMap]);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -602,7 +777,7 @@ export default function ChapterContent({
     };
   }, [onRequestNote, section.id]);
 
-  const hoverPreviewNode = useMemo(() => {
+  const footnotePreviewNode = useMemo(() => {
     if (!hoveredFootnote) return null;
     if (typeof window === "undefined") return null;
 
@@ -632,6 +807,37 @@ export default function ChapterContent({
     );
   }, [hoveredFootnote]);
 
+  const glossaryPreviewNode = useMemo(() => {
+    if (!glossaryPreview) return null;
+    if (typeof window === "undefined") return null;
+    const spacing = 10;
+    const viewportWidth = window.innerWidth;
+    const baseWidth = 320;
+    const width = Math.min(baseWidth, Math.max(240, viewportWidth - 32));
+    const centeredLeft =
+      glossaryPreview.rect.left + glossaryPreview.rect.width / 2 - width / 2;
+    const left = Math.min(Math.max(centeredLeft, 16), viewportWidth - width - 16);
+    const top = glossaryPreview.rect.bottom + spacing;
+
+    return createPortal(
+      <div
+        className="pointer-events-none fixed z-50 max-w-[90vw] rounded-2xl border border-amber-200 bg-amber-50/95 px-4 py-3 text-amber-900 shadow-2xl backdrop-blur"
+        style={{ top, left, width }}
+        role="status"
+        aria-live="polite"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-[0.35em] text-amber-700/70">
+          Teaching Glossary
+        </div>
+        <p className="mt-1 font-heading text-sm leading-snug">{glossaryPreview.entry.title}</p>
+        <p className="mt-1 text-xs text-amber-900/70">
+          Entry previews are abridged — click any highlighted term to open the full glossary reference.
+        </p>
+      </div>,
+      document.body
+    );
+  }, [glossaryPreview]);
+
   const inlineImagePortals = showImageCatalogue
     ? inlineImageHosts
         .map((host) => {
@@ -650,7 +856,7 @@ export default function ChapterContent({
 
   return (
     <>
-      <article className="max-w-3xl mx-auto px-6 py-10">
+      <article className="max-w-3xl mx-auto px-6 py-10" ref={articleRef}>
       <div className="mb-6 space-y-3">
         {sectionTrail.length > 0 && (
           <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-sans uppercase tracking-[0.35em] text-muted-foreground">
@@ -674,12 +880,11 @@ export default function ChapterContent({
         )}
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6" ref={audioPlayerRef}>
         <SectionAudioPlayer
-          sectionId={section.id}
           sectionTitle={section.title}
           chapterTitle={chapterTitle}
-          estimatedDuration={estimatedAudioDuration}
+          controller={audioController}
         />
       </div>
 
@@ -698,32 +903,18 @@ export default function ChapterContent({
         data-testid="chapter-text-content"
         dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       />
-
-      {section.footnotes.length > 0 && (
-        <div className="mt-16 pt-8 border-t border-border">
-          <h3 className="text-xl font-heading font-medium mb-6">Footnotes</h3>
-          <div className="space-y-4">
-            {section.footnotes.map((footnote) => (
-              <div
-                key={footnote.id}
-                className="text-sm leading-relaxed"
-                data-testid={`footnote-${footnote.number}`}
-              >
-                <span className="font-semibold text-primary mr-2">
-                  {footnote.number}.
-                </span>
-                <span
-                  className="text-muted-foreground"
-                  dangerouslySetInnerHTML={{ __html: footnote.content }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </article>
+      <FloatingAudioPlayer
+        visible={audioHasStarted && !isAudioPlayerVisible && !audioDismissed}
+        controller={audioController}
+        chapterTitle={chapterTitle}
+        sectionTitle={section.title}
+        anchorRect={articleRect}
+        onClose={() => setAudioDismissed(true)}
+      />
       {inlineImagePortals}
-      {hoverPreviewNode}
+      {footnotePreviewNode}
+      {glossaryPreviewNode}
     </>
   );
 }

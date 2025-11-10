@@ -1,82 +1,33 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useMemo, useRef, type MouseEvent as ReactMouseEvent } from "react";
 import { Headphones, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SectionAudioController } from "@/hooks/useSectionAudioController";
+import { formatDuration } from "@/lib/time";
 
 interface SectionAudioPlayerProps {
-  sectionId: string;
   sectionTitle: string;
   chapterTitle: string;
-  estimatedDuration: number; // seconds
-}
-
-function formatTime(totalSeconds: number) {
-  const seconds = Math.max(0, Math.floor(totalSeconds));
-  const mins = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${mins.toString().padStart(2, "0")}:${remainder.toString().padStart(2, "0")}`;
+  controller: SectionAudioController;
 }
 
 export default function SectionAudioPlayer({
-  sectionId,
   sectionTitle,
   chapterTitle,
-  estimatedDuration,
+  controller,
 }: SectionAudioPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const intervalRef = useRef<number | null>(null);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    setElapsed(0);
-    setIsPlaying(false);
-    if (intervalRef.current !== null) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, [sectionId, estimatedDuration]);
-
-  useEffect(() => {
-    if (!isPlaying) {
-      if (intervalRef.current !== null) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-
-    intervalRef.current = window.setInterval(() => {
-      setElapsed((prev) => {
-        const next = Math.min(prev + 1, estimatedDuration);
-        if (next >= estimatedDuration) {
-          window.clearInterval(intervalRef.current ?? 0);
-          intervalRef.current = null;
-          setIsPlaying(false);
-          return 0;
-        }
-        return next;
-      });
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current !== null) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isPlaying, estimatedDuration]);
-
   const progressPercent = useMemo(() => {
-    if (estimatedDuration === 0) return 0;
-    return Math.min(100, Math.max(0, (elapsed / estimatedDuration) * 100));
-  }, [elapsed, estimatedDuration]);
+    if (controller.duration === 0) return 0;
+    return Math.min(100, Math.max(0, (controller.elapsed / controller.duration) * 100));
+  }, [controller.elapsed, controller.duration]);
 
   const handleProgressClick = (event: ReactMouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current) return;
     const rect = progressBarRef.current.getBoundingClientRect();
     const ratio = (event.clientX - rect.left) / rect.width;
     const clamped = Math.min(1, Math.max(0, ratio));
-    setElapsed(Math.round(clamped * estimatedDuration));
+    controller.seekTo(Math.round(clamped * controller.duration));
   };
 
   return (
@@ -92,11 +43,11 @@ export default function SectionAudioPlayer({
       <div className="relative flex items-center gap-5">
         <button
           type="button"
-          onClick={() => setIsPlaying((prev) => !prev)}
+          onClick={controller.togglePlay}
           className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-border/70 bg-background/90 text-primary shadow-md transition hover:border-primary/40 hover:text-primary"
-          aria-label={isPlaying ? "Pause narration preview" : "Play narration preview"}
+          aria-label={controller.isPlaying ? "Pause narration preview" : "Play narration preview"}
         >
-          {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 translate-x-[2px]" />}
+          {controller.isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 translate-x-[2px]" />}
         </button>
 
         <div className="flex-1 space-y-1">
@@ -113,8 +64,8 @@ export default function SectionAudioPlayer({
         </div>
 
         <div className="flex flex-col items-end text-xs font-mono text-muted-foreground/80">
-          <span>{formatTime(elapsed)}</span>
-          <span className="opacity-70">/{formatTime(estimatedDuration)}</span>
+          <span>{formatDuration(controller.elapsed)}</span>
+          <span className="opacity-70">/{formatDuration(controller.duration)}</span>
         </div>
       </div>
 
@@ -127,7 +78,7 @@ export default function SectionAudioPlayer({
         <div
           className={cn(
             "absolute left-0 top-0 h-full rounded-full bg-primary/80 transition-all duration-300 ease-out",
-            isPlaying ? "shadow-[0_0_12px_rgba(45,140,140,0.35)]" : "shadow-none"
+            controller.isPlaying ? "shadow-[0_0_12px_rgba(45,140,140,0.35)]" : "shadow-none"
           )}
           style={{ width: `${progressPercent}%` }}
         />

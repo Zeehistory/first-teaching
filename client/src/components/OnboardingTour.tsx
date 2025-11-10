@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sparkles, ArrowRight, MousePointer2, Map, Search, BookOpen, Wand2, MoonStar } from "lucide-react";
+import { Sparkles, ArrowRight, MousePointer2, Map, Search, BookOpen, Wand2, MoonStar, PenSquare } from "lucide-react";
 
 type Step = {
   id: string;
@@ -100,9 +100,16 @@ export default function OnboardingTour() {
         id: "reading-tools",
         title: "Reading Tools",
         description:
-          "In any chapter, use search, the AI assistant, theme toggle, and text size controls to tailor your study.",
-        // we'll prioritize search button in chapter header if present
-        target: '[data-tour="chapter-search"], [data-tour="assistant-button"], [data-tour="theme-toggle"], [data-tour="text-size-control"]',
+          "In any chapter, use search, the notes pane, theme toggle, and text size controls to tailor your study.",
+        target: '[data-tour="chapter-search"], [data-tour="theme-toggle"], [data-tour="text-size-control"]',
+        ensureRoute: (path) => /^\/v\/[\d]+\/.+/.test(path),
+      },
+      {
+        id: "ask-ai",
+        title: "Ask AI Companion",
+        description:
+          "The Ask AI button summons a focused assistant for clarifications, summaries, and citations right beside the text.",
+        target: '[data-tour="assistant-button"]',
         ensureRoute: (path) => /^\/v\/[\d]+\/.+/.test(path),
       },
       {
@@ -249,6 +256,8 @@ export default function OnboardingTour() {
     ? BookOpen
     : currentStep.id === "reading-tools"
     ? Wand2
+    : currentStep.id === "ask-ai"
+    ? Sparkles
     : MousePointer2;
 
   return (
@@ -299,8 +308,8 @@ export default function OnboardingTour() {
                 Search
               </div>
               <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
-                <Sparkles className="h-3.5 w-3.5 text-foreground/70" />
-                Ask Al
+                <PenSquare className="h-3.5 w-3.5 text-foreground/70" />
+                Notes
               </div>
               <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
                 <MoonStar className="h-3.5 w-3.5 text-foreground/70" />
