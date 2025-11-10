@@ -78,9 +78,7 @@ export default function ChapterContent({
   const glossaryHoverRef = useRef<HTMLElement | null>(null);
   const [inlineImageHosts, setInlineImageHosts] = useState<HTMLElement[]>([]);
   const [glossaryPreview, setGlossaryPreview] = useState<{ entry: GlossaryEntry; rect: DOMRect } | null>(null);
-  const audioPlayerRef = useRef<HTMLDivElement | null>(null);
   const [articleRect, setArticleRect] = useState<DOMRect | null>(null);
-  const [isAudioPlayerVisible, setIsAudioPlayerVisible] = useState(true);
   const [audioDismissed, setAudioDismissed] = useState(false);
   const [audioHasStarted, setAudioHasStarted] = useState(false);
 
@@ -144,23 +142,6 @@ export default function ChapterContent({
     );
     setInlineImageHosts(mounts);
   }, [sanitizedContent, showImageCatalogue]);
-
-  useEffect(() => {
-    const target = audioPlayerRef.current;
-    if (!target) {
-      setIsAudioPlayerVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsAudioPlayerVisible(entry.isIntersecting);
-      },
-      { threshold: 0.2 }
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [section.id]);
 
   useEffect(() => {
     if (audioController.isPlaying || audioController.elapsed > 0) {
@@ -398,7 +379,16 @@ export default function ChapterContent({
       return;
     }
     const rect = el.getBoundingClientRect();
-    setArticleRect(rect);
+    setArticleRect((prev) => {
+      if (
+        prev &&
+        Math.abs(prev.left - rect.left) < 0.5 &&
+        Math.abs(prev.width - rect.width) < 0.5
+      ) {
+        return prev;
+      }
+      return rect;
+    });
   }, []);
 
   useEffect(() => {
@@ -407,15 +397,26 @@ export default function ChapterContent({
       setArticleRect(null);
       return;
     }
+
     recomputeArticleRect();
-    const observer = new ResizeObserver(recomputeArticleRect);
-    observer.observe(el);
+
+    const observers: ResizeObserver[] = [];
+    const articleObserver = new ResizeObserver(() => recomputeArticleRect());
+    articleObserver.observe(el);
+    observers.push(articleObserver);
+
+    const parent = el.parentElement;
+    if (parent) {
+      const parentObserver = new ResizeObserver(() => recomputeArticleRect());
+      parentObserver.observe(parent);
+      observers.push(parentObserver);
+    }
+
     window.addEventListener("resize", recomputeArticleRect);
-    window.addEventListener("scroll", recomputeArticleRect, true);
+
     return () => {
-      observer.disconnect();
+      observers.forEach((observer) => observer.disconnect());
       window.removeEventListener("resize", recomputeArticleRect);
-      window.removeEventListener("scroll", recomputeArticleRect, true);
     };
   }, [recomputeArticleRect, section.id]);
 
@@ -880,7 +881,7 @@ export default function ChapterContent({
         )}
       </div>
 
-      <div className="mt-6" ref={audioPlayerRef}>
+      <div className="mt-6">
         <SectionAudioPlayer
           sectionTitle={section.title}
           chapterTitle={chapterTitle}
@@ -905,7 +906,7 @@ export default function ChapterContent({
       />
     </article>
       <FloatingAudioPlayer
-        visible={audioHasStarted && !isAudioPlayerVisible && !audioDismissed}
+        visible={audioHasStarted && !audioDismissed}
         controller={audioController}
         chapterTitle={chapterTitle}
         sectionTitle={section.title}
