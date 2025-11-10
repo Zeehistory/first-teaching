@@ -512,7 +512,11 @@ export default function Chapter() {
           setHighlightGlobalIndex(Math.max(0, highlightIndexOverride));
         }
       }
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      const shouldScrollToTop =
+        sectionId !== currentSectionId || Boolean(trimmedHighlight) || Boolean(noteAnchorId);
+      if (shouldScrollToTop) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     },
     [
       clearSelection,
