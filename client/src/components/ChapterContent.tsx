@@ -407,6 +407,8 @@ export default function ChapterContent({
 
     const parent = el.parentElement;
     if (parent) {
+      // Watch the layout shell as well because side panes can change its width without
+      // the article itself resizing (e.g., study pane toggles).
       const parentObserver = new ResizeObserver(() => recomputeArticleRect());
       parentObserver.observe(parent);
       observers.push(parentObserver);
