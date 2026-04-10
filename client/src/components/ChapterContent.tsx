@@ -14,6 +14,7 @@ import {
   getFootnoteMarkerKey,
   getFootnoteOrigin,
 } from "@/lib/footnotes";
+import { decorateTimelineDatesInElement } from "@/lib/timeline";
 
 const INLINE_IMAGE_CONFIG: Record<string, { itemId: string; variant: "default" | "floated" }> = {
   "2": { itemId: "image-tarbha", variant: "default" },
@@ -49,6 +50,7 @@ interface ChapterContentProps {
   currentHighlightIndex: number | null;
   onHighlightMatches?: (count: number) => void;
   onFootnoteClick: (footnote: Footnote) => void;
+  onTimelineClick?: (eventId: string) => void;
   onRequestNote?: (payload: {
     sectionId: string;
     excerpt: string;
@@ -56,6 +58,7 @@ interface ChapterContentProps {
     range: Range;
   }) => void;
   sectionMarkupOverride?: string;
+  timelineSourceKey?: string;
 }
 
 export default function ChapterContent({
@@ -67,8 +70,10 @@ export default function ChapterContent({
   currentHighlightIndex,
   onHighlightMatches,
   onFootnoteClick,
+  onTimelineClick,
   onRequestNote,
   sectionMarkupOverride,
+  timelineSourceKey,
 }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const articleRef = useRef<HTMLElement | null>(null);
@@ -200,6 +205,43 @@ export default function ChapterContent({
       }
     });
   }, [section.id]);
+
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container || !timelineSourceKey) return;
+
+    decorateTimelineDatesInElement(container, timelineSourceKey);
+
+    const getTimelineHost = (target: EventTarget | null): HTMLElement | null => {
+      if (!target || !(target instanceof HTMLElement)) return null;
+      return target.closest("[data-timeline-id]") as HTMLElement | null;
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const host = getTimelineHost(event.target);
+      const eventId = host?.dataset.timelineId;
+      if (!host || !eventId) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onTimelineClick?.(eventId);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const host = getTimelineHost(event.target);
+      const eventId = host?.dataset.timelineId;
+      if (!host || !eventId) return;
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      onTimelineClick?.(eventId);
+    };
+
+    container.addEventListener("click", handleClick);
+    container.addEventListener("keydown", handleKeyDown);
+    return () => {
+      container.removeEventListener("click", handleClick);
+      container.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [timelineSourceKey, sanitizedContent, onTimelineClick]);
 
   useEffect(() => {
     const container = contentRef.current;

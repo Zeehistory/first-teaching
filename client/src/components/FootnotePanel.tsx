@@ -6,17 +6,25 @@ import {
   getFootnoteDisplayNumber,
   getFootnoteOrigin,
 } from "@/lib/footnotes";
+import { decorateTimelineDatesInElement } from "@/lib/timeline";
 
 interface FootnotePanelProps {
   footnote: Footnote | null;
   onClose: () => void;
+  onTimelineClick?: (eventId: string) => void;
+  timelineSourceKey?: string;
 }
 
 const MIN_WIDTH = 280;
 const MAX_WIDTH = 640;
 const COLLAPSED_WIDTH = 56;
 
-export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps) {
+export default function FootnotePanel({
+  footnote,
+  onClose,
+  onTimelineClick,
+  timelineSourceKey,
+}: FootnotePanelProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const dragState = useRef<{ startX: number; startWidth: number }>({ startX: 0, startWidth: 360 });
   const [width, setWidth] = useState(360);
@@ -55,6 +63,43 @@ export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps)
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging]);
+
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container || !timelineSourceKey) return;
+
+    decorateTimelineDatesInElement(container, timelineSourceKey);
+
+    const getTimelineHost = (target: EventTarget | null): HTMLElement | null => {
+      if (!target || !(target instanceof HTMLElement)) return null;
+      return target.closest("[data-timeline-id]") as HTMLElement | null;
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const host = getTimelineHost(event.target);
+      const eventId = host?.dataset.timelineId;
+      if (!host || !eventId) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onTimelineClick?.(eventId);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const host = getTimelineHost(event.target);
+      const eventId = host?.dataset.timelineId;
+      if (!host || !eventId) return;
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      onTimelineClick?.(eventId);
+    };
+
+    container.addEventListener("click", handleClick);
+    container.addEventListener("keydown", handleKeyDown);
+    return () => {
+      container.removeEventListener("click", handleClick);
+      container.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [timelineSourceKey, footnote?.id, onTimelineClick]);
 
   const panelWidth = useMemo(
     () => (isCollapsed ? COLLAPSED_WIDTH : Math.max(MIN_WIDTH, Math.min(width, MAX_WIDTH))),

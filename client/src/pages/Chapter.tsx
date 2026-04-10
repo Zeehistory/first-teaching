@@ -15,16 +15,23 @@ import ChapterSidebar from "@/components/ChapterSidebar";
 import ChapterContent from "@/components/ChapterContent";
 import SearchOverlay from "@/components/SearchOverlay";
 import FootnotePanel from "@/components/FootnotePanel";
+import TimelineOverlay from "@/components/TimelineOverlay";
 import SearchResultNavigator from "@/components/SearchResultNavigator";
 import ReadingProgress from "@/components/ReadingProgress";
 import ThemeToggle from "@/components/ThemeToggle";
 import TextSizeControl from "@/components/TextSizeControl";
 import PageReferenceInput from "@/components/PageReferenceInput";
 import { buildFootnoteSelector } from "@/lib/footnotes";
+import {
+  buildFootnoteTimelineSourceKey,
+  buildTimelineSourceKey,
+  getTimelineEventById,
+  getTimelineEventsBefore,
+} from "@/lib/timeline";
 import { volumes } from "@/lib/volumes";
 import { buildSectionHierarchy } from "@/lib/sectionHierarchy";
 import { hasRenderableContent } from "@/lib/content";
-import type { Footnote } from "@shared/schema";
+import type { Footnote, TimelineEvent } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -94,6 +101,7 @@ export default function Chapter() {
   const search = useSearch();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedFootnote, setSelectedFootnote] = useState<Footnote | null>(null);
+  const [selectedTimelineEventId, setSelectedTimelineEventId] = useState<string | null>(null);
   const [textSize, setTextSize] = useState(() => {
     const saved = localStorage.getItem("textSize");
     return saved ? parseInt(saved, 10) : 18;
@@ -397,6 +405,14 @@ export default function Chapter() {
     pendingFootnoteRef.current = null;
   }, [currentSectionId]);
 
+  const handleTimelineOpen = useCallback((eventId: string) => {
+    setSelectedTimelineEventId(eventId);
+  }, []);
+
+  const handleTimelineClose = useCallback(() => {
+    setSelectedTimelineEventId(null);
+  }, []);
+
   const handleRequestNote = useCallback(
     (payload: {
       sectionId: string;
@@ -528,6 +544,32 @@ export default function Chapter() {
       currentSectionId,
       setSectionMarkupOverrides,
     ]
+  );
+
+  const handleTimelineJump = useCallback(
+    (event: TimelineEvent) => {
+      setSelectedTimelineEventId(null);
+
+      if (event.containerType === "web-extension") {
+        const params = new URLSearchParams();
+        if (event.anchorText.trim()) {
+          params.set("h", event.anchorText.trim());
+        }
+        const query = params.toString();
+        setLocation(
+          `/v/${event.volumeNumber}/${event.chapterId}/web-extension${query ? `?${query}` : ""}`
+        );
+        return;
+      }
+
+      handleSectionClick(
+        event.volumeNumber,
+        event.chapterId,
+        event.sectionId,
+        event.anchorText.trim() || undefined
+      );
+    },
+    [handleSectionClick, setLocation]
   );
 
   const scrollToNoteMarker = useCallback((anchorId: string) => {
@@ -830,6 +872,18 @@ export default function Chapter() {
   const sectionTrail = currentSection
     ? sectionHierarchy.trails.get(currentSection.id) ?? []
     : [];
+  const currentTimelineSourceKey = currentSection
+    ? buildTimelineSourceKey("chapter", bookData.volumeNumber, chapter.id, currentSection.id)
+    : null;
+  const selectedFootnoteTimelineSourceKey = selectedFootnote
+    ? buildFootnoteTimelineSourceKey(selectedFootnote.id)
+    : undefined;
+  const activeTimelineEvent = selectedTimelineEventId
+    ? getTimelineEventById(selectedTimelineEventId)
+    : null;
+  const visibleTimelineEvents = selectedTimelineEventId
+    ? getTimelineEventsBefore(selectedTimelineEventId)
+    : [];
 
   const handleExtensionNavigate = useCallback(
     (
@@ -1123,8 +1177,10 @@ export default function Chapter() {
                   sectionTrail={sectionTrail}
                   currentHighlightIndex={highlightLocalIndex}
                   onFootnoteClick={handleFootnoteOpen}
+                  onTimelineClick={handleTimelineOpen}
                   onRequestNote={handleRequestNote}
                   sectionMarkupOverride={sectionMarkupOverrides[currentSection.id]}
+                  timelineSourceKey={currentTimelineSourceKey ?? undefined}
                 />
               )}
 
@@ -1171,7 +1227,12 @@ export default function Chapter() {
             </main>
           </div>
 
-          <FootnotePanel footnote={selectedFootnote} onClose={() => setSelectedFootnote(null)} />
+          <FootnotePanel
+            footnote={selectedFootnote}
+            onClose={() => setSelectedFootnote(null)}
+            onTimelineClick={handleTimelineOpen}
+            timelineSourceKey={selectedFootnoteTimelineSourceKey}
+          />
         </div>
       </div>
 
@@ -1204,6 +1265,13 @@ export default function Chapter() {
           disableSave={noteDraft.trim().length === 0}
         />
       )}
+      <TimelineOverlay
+        isOpen={selectedTimelineEventId !== null}
+        activeEvent={activeTimelineEvent}
+        events={visibleTimelineEvents}
+        onClose={handleTimelineClose}
+        onJumpToEvent={handleTimelineJump}
+      />
     </>
   );
 }

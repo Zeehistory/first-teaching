@@ -64,6 +64,34 @@ export interface WebExtensionEntry {
   footnotes: Footnote[];
 }
 
+export type TimelineEventSource = "chapter" | "footnote" | "web-extension";
+export type TimelineContainerType = "chapter" | "web-extension";
+
+export interface TimelineImageSlot {
+  type: "placeholder";
+  label: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  sourceKey: string;
+  sourceType: TimelineEventSource;
+  containerType: TimelineContainerType;
+  volumeNumber: number;
+  volumeTitle: string;
+  chapterId: string;
+  chapterTitle: string;
+  sectionId: string;
+  sectionTitle: string;
+  displayDate: string;
+  sortKey: number;
+  readingOrder: number;
+  title: string;
+  annotation: string;
+  imageSlot: TimelineImageSlot;
+  anchorText: string;
+}
+
 export type VolumeStatus = "available" | "in-progress" | "coming-soon";
 
 export interface VolumeSummary {

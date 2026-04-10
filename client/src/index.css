@@ -647,6 +647,113 @@
   background: linear-gradient(180deg, hsla(28, 52%, 30%, 0.98), hsla(22, 54%, 24%, 0.98));
 }
 
+.chapter-prose .timeline-date-trigger {
+  display: inline;
+  padding: 0 0.12rem 0.06rem;
+  margin: 0 0.02rem;
+  border-bottom: 1.5px solid hsla(188, 42%, 42%, 0.42);
+  border-radius: 0.28rem;
+  background: linear-gradient(180deg, transparent 0%, transparent 62%, hsla(187, 46%, 80%, 0.34) 100%);
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+
+.chapter-prose .timeline-date-trigger:hover,
+.chapter-prose .timeline-date-trigger:focus-visible {
+  border-bottom-color: hsla(187, 48%, 34%, 0.8);
+  background: linear-gradient(180deg, transparent 0%, transparent 46%, hsla(187, 54%, 78%, 0.55) 100%);
+  box-shadow: 0 0 0 3px hsla(187, 48%, 74%, 0.18);
+}
+
+.chapter-prose .timeline-date-trigger:focus-visible {
+  outline: none;
+}
+
+.dark .chapter-prose .timeline-date-trigger {
+  border-bottom-color: hsla(187, 42%, 66%, 0.5);
+  background: linear-gradient(180deg, transparent 0%, transparent 56%, hsla(188, 46%, 44%, 0.26) 100%);
+}
+
+.dark .chapter-prose .timeline-date-trigger:hover,
+.dark .chapter-prose .timeline-date-trigger:focus-visible {
+  border-bottom-color: hsla(187, 55%, 74%, 0.82);
+  background: linear-gradient(180deg, transparent 0%, transparent 44%, hsla(188, 48%, 50%, 0.4) 100%);
+  box-shadow: 0 0 0 3px hsla(187, 42%, 52%, 0.16);
+}
+
+body.timeline-open {
+  overflow: hidden;
+}
+
+.timeline-overlay {
+  background:
+    radial-gradient(circle at top left, hsla(35, 80%, 84%, 0.2), transparent 26rem),
+    radial-gradient(circle at bottom right, hsla(190, 52%, 78%, 0.16), transparent 22rem),
+    hsla(28, 28%, 10%, 0.54);
+  backdrop-filter: blur(10px);
+}
+
+.timeline-shell {
+  background:
+    radial-gradient(circle at top right, hsla(42, 58%, 97%, 0.86), transparent 28rem),
+    linear-gradient(180deg, hsl(37, 34%, 96%), hsl(35, 26%, 93%));
+}
+
+.timeline-header {
+  background:
+    linear-gradient(135deg, hsla(39, 78%, 95%, 0.96), hsla(33, 46%, 91%, 0.94));
+}
+
+.timeline-active-panel {
+  background:
+    linear-gradient(180deg, hsla(40, 48%, 97%, 0.96), hsla(35, 34%, 93%, 0.88));
+}
+
+.timeline-image-placeholder {
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-image-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(hsla(32, 26%, 62%, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, hsla(32, 26%, 62%, 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+.dark .timeline-overlay {
+  background:
+    radial-gradient(circle at top left, hsla(30, 65%, 32%, 0.24), transparent 26rem),
+    radial-gradient(circle at bottom right, hsla(187, 45%, 28%, 0.22), transparent 22rem),
+    hsla(24, 30%, 6%, 0.72);
+}
+
+.dark .timeline-shell {
+  background:
+    radial-gradient(circle at top right, hsla(32, 24%, 22%, 0.7), transparent 28rem),
+    linear-gradient(180deg, hsl(28, 18%, 14%), hsl(26, 16%, 12%));
+}
+
+.dark .timeline-header {
+  background:
+    linear-gradient(135deg, hsla(28, 30%, 20%, 0.98), hsla(22, 26%, 16%, 0.96));
+}
+
+.dark .timeline-active-panel {
+  background:
+    linear-gradient(180deg, hsla(30, 20%, 16%, 0.96), hsla(24, 16%, 13%, 0.9));
+}
+
 .web-extension-header {
   background:
     linear-gradient(135deg, hsla(35, 100%, 95%, 0.96), hsla(28, 62%, 91%, 0.94));
