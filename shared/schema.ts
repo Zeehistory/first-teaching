@@ -5,6 +5,9 @@ export interface Footnote {
   number: number;
   content: string;
   sectionId: string;
+  displayNumber?: number;
+  markerKey?: string;
+  origin?: "syntopicon" | "web-extension";
 }
 
 export const insertUserSchema = z.object({
@@ -47,6 +50,18 @@ export interface BookData {
   introduction: string;
   totalVolumes: number;
   chapters: Chapter[];
+}
+
+export interface WebExtensionEntry {
+  id: string;
+  markerCode: string;
+  ordinal: number;
+  volumeNumber: number;
+  chapterId: string;
+  chapterTitle: string;
+  title: string;
+  content: string;
+  footnotes: Footnote[];
 }
 
 export type VolumeStatus = "available" | "in-progress" | "coming-soon";

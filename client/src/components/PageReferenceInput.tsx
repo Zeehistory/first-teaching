@@ -10,6 +10,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Chapter, Footnote } from "@shared/schema";
+import { getFootnoteDisplayNumber, getFootnoteOrigin } from "@/lib/footnotes";
 
 interface PageReferenceInputProps {
   volumeNumber: number;
@@ -46,7 +47,13 @@ export default function PageReferenceInput({
 
     for (const chapter of chapters) {
       for (const section of chapter.sections) {
-        const match = section.footnotes.find((footnote) => footnote.number === parsed);
+        const match =
+          section.footnotes.find(
+            (footnote) =>
+              getFootnoteOrigin(footnote) === "web-extension" &&
+              getFootnoteDisplayNumber(footnote) === parsed
+          ) ??
+          section.footnotes.find((footnote) => getFootnoteDisplayNumber(footnote) === parsed);
         if (match) {
           onNavigate(volumeNumber, chapter.id, section.id, match);
           setOpen(false);

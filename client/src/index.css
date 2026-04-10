@@ -247,6 +247,18 @@
     transition: margin-right 250ms ease;
   }
 
+  .web-extension-shell {
+    background:
+      radial-gradient(circle at top left, hsla(37, 100%, 92%, 0.75), transparent 28rem),
+      linear-gradient(180deg, hsl(40, 54%, 96%), hsl(32, 44%, 98%));
+  }
+
+  .dark .web-extension-shell {
+    background:
+      radial-gradient(circle at top left, hsla(32, 68%, 26%, 0.28), transparent 28rem),
+      linear-gradient(180deg, hsl(28, 24%, 12%), hsl(34, 18%, 10%));
+  }
+
   body.assistant-open .chapter-shell {
     margin-right: var(--assistant-panel-width);
   }
@@ -298,6 +310,46 @@
   .no-default-hover-elevate {}
 
   .no-default-active-elevate {}
+
+  .minimal-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsla(28, 14%, 58%, 0.28) transparent;
+  }
+
+  .minimal-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .minimal-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .minimal-scrollbar::-webkit-scrollbar-thumb {
+    background: hsla(28, 14%, 58%, 0.18);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .minimal-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: hsla(28, 14%, 58%, 0.34);
+    background-clip: padding-box;
+  }
+
+  .dark .minimal-scrollbar {
+    scrollbar-color: hsla(35, 12%, 72%, 0.26) transparent;
+  }
+
+  .dark .minimal-scrollbar::-webkit-scrollbar-thumb {
+    background: hsla(35, 12%, 72%, 0.18);
+    background-clip: padding-box;
+  }
+
+  .dark .minimal-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: hsla(35, 12%, 72%, 0.32);
+    background-clip: padding-box;
+  }
 
 
   /**
@@ -483,7 +535,8 @@
   @apply bg-primary/10 ring-2 ring-primary/40 rounded-sm transition;
 }
 
-.chapter-prose sup[data-footnote] {
+.chapter-prose sup[data-footnote],
+.chapter-prose sup[data-footnote-key] {
   position: relative;
   top: -0.2em;
   display: inline-flex;
@@ -504,14 +557,92 @@
   transition: background-color 150ms ease, transform 150ms ease;
 }
 
-/* Glossary markers: inline superscript chips in a distinct color */
-.chapter-prose sup[data-footnote]:hover {
+.chapter-prose sup[data-footnote-origin="syntopicon"] {
+  background: hsl(185, 35%, 88%);
+  color: hsl(184, 42%, 32%);
+}
+
+.chapter-prose sup[data-footnote-origin="web-extension"] {
+  background: hsl(34, 84%, 86%);
+  color: hsl(20, 65%, 28%);
+}
+
+.chapter-prose sup[data-footnote]:hover,
+.chapter-prose sup[data-footnote-key]:hover {
   background: hsl(185, 45%, 82%);
   transform: translateY(-1px);
 }
 
-.chapter-prose sup[data-footnote]:active {
+.chapter-prose sup[data-footnote-origin="web-extension"]:hover {
+  background: hsl(34, 84%, 80%);
+}
+
+.chapter-prose sup[data-footnote]:active,
+.chapter-prose sup[data-footnote-key]:active {
   transform: translateY(0);
+}
+
+[data-footnote-panel-origin="syntopicon"] {
+  background: hsl(185, 35%, 88%);
+  color: hsl(184, 42%, 32%);
+}
+
+[data-footnote-panel-origin="web-extension"] {
+  background: hsl(34, 84%, 86%);
+  color: hsl(20, 65%, 28%);
+}
+
+.chapter-prose .web-extension-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  margin-left: 0.3rem;
+  border-radius: 9999px;
+  background: hsl(34, 84%, 86%);
+  color: hsl(20, 65%, 28%);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  vertical-align: middle;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.chapter-prose .web-extension-chip:hover {
+  background: hsl(34, 84%, 80%);
+  transform: translateY(-1px);
+}
+
+.chapter-prose .web-extension-chip:active {
+  transform: translateY(0);
+}
+
+.web-extension-header {
+  background:
+    linear-gradient(135deg, hsla(35, 100%, 95%, 0.96), hsla(28, 62%, 91%, 0.94));
+  backdrop-filter: blur(10px);
+}
+
+.dark .web-extension-header {
+  background:
+    linear-gradient(135deg, hsla(28, 36%, 16%, 0.96), hsla(20, 34%, 13%, 0.94));
+}
+
+.web-extension-stage {
+  background-image:
+    linear-gradient(hsla(30, 48%, 76%, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, hsla(30, 48%, 76%, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.dark .web-extension-stage {
+  background-image:
+    linear-gradient(hsla(34, 30%, 60%, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsla(34, 30%, 60%, 0.05) 1px, transparent 1px);
 }
 
 .chapter-prose .glossary-term-chip {

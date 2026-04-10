@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import OpenAI from "openai";
 import { volumeOneData } from "../client/src/lib/content/volume1";
 import { volumeTwoData } from "../client/src/lib/content/volume2";
+import { volumeEighteenData } from "../client/src/lib/content/volume18";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,7 +62,7 @@ function chunkParagraph(paragraph: string): string[] {
 }
 
 function collectChunks(): KnowledgeChunkInput[] {
-  const books = [volumeOneData, volumeTwoData];
+  const books = [volumeOneData, volumeTwoData, volumeEighteenData];
   const entries: KnowledgeChunkInput[] = [];
 
   books.forEach((book) => {

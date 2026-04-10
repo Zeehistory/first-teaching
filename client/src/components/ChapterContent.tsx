@@ -9,6 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { imageCatalogue } from "@/data/imageCatalogue";
 import type { GalleryItem } from "@/data/imageCatalogue";
 import { useSectionAudioController } from "@/hooks/useSectionAudioController";
+import {
+  getFootnoteDisplayNumber,
+  getFootnoteMarkerKey,
+  getFootnoteOrigin,
+} from "@/lib/footnotes";
 
 const INLINE_IMAGE_CONFIG: Record<string, { itemId: string; variant: "default" | "floated" }> = {
   "2": { itemId: "image-tarbha", variant: "default" },
@@ -218,12 +223,20 @@ export default function ChapterContent({
       return null;
     };
 
+    const resolveFootnote = (element: HTMLElement) => {
+      const markerKey = element.dataset.footnoteKey;
+      if (markerKey) {
+        return section.footnotes.find((footnote) => getFootnoteMarkerKey(footnote) === markerKey) ?? null;
+      }
+      const footnoteNumber = parseInt(element.dataset.footnote ?? "", 10);
+      if (Number.isNaN(footnoteNumber)) return null;
+      return section.footnotes.find((footnote) => getFootnoteDisplayNumber(footnote) === footnoteNumber) ?? null;
+    };
+
     const handleClick = (event: MouseEvent) => {
       const footnoteEl = findFootnoteHost(event);
       if (!footnoteEl) return;
-      const footnoteNumber = parseInt(footnoteEl.dataset.footnote ?? "", 10);
-      if (Number.isNaN(footnoteNumber)) return;
-      const footnote = section.footnotes.find((f) => f.number === footnoteNumber);
+      const footnote = resolveFootnote(footnoteEl);
       if (footnote) {
         event.preventDefault();
         onFootnoteClick(footnote);
@@ -233,11 +246,9 @@ export default function ChapterContent({
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
       if (!target) return;
-      if (target.matches("sup[data-footnote]") && (event.key === "Enter" || event.key === " ")) {
+      if (target.matches("sup[data-footnote], sup[data-footnote-key]") && (event.key === "Enter" || event.key === " ")) {
         event.preventDefault();
-        const footnoteNumber = parseInt(target.dataset.footnote ?? "", 10);
-        if (Number.isNaN(footnoteNumber)) return;
-        const footnote = section.footnotes.find((f) => f.number === footnoteNumber);
+        const footnote = resolveFootnote(target);
         if (footnote) {
           onFootnoteClick(footnote);
         }
@@ -246,9 +257,7 @@ export default function ChapterContent({
 
     function handleMouseEnter(this: HTMLElement) {
       cancelHoverTimeout();
-      const footnoteNumber = parseInt(this.dataset.footnote ?? "", 10);
-      if (Number.isNaN(footnoteNumber)) return;
-      const footnote = section.footnotes.find((f) => f.number === footnoteNumber);
+      const footnote = resolveFootnote(this);
       if (!footnote) return;
       hoveredMarkerRef.current = this;
       setHoveredFootnote({
@@ -279,11 +288,23 @@ export default function ChapterContent({
       }, 80);
     }
 
-    const markers = container.querySelectorAll<HTMLElement>("sup[data-footnote]");
+    const markers = container.querySelectorAll<HTMLElement>("sup[data-footnote], sup[data-footnote-key]");
     markers.forEach((marker) => {
+      const footnote = resolveFootnote(marker);
+      if (footnote) {
+        marker.dataset.footnoteOrigin = getFootnoteOrigin(footnote);
+        if (!marker.dataset.footnoteKey) {
+          marker.dataset.footnoteKey = getFootnoteMarkerKey(footnote);
+        }
+      }
       marker.setAttribute("role", "button");
       marker.setAttribute("tabindex", "0");
-      marker.setAttribute("aria-label", `Read footnote ${marker.dataset.footnote}`);
+      marker.setAttribute(
+        "aria-label",
+        footnote
+          ? `Read ${getFootnoteOrigin(footnote) === "web-extension" ? "web extension" : "syntopicon"} footnote ${getFootnoteDisplayNumber(footnote)}`
+          : `Read footnote ${marker.dataset.footnote ?? ""}`
+      );
       marker.addEventListener("mouseenter", handleMouseEnter);
       marker.addEventListener("mouseleave", handleMouseLeave);
       marker.addEventListener("focus", handleFocus);
@@ -308,13 +329,13 @@ export default function ChapterContent({
 
   useEffect(() => {
     if (!hoveredFootnote) return;
-    const footnoteNumber = hoveredFootnote.footnote.number;
+    const markerKey = getFootnoteMarkerKey(hoveredFootnote.footnote);
 
     const updateRect = () => {
       const container = contentRef.current;
       if (!container) return;
       const marker = container.querySelector<HTMLElement>(
-        `sup[data-footnote="${footnoteNumber}"]`
+        `sup[data-footnote-key="${CSS.escape(markerKey)}"]`
       );
       if (!marker) {
         hoveredMarkerRef.current = null;
@@ -324,7 +345,7 @@ export default function ChapterContent({
       hoveredMarkerRef.current = marker;
       const rect = marker.getBoundingClientRect();
       setHoveredFootnote((prev) => {
-        if (!prev || prev.footnote.number !== footnoteNumber) return prev;
+        if (!prev || getFootnoteMarkerKey(prev.footnote) !== markerKey) return prev;
         const sameRect =
           Math.abs(prev.rect.top - rect.top) < 0.5 &&
           Math.abs(prev.rect.left - rect.left) < 0.5 &&

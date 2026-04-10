@@ -2,6 +2,10 @@ import { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Footnote } from "@shared/schema";
+import {
+  getFootnoteDisplayNumber,
+  getFootnoteOrigin,
+} from "@/lib/footnotes";
 
 interface FootnotePreviewSidebarProps {
   footnotes: Footnote[];
@@ -90,11 +94,13 @@ export default function FootnotePreviewSidebar({
                 >
                   <div className="flex items-start gap-3">
                     <div className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[hsl(185,35%,88%)] font-heading text-base text-[hsl(184,42%,32%)] shadow-sm">
-                      {footnote.number}
+                      {getFootnoteDisplayNumber(footnote)}
                     </div>
                     <div className="space-y-1">
                       <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground/80">
-                        Footnote {footnote.number}
+                        {getFootnoteOrigin(footnote) === "web-extension"
+                          ? `Web Ext ${getFootnoteDisplayNumber(footnote)}`
+                          : `Footnote ${getFootnoteDisplayNumber(footnote)}`}
                       </div>
                       <div className="text-sm leading-snug text-foreground/80 line-clamp-3 group-hover:text-foreground">
                         {footnote.preview || "Additional commentary."}

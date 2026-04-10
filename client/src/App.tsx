@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Home from "@/pages/Home";
 import Volume from "@/pages/Volume";
 import Chapter from "@/pages/Chapter";
+import WebExtension from "@/pages/WebExtension";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
 import Glossary from "@/pages/Glossary";
@@ -31,6 +32,10 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/" component={() => <ProtectedRoute component={Home} />} />
       <Route path="/glossary" component={() => <ProtectedRoute component={Glossary} />} />
+      <Route
+        path="/v/:volumeNumber/:id/web-extension"
+        component={() => <ProtectedRoute component={WebExtension} />}
+      />
       <Route path="/v/:volumeNumber/:id" component={() => <ProtectedRoute component={Chapter} />} />
       <Route path="/v/:volumeNumber" component={() => <ProtectedRoute component={Volume} />} />
       <Route component={NotFound} />

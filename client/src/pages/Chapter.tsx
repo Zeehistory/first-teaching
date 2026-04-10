@@ -20,6 +20,7 @@ import ReadingProgress from "@/components/ReadingProgress";
 import ThemeToggle from "@/components/ThemeToggle";
 import TextSizeControl from "@/components/TextSizeControl";
 import PageReferenceInput from "@/components/PageReferenceInput";
+import { buildFootnoteSelector } from "@/lib/footnotes";
 import { volumes } from "@/lib/volumes";
 import { buildSectionHierarchy } from "@/lib/sectionHierarchy";
 import { hasRenderableContent } from "@/lib/content";
@@ -357,9 +358,7 @@ export default function Chapter() {
 
   const focusFootnoteMarker = useCallback((footnote: Footnote) => {
     if (typeof document === "undefined") return;
-    const marker = document.querySelector<HTMLElement>(
-      `sup[data-footnote="${footnote.number}"]`
-    );
+    const marker = document.querySelector<HTMLElement>(buildFootnoteSelector(footnote));
     if (!marker) return;
     marker.scrollIntoView({ behavior: "smooth", block: "center" });
     marker.classList.add("footnote-marker-focus");
@@ -926,7 +925,7 @@ export default function Chapter() {
                 </div>
               ) : (
                 <div className="flex h-full flex-col">
-                  <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <div className="minimal-scrollbar flex-1 overflow-y-auto px-4 py-4">
                     {notes.length === 0 ? (
                       <p className="text-sm leading-relaxed text-muted-foreground/80">
                         Highlight any sentence to capture a thought. We&apos;ll keep it here just while you&apos;re in this chapter.
@@ -1114,7 +1113,7 @@ export default function Chapter() {
               </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto">
+            <main className="minimal-scrollbar flex-1 overflow-y-auto">
               {currentSection && (
                 <ChapterContent
                   section={currentSection}

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, CornerDownLeft, X } from "lucide-react";
 import type { Footnote } from "@shared/schema";
+import {
+  buildFootnoteSelector,
+  getFootnoteDisplayNumber,
+  getFootnoteOrigin,
+} from "@/lib/footnotes";
 
 interface FootnotePanelProps {
   footnote: Footnote | null;
@@ -62,9 +67,7 @@ export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps)
 
   const handleReturnToText = () => {
     if (typeof document === "undefined") return;
-    const marker = document.querySelector<HTMLElement>(
-      `sup[data-footnote="${footnote.number}"]`
-    );
+    const marker = document.querySelector<HTMLElement>(buildFootnoteSelector(footnote));
     if (!marker) return;
     marker.scrollIntoView({ behavior: "smooth", block: "center" });
     marker.classList.add("footnote-marker-focus");
@@ -94,6 +97,9 @@ export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps)
     );
   }
 
+  const footnoteOrigin = getFootnoteOrigin(footnote);
+  const displayNumber = getFootnoteDisplayNumber(footnote);
+
   return (
     <aside
       className="relative hidden h-full min-h-0 flex-col overflow-hidden border-l border-border bg-background/95 shadow-xl transition-[width] duration-200 md:flex"
@@ -111,11 +117,16 @@ export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps)
 
       <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-5">
         <div className="flex items-center gap-3">
-          <span className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[hsl(185,35%,88%)] font-heading text-lg text-[hsl(184,42%,32%)] shadow-sm">
-            {footnote.number}
+          <span
+            className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-heading text-lg shadow-sm"
+            data-footnote-panel-origin={footnoteOrigin}
+          >
+            {displayNumber}
           </span>
-          <div className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-            Footnote
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+              {footnoteOrigin === "web-extension" ? "Web Ext Footnote" : "Syntopicon Footnote"}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -155,7 +166,7 @@ export default function FootnotePanel({ footnote, onClose }: FootnotePanelProps)
 
         <div
           ref={contentRef}
-          className="flex-1 overflow-y-auto rounded-2xl border border-border/60 bg-muted/15 px-5 py-5 text-base leading-relaxed"
+          className="minimal-scrollbar flex-1 overflow-y-auto rounded-2xl border border-border/60 bg-muted/15 px-5 py-5 text-base leading-relaxed"
         >
           <div
             className="prose prose-primary max-w-none space-y-4 text-foreground/90 chapter-prose"

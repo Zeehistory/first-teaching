@@ -1,5 +1,5 @@
 import type { Volume } from "@shared/schema";
-import { volumeOneData, volumeTwoData } from "./content";
+import { volumeOneData, volumeTwoData, volumeEighteenData } from "./content";
 
 const placeholderDescription =
   "Detailed commentary and teaching materials for this volume are currently in preparation. Check back soon for updates as the manuscript is edited and prepared for digital release.";
@@ -21,9 +21,18 @@ const generatedVolumes: Volume[] = [
     status: "available",
     data: volumeTwoData,
   },
+  {
+    number: 18,
+    title: "Syntopicon 18",
+    subtitle: volumeEighteenData.volumeTitle,
+    description: volumeEighteenData.introduction,
+    status: "available",
+    data: volumeEighteenData,
+  },
 ];
 
 for (let number = 3; number <= 19; number += 1) {
+  if (number === 18) continue;
   generatedVolumes.push({
     number,
     title: `Volume ${number}`,
@@ -32,6 +41,8 @@ for (let number = 3; number <= 19; number += 1) {
     status: "coming-soon",
   });
 }
+
+generatedVolumes.sort((a, b) => a.number - b.number);
 
 export const volumes: Volume[] = generatedVolumes;
 
