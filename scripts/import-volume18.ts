@@ -767,6 +767,8 @@ function removeBoilerplateLead(segmentHtml: string) {
 
 function renumberVolumeMainFootnotes(chapters: BookData["chapters"]) {
   let globalNumber = 1;
+  const markerRegex =
+    /<sup data-footnote="(\d+)" data-footnote-key="([^"]+)" data-footnote-origin="syntopicon">\d+<\/sup>/g;
 
   chapters.forEach((chapter) => {
     const section = chapter.sections[0];
@@ -775,26 +777,37 @@ function renumberVolumeMainFootnotes(chapters: BookData["chapters"]) {
     const syntopiconFootnotes = section.footnotes.filter(
       (footnote) => footnote.origin === "syntopicon"
     );
+    let localIndex = 0;
 
-    syntopiconFootnotes.forEach((footnote) => {
-      const previousMarkerKey = footnote.markerKey ?? `${section.id}:syntopicon:${footnote.number}`;
-      const nextMarkerKey = `${chapter.id}:syntopicon:${globalNumber}`;
-      const markerPattern = new RegExp(
-        `<sup data-footnote="${footnote.number}" data-footnote-key="${escapeHtml(previousMarkerKey)}" data-footnote-origin="syntopicon">${footnote.number}<\\/sup>`,
-        "g"
+    section.content = section.content.replace(
+      markerRegex,
+      (_match, _previousNumber, _previousMarkerKey) => {
+        const footnote = syntopiconFootnotes[localIndex];
+        if (!footnote) {
+          console.warn(
+            `[volume18] Found extra syntopicon marker without matching footnote in ${chapter.id}`
+          );
+          return "";
+        }
+
+        const nextMarkerKey = `${chapter.id}:syntopicon:${globalNumber}`;
+        footnote.id = `fn-${chapter.id}-${globalNumber}`;
+        footnote.number = globalNumber;
+        footnote.displayNumber = globalNumber;
+        footnote.markerKey = nextMarkerKey;
+
+        const marker = `<sup data-footnote="${globalNumber}" data-footnote-key="${nextMarkerKey}" data-footnote-origin="syntopicon">${globalNumber}</sup>`;
+        globalNumber += 1;
+        localIndex += 1;
+        return marker;
+      }
+    );
+
+    if (localIndex !== syntopiconFootnotes.length) {
+      console.warn(
+        `[volume18] Syntopicon footnote count mismatch in ${chapter.id}: consumed ${localIndex} of ${syntopiconFootnotes.length}`
       );
-
-      section.content = section.content.replace(
-        markerPattern,
-        `<sup data-footnote="${globalNumber}" data-footnote-key="${nextMarkerKey}" data-footnote-origin="syntopicon">${globalNumber}</sup>`
-      );
-
-      footnote.id = `fn-${chapter.id}-${globalNumber}`;
-      footnote.number = globalNumber;
-      footnote.displayNumber = globalNumber;
-      footnote.markerKey = nextMarkerKey;
-      globalNumber += 1;
-    });
+    }
 
     section.footnotes = [
       ...syntopiconFootnotes,
