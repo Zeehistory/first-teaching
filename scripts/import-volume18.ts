@@ -211,6 +211,172 @@ function parseParagraphs(html: string) {
   return paragraphs;
 }
 
+function buildAnchorCandidates(prefixText: string) {
+  const words = prefixText.split(/\s+/).filter(Boolean);
+  const candidates: string[] = [];
+  const maxLength = Math.min(words.length, 12);
+  for (let length = maxLength; length >= 1; length -= 1) {
+    const candidate = words
+      .slice(words.length - length)
+      .join(" ")
+      .replace(/^[([{“"']+/g, "")
+      .replace(/[)\]},”"'.:;!?]+$/g, "")
+      .trim();
+    if (!candidate) continue;
+    if (candidate.length < 3) continue;
+    if (length === 1) {
+      const comparable = normalizeComparableText(candidate);
+      const looksLikeName = /[A-ZĀĪŪṢḌṬẒḤḪʻ’'\-]/u.test(candidate);
+      if (comparable.length < 6 || !looksLikeName) continue;
+    }
+    candidates.push(candidate);
+  }
+  return Array.from(new Set(candidates));
+}
+
+function isProperTermCandidate(candidate: string) {
+  const clean = normalizeText(candidate).trim();
+  if (!clean) return false;
+
+  const tokens = clean.split(/\s+/).filter(Boolean);
+  if (!tokens.length || tokens.length > 6) return false;
+
+  const bannedLeadingWords = new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "for",
+    "nor",
+    "so",
+    "yet",
+    "of",
+    "to",
+    "in",
+    "on",
+    "at",
+    "by",
+    "with",
+    "from",
+    "into",
+    "through",
+    "during",
+    "before",
+    "after",
+    "above",
+    "below",
+    "between",
+    "under",
+    "again",
+    "further",
+    "then",
+    "once",
+    "this",
+    "that",
+    "these",
+    "those",
+    "their",
+    "there",
+    "whose",
+    "which",
+    "what",
+    "where",
+    "when",
+    "while",
+    "everything",
+    "something",
+    "nothing",
+  ]);
+
+  const hasDiacriticsOrScholarlyMarks = /[ĀĪŪṢḌṬẒḤḪŚŻŁŃẞẊʿʻ’]/u.test(clean);
+  const hasInternalHyphen = /[A-Za-z\u00C0-\u024F][-'’][A-Za-z\u00C0-\u024F]/u.test(clean);
+  const hasCapitalizedToken = tokens.some((token) => /^[A-ZĀĪŪṢḌṬẒḤḪ]/u.test(token));
+  const hasConnectorPattern = /\b(al|ibn|bin|bint|abu|abū|umm|ahl)-?[A-ZĀĪŪṢḌṬẒḤḪ]/u.test(clean);
+
+  if (bannedLeadingWords.has(tokens[0].toLowerCase())) return false;
+  if (tokens.length === 1) {
+    return hasCapitalizedToken || hasDiacriticsOrScholarlyMarks || hasInternalHyphen || hasConnectorPattern;
+  }
+
+  return hasCapitalizedToken || hasDiacriticsOrScholarlyMarks || hasConnectorPattern;
+}
+
+function findVisibleAnchorMatch(html: string, prefixText: string) {
+  const candidates = buildAnchorCandidates(prefixText);
+  if (!candidates.length) return null;
+
+  let visibleText = "";
+  const visibleToHtmlStart: number[] = [];
+  const visibleToHtmlEnd: number[] = [];
+
+  for (let index = 0; index < html.length; index += 1) {
+    const char = html[index];
+    if (char === "<") {
+      const closingIndex = html.indexOf(">", index);
+      if (closingIndex === -1) break;
+      index = closingIndex;
+      continue;
+    }
+    if (char === "&") {
+      const closingIndex = html.indexOf(";", index);
+      if (closingIndex !== -1) {
+        const entity = html.slice(index, closingIndex + 1);
+        const decoded = decodeEntity(entity);
+        for (const entityChar of decoded) {
+          visibleText += entityChar;
+          visibleToHtmlStart.push(index);
+          visibleToHtmlEnd.push(closingIndex + 1);
+        }
+        index = closingIndex;
+        continue;
+      }
+    }
+    visibleText += char;
+    visibleToHtmlStart.push(index);
+    visibleToHtmlEnd.push(index + 1);
+  }
+
+  const visibleTextLower = visibleText.toLocaleLowerCase();
+  for (const candidate of candidates) {
+    const matchIndex = visibleTextLower.lastIndexOf(candidate.toLocaleLowerCase());
+    if (matchIndex === -1) continue;
+    const visibleEnd = matchIndex + candidate.length;
+    return {
+      candidate,
+      matchedWords: candidate.split(/\s+/).filter(Boolean).length,
+      htmlStartIndex: visibleToHtmlStart[matchIndex] ?? null,
+      htmlEndIndex: visibleToHtmlEnd[Math.max(visibleEnd - 1, 0)] ?? null,
+    };
+  }
+
+  return null;
+}
+
+function wrapAnchorAndInsertMarker(
+  html: string,
+  anchorMatch: { candidate: string; htmlStartIndex: number | null; htmlEndIndex: number | null },
+  markerHtml: string
+) {
+  if (anchorMatch.htmlStartIndex === null || anchorMatch.htmlEndIndex === null) {
+    return { html, insertionIndex: null };
+  }
+
+  const before = html.slice(0, anchorMatch.htmlStartIndex);
+  const anchorHtml = html.slice(anchorMatch.htmlStartIndex, anchorMatch.htmlEndIndex);
+  const after = html.slice(anchorMatch.htmlEndIndex);
+  const shouldBold = isProperTermCandidate(anchorMatch.candidate);
+  const wrappedAnchor =
+    shouldBold && !/<\/?strong\b/i.test(anchorHtml) ? `<strong>${anchorHtml}</strong>` : anchorHtml;
+  const nextHtml = `${before}${wrappedAnchor}${markerHtml}${after}`;
+
+  return {
+    html: nextHtml,
+    insertionIndex: before.length + wrappedAnchor.length,
+  };
+}
+
 function findMainBodyStart(html: string) {
   const bodyTitle = "<p>Obligatory Creedal Belief in the Hereafter &amp; Otherworldly Eschatology</p>";
   const index = html.indexOf(bodyTitle);
@@ -301,6 +467,7 @@ function extractExtensionFootnotes(
   });
 
   parseParagraphs(contentHtml).forEach((paragraph) => {
+    refRegex.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = refRegex.exec(paragraph.html)) !== null) {
       const prefixHtml = paragraph.html.slice(0, match.index);
@@ -320,17 +487,40 @@ function extractExtensionFootnotes(
         prefixText: normalizeText(prefixHtml),
       });
     }
+    refRegex.lastIndex = 0;
   });
 
-  contentHtml = contentHtml.replace(
-    /<sup>\s*<a href="#footnote-(\d+)"[^>]*>\[(\d+)\]<\/a>\s*<\/sup>/g,
-    (_match, refNumber) => {
-      const displayNumber = displayNumberByOriginal.get(Number(refNumber));
-      if (!displayNumber) return "";
+  const enhancedParagraphs = parseParagraphs(contentHtml).map((paragraph) => {
+    let paragraphHtml = paragraph.html;
+    refRegex.lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = refRegex.exec(paragraphHtml)) !== null) {
+      const originalNumber = Number(match[1]);
+      const displayNumber = displayNumberByOriginal.get(originalNumber);
+      if (!displayNumber) continue;
+
       const markerKey = `${sectionId}:web-extension:${displayNumber}`;
-      return `<sup data-footnote="${displayNumber}" data-footnote-key="${markerKey}" data-footnote-origin="web-extension">${displayNumber}</sup>`;
+      const markerHtml = `<sup data-footnote="${displayNumber}" data-footnote-key="${markerKey}" data-footnote-origin="web-extension">${displayNumber}</sup>`;
+      const prefixHtml = paragraphHtml.slice(0, match.index);
+      const anchorMatch = findVisibleAnchorMatch(prefixHtml, normalizeText(prefixHtml));
+      const paragraphWithoutOriginalRef = `${paragraphHtml.slice(0, match.index)}${paragraphHtml.slice(match.index + match[0].length)}`;
+
+      if (!anchorMatch) {
+        paragraphHtml = `${paragraphHtml.slice(0, match.index)}${markerHtml}${paragraphHtml.slice(match.index + match[0].length)}`;
+        refRegex.lastIndex = 0;
+        continue;
+      }
+
+      const enhanced = wrapAnchorAndInsertMarker(paragraphWithoutOriginalRef, anchorMatch, markerHtml);
+      paragraphHtml = enhanced.html;
+      refRegex.lastIndex = 0;
     }
-  );
+
+    return paragraphHtml;
+  });
+
+  contentHtml = contentHtml.replace(/<p>[\s\S]*?<\/p>/g, () => enhancedParagraphs.shift() ?? "");
 
   return { content: contentHtml.trim(), footnotes, references };
 }
@@ -366,29 +556,6 @@ function injectMainFootnotes(
     source: Footnote;
   }> = [];
 
-  const buildWordCandidates = (prefixText: string) => {
-    const words = prefixText.split(/\s+/).filter(Boolean);
-    const candidates: string[] = [];
-    const maxLength = Math.min(words.length, 12);
-    for (let length = maxLength; length >= 1; length -= 1) {
-      const candidate = words
-        .slice(words.length - length)
-        .join(" ")
-        .replace(/^[([{“"']+/g, "")
-        .replace(/[)\]},”"'.:;!?]+$/g, "")
-        .trim();
-      if (!candidate) continue;
-      if (candidate.length < 3) continue;
-      if (length === 1) {
-        const comparable = normalizeComparableText(candidate);
-        const looksLikeName = /[A-ZĀĪŪṢḌṬẒḤḪʻ’'\-]/u.test(candidate);
-        if (comparable.length < 6 || !looksLikeName) continue;
-      }
-      candidates.push(candidate);
-    }
-    return Array.from(new Set(candidates));
-  };
-
   const scoreParagraphMatch = (extensionParagraph: string, mainParagraph: string) => {
     const extNorm = normalizeComparableText(extensionParagraph);
     const mainNorm = normalizeComparableText(mainParagraph);
@@ -415,52 +582,6 @@ function injectMainFootnotes(
     return overlap;
   };
 
-  const findVisibleInsertionMatch = (html: string, prefixText: string) => {
-    const candidates = buildWordCandidates(prefixText);
-    if (!candidates.length) return null;
-
-    let visibleText = "";
-    const visibleToHtml: number[] = [];
-    for (let index = 0; index < html.length; index += 1) {
-      const char = html[index];
-      if (char === "<") {
-        const closingIndex = html.indexOf(">", index);
-        if (closingIndex === -1) break;
-        index = closingIndex;
-        continue;
-      }
-      if (char === "&") {
-        const closingIndex = html.indexOf(";", index);
-        if (closingIndex !== -1) {
-          const entity = html.slice(index, closingIndex + 1);
-          const decoded = decodeEntity(entity);
-          for (const entityChar of decoded) {
-            visibleText += entityChar;
-            visibleToHtml.push(closingIndex + 1);
-          }
-          index = closingIndex;
-          continue;
-        }
-      }
-      visibleText += char;
-      visibleToHtml.push(index + 1);
-    }
-
-    const visibleTextLower = visibleText.toLocaleLowerCase();
-    for (const candidate of candidates) {
-      const matchIndex = visibleTextLower.lastIndexOf(candidate.toLocaleLowerCase());
-      if (matchIndex === -1) continue;
-      const visibleEnd = matchIndex + candidate.length;
-      return {
-        insertionIndex: visibleToHtml[Math.max(visibleEnd - 1, 0)] ?? null,
-        candidate,
-        matchedWords: candidate.split(/\s+/).filter(Boolean).length,
-      };
-    }
-
-    return null;
-  };
-
   let paragraphSearchIndex = 0;
   references.forEach((reference) => {
     const source = extensionFootnotes.find((entry) => entry.markerKey === reference.markerKey);
@@ -481,8 +602,8 @@ function injectMainFootnotes(
       const paragraphScore = scoreParagraphMatch(reference.paragraphText, mainParagraphs[index].text);
       if (paragraphScore < 3) continue;
 
-      const visibleMatch = findVisibleInsertionMatch(paragraphHtmls[index], reference.prefixText);
-      if (!visibleMatch || visibleMatch.insertionIndex === null) continue;
+      const visibleMatch = findVisibleAnchorMatch(paragraphHtmls[index], reference.prefixText);
+      if (!visibleMatch || visibleMatch.htmlEndIndex === null) continue;
 
       const totalScore = visibleMatch.matchedWords * 10000 + paragraphScore;
       const bestTotal =
@@ -491,7 +612,7 @@ function injectMainFootnotes(
       if (totalScore > bestTotal) {
         bestMatch = {
           paragraphIndex: index,
-          insertionIndex: visibleMatch.insertionIndex,
+          insertionIndex: visibleMatch.htmlEndIndex,
           matchedWords: visibleMatch.matchedWords,
           paragraphScore,
         };
@@ -523,12 +644,28 @@ function injectMainFootnotes(
     }
 
     const placeholder = `__V18_MAIN_FOOTNOTE_${placements.length}__`;
-    paragraphHtmls[bestMatch.paragraphIndex] = `${currentHtml.slice(0, bestMatch.insertionIndex)}${placeholder}${currentHtml.slice(bestMatch.insertionIndex)}`;
+    const anchorMatch = findVisibleAnchorMatch(currentHtml, reference.prefixText);
+    if (!anchorMatch) {
+      console.warn(
+        `[volume18] Skipped main-text insertion for footnote ${reference.originalNumber} in ${chapterId}: anchor disappeared before insertion`
+      );
+      return;
+    }
+
+    const enhanced = wrapAnchorAndInsertMarker(currentHtml, anchorMatch, placeholder);
+    if (enhanced.insertionIndex === null) {
+      console.warn(
+        `[volume18] Skipped main-text insertion for footnote ${reference.originalNumber} in ${chapterId}: invalid insertion point`
+      );
+      return;
+    }
+
+    paragraphHtmls[bestMatch.paragraphIndex] = enhanced.html;
     occupiedInsertionPoints.add(insertionPointKey);
     importedByReference.add(reference.markerKey);
     placements.push({
       paragraphIndex: bestMatch.paragraphIndex,
-      insertionIndex: bestMatch.insertionIndex,
+      insertionIndex: enhanced.insertionIndex,
       placeholder,
       source,
     });

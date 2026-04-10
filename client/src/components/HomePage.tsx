@@ -108,14 +108,9 @@ export default function HomePage({
                   {idx + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-lg font-heading font-medium leading-snug break-words">
-                      {chapter.title}
-                    </h2>
-                    <span className="inline-flex flex-shrink-0 items-center rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-sans text-muted-foreground">
-                      {chapter.sections.length} sec
-                    </span>
-                  </div>
+                  <h2 className="text-lg font-heading font-medium leading-snug break-words">
+                    {chapter.title}
+                  </h2>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground/90">
                     {chapter.description}
                   </p>

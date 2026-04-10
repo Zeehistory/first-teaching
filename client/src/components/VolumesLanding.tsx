@@ -49,6 +49,8 @@ const referenceTiles = [
 ];
 
 export default function VolumesLanding({ overview, volumes, onSelectVolume }: VolumesLandingProps) {
+  const hasSingleFeaturedVolume = volumes.length === 1;
+
   return (
     <div className="min-h-screen bg-background">
       <section className="relative overflow-hidden border-b border-border bg-gradient-to-br from-background via-background to-muted/40">
@@ -103,9 +105,13 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
         <div className="flex items-center gap-3 mb-10">
           <Sparkles className="h-6 w-6 text-primary" />
           <div>
-            <h2 className="text-2xl font-heading font-semibold">The Nineteen-Volume Curriculum</h2>
+            <h2 className="text-2xl font-heading font-semibold">
+              {hasSingleFeaturedVolume ? "Featured Volume" : "The Nineteen-Volume Curriculum"}
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Explore the structured roadmap of The First Teaching of the Last Message.
+              {hasSingleFeaturedVolume
+                ? "Open the current digital Syntopicon volume."
+                : "Explore the structured roadmap of The First Teaching of the Last Message."}
             </p>
           </div>
         </div>
