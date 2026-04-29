@@ -4,24 +4,17 @@ import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import ChapterContent from "@/components/ChapterContent";
 import FootnotePanel from "@/components/FootnotePanel";
-import TimelineOverlay from "@/components/TimelineOverlay";
 import ThemeToggle from "@/components/ThemeToggle";
 import TextSizeControl from "@/components/TextSizeControl";
-import type { Footnote, Section, TimelineEvent } from "@shared/schema";
+import type { Footnote, Section } from "@shared/schema";
 import { volumeEighteenWebExtensions } from "@/lib/content";
 import { buildFootnoteSelector } from "@/lib/footnotes";
-import {
-  buildFootnoteTimelineSourceKey,
-  buildTimelineSourceKey,
-  getTimelineEventById,
-  getTimelineEventsBefore,
-} from "@/lib/timeline";
+import { readReadingReturnState } from "@/lib/readingReturn";
 
 export default function WebExtension() {
   const [, params] = useRoute("/v/:volumeNumber/:id/web-extension");
   const [, setLocation] = useLocation();
   const [selectedFootnote, setSelectedFootnote] = useState<Footnote | null>(null);
-  const [selectedTimelineEventId, setSelectedTimelineEventId] = useState<string | null>(null);
   const [textSize, setTextSize] = useState(() => {
     const saved = localStorage.getItem("textSize");
     return saved ? parseInt(saved, 10) : 18;
@@ -35,6 +28,7 @@ export default function WebExtension() {
   const chapterId = params?.id ?? "";
   const extension =
     volumeNumber === 18 ? volumeEighteenWebExtensions[chapterId] ?? null : null;
+  const returnState = useMemo(() => readReadingReturnState(), []);
 
   const focusFootnoteMarker = useCallback((footnote: Footnote) => {
     if (typeof document === "undefined") return;
@@ -67,46 +61,6 @@ export default function WebExtension() {
     };
   }, [extension]);
 
-  const timelineSourceKey = extension
-    ? buildTimelineSourceKey("web-extension", extension.volumeNumber, extension.chapterId, extension.id)
-    : null;
-  const selectedFootnoteTimelineSourceKey = selectedFootnote
-    ? buildFootnoteTimelineSourceKey(selectedFootnote.id)
-    : undefined;
-  const activeTimelineEvent = selectedTimelineEventId
-    ? getTimelineEventById(selectedTimelineEventId)
-    : null;
-  const visibleTimelineEvents = selectedTimelineEventId
-    ? getTimelineEventsBefore(selectedTimelineEventId)
-    : [];
-
-  const handleTimelineJump = useCallback(
-    (event: TimelineEvent) => {
-      setSelectedTimelineEventId(null);
-      const highlight = event.anchorText.trim();
-
-      if (event.containerType === "web-extension") {
-        const params = new URLSearchParams();
-        if (highlight) {
-          params.set("h", highlight);
-        }
-        const query = params.toString();
-        setLocation(
-          `/v/${event.volumeNumber}/${event.chapterId}/web-extension${query ? `?${query}` : ""}`
-        );
-        return;
-      }
-
-      const params = new URLSearchParams();
-      params.set("s", event.sectionId);
-      if (highlight) {
-        params.set("h", highlight);
-      }
-      setLocation(`/v/${event.volumeNumber}/${event.chapterId}?${params.toString()}`);
-    },
-    [setLocation]
-  );
-
   if (!extension || !section) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
@@ -136,10 +90,13 @@ export default function WebExtension() {
                 <div className="space-y-3">
                   <Button
                     variant="ghost"
-                    className="h-auto gap-2 px-0 text-[hsl(20,40%,34%)] hover:bg-transparent hover:text-[hsl(20,58%,22%)]"
-                    onClick={() => setLocation(`/v/18/${extension.chapterId}`)}
+                    size="sm"
+                    className="min-h-0 gap-1.5 px-0 py-0 font-heading text-lg text-[hsl(20,40%,34%)] shadow-none hover:bg-transparent hover:text-[hsl(20,58%,22%)] hover:shadow-none"
+                    onClick={() =>
+                      setLocation(returnState?.path ?? `/v/18/${extension.chapterId}`)
+                    }
                   >
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-5 w-5" />
                     Back To Chapter
                   </Button>
 
@@ -192,28 +149,14 @@ export default function WebExtension() {
                   sectionTrail={[]}
                   currentHighlightIndex={null}
                   onFootnoteClick={handleFootnoteOpen}
-                  onTimelineClick={setSelectedTimelineEventId}
-                  timelineSourceKey={timelineSourceKey ?? undefined}
                 />
               </div>
             </div>
           </main>
         </div>
 
-        <FootnotePanel
-          footnote={selectedFootnote}
-          onClose={() => setSelectedFootnote(null)}
-          onTimelineClick={setSelectedTimelineEventId}
-          timelineSourceKey={selectedFootnoteTimelineSourceKey}
-        />
+        <FootnotePanel footnote={selectedFootnote} onClose={() => setSelectedFootnote(null)} />
       </div>
-      <TimelineOverlay
-        isOpen={selectedTimelineEventId !== null}
-        activeEvent={activeTimelineEvent}
-        events={visibleTimelineEvents}
-        onClose={() => setSelectedTimelineEventId(null)}
-        onJumpToEvent={handleTimelineJump}
-      />
     </div>
   );
 }

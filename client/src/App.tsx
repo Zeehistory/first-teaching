@@ -11,18 +11,11 @@ import WebExtension from "@/pages/WebExtension";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
 import Glossary from "@/pages/Glossary";
-import { isAuthed } from "@/lib/auth";
-import { useLocation } from "wouter";
 import AskAssistant from "@/components/AskAssistant";
 import MobileBlocker from "@/components/MobileBlocker";
 import OnboardingTour from "@/components/OnboardingTour";
 
 function ProtectedRoute({ component: Comp }: { component: any }) {
-  const [, setLocation] = useLocation();
-  if (!isAuthed()) {
-    setLocation("/login");
-    return null;
-  }
   return <Comp />;
 }
 

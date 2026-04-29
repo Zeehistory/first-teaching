@@ -46,28 +46,28 @@ function buildSnippet(value: string, limit = 220) {
   return `${clipped.slice(0, lastSpace > 120 ? lastSpace : limit).trimEnd()}…`;
 }
 
-function extractSortKey(displayDate: string) {
+function extractSortKey(displayDate: string): number | null {
   const normalized = displayDate.replace(/\s+/g, " ").trim();
 
   if (/BCE/i.test(normalized)) {
     const year = Number(normalized.match(/(\d{1,4})/)?.[1] ?? NaN);
-    return Number.isFinite(year) ? -year : Number.MAX_SAFE_INTEGER;
+    return Number.isFinite(year) ? -year : null;
   }
 
   if (normalized.includes("/")) {
     const parts = normalized.match(/(\d{1,4})\s*\/\s*(\d{2,4})/);
     const year = Number(parts?.[2] ?? NaN);
-    return Number.isFinite(year) ? year : Number.MAX_SAFE_INTEGER;
+    return Number.isFinite(year) ? year : null;
   }
 
   if (/[–-]/.test(normalized)) {
     const parts = normalized.match(/(\d{3,4})\s*[–-]\s*(\d{2,4})/);
     const year = Number(parts?.[1] ?? NaN);
-    return Number.isFinite(year) ? year : Number.MAX_SAFE_INTEGER;
+    return Number.isFinite(year) ? year : null;
   }
 
   const year = Number(normalized.match(/(\d{4})/)?.[1] ?? NaN);
-  return Number.isFinite(year) ? year : Number.MAX_SAFE_INTEGER;
+  return Number.isFinite(year) ? year : null;
 }
 
 function getTimelineContainerSelector() {
@@ -105,7 +105,7 @@ function findDateMatches(text: string) {
       }
 
       const sortKey = extractSortKey(displayDate);
-      if (!Number.isFinite(sortKey)) return;
+      if (sortKey === null) return;
 
       matches.push({ start, end, text: displayDate, sortKey });
     });

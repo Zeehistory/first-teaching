@@ -2,9 +2,11 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { glossary } from "@shared/glossary";
 import { ArrowLeft } from "lucide-react";
+import { readReadingReturnState } from "@/lib/readingReturn";
 
 export default function Glossary() {
   const [, setLocation] = useLocation();
+  const returnState = readReadingReturnState();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -62,7 +64,7 @@ export default function Glossary() {
             <div className="mt-3 text-right">
               <button
                 type="button"
-                onClick={() => setLocation("/v/1")}
+                onClick={() => setLocation(returnState?.path ?? "/v/1")}
                 className="text-xs text-muted-foreground underline decoration-dotted hover:text-foreground"
               >
                 Back to reading

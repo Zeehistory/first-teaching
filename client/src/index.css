@@ -754,6 +754,319 @@ body.timeline-open {
     linear-gradient(180deg, hsla(30, 20%, 16%, 0.96), hsla(24, 16%, 13%, 0.9));
 }
 
+.timeline-control {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid hsla(32, 18%, 72%, 0.9);
+  background: hsla(0, 0%, 100%, 0.6);
+  color: hsl(24, 24%, 22%);
+  box-shadow: 0 1px 0 hsla(0, 0%, 100%, 0.55) inset;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.timeline-control:hover {
+  background: hsla(0, 0%, 100%, 0.78);
+  border-color: hsla(28, 22%, 60%, 0.95);
+  transform: translateY(-1px);
+}
+
+.timeline-control:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px hsla(36, 80%, 70%, 0.22),
+    0 1px 0 hsla(0, 0%, 100%, 0.55) inset;
+}
+
+.dark .timeline-control {
+  border-color: hsla(34, 18%, 34%, 0.95);
+  background: hsla(26, 18%, 14%, 0.65);
+  color: hsl(34, 26%, 88%);
+  box-shadow: 0 1px 0 hsla(0, 0%, 100%, 0.05) inset;
+}
+
+.dark .timeline-control:hover {
+  background: hsla(26, 18%, 14%, 0.82);
+  border-color: hsla(34, 24%, 44%, 0.95);
+}
+
+.timeline-zoom {
+  width: 9.5rem;
+  accent-color: hsl(30, 70%, 44%);
+}
+
+.timeline-viewport {
+  cursor: grab;
+}
+
+.timeline-viewport:active {
+  cursor: grabbing;
+}
+
+.timeline-stem {
+  position: absolute;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, hsla(28, 22%, 52%, 0.06), hsla(28, 22%, 52%, 0.26));
+  pointer-events: none;
+}
+
+.dark .timeline-stem {
+  background: linear-gradient(180deg, hsla(34, 24%, 60%, 0.06), hsla(34, 24%, 60%, 0.22));
+}
+
+.timeline-gridline {
+  position: relative;
+  height: 100%;
+}
+
+.timeline-gridline-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    hsla(28, 22%, 52%, 0.12),
+    hsla(28, 22%, 52%, 0.08) 30%,
+    hsla(28, 22%, 52%, 0.1) 70%,
+    hsla(28, 22%, 52%, 0.14)
+  );
+}
+
+.timeline-gridline-label {
+  position: absolute;
+  left: 50%;
+  top: 0.85rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsla(24, 18%, 40%, 0.82);
+  background: hsla(36, 70%, 96%, 0.85);
+  padding: 0.12rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid hsla(32, 18%, 82%, 0.75);
+}
+
+.timeline-gridline.minor .timeline-gridline-bar {
+  background: linear-gradient(
+    180deg,
+    hsla(28, 22%, 52%, 0.05),
+    hsla(28, 22%, 52%, 0.03) 40%,
+    hsla(28, 22%, 52%, 0.05)
+  );
+}
+
+.dark .timeline-gridline-bar {
+  background: linear-gradient(
+    180deg,
+    hsla(34, 24%, 60%, 0.12),
+    hsla(34, 24%, 60%, 0.08) 30%,
+    hsla(34, 24%, 60%, 0.1) 70%,
+    hsla(34, 24%, 60%, 0.14)
+  );
+}
+
+.dark .timeline-gridline-label {
+  color: hsla(34, 26%, 90%, 0.78);
+  background: hsla(26, 18%, 14%, 0.82);
+  border-color: hsla(34, 18%, 34%, 0.95);
+}
+
+.dark .timeline-gridline.minor .timeline-gridline-bar {
+  background: linear-gradient(
+    180deg,
+    hsla(34, 24%, 60%, 0.06),
+    hsla(34, 24%, 60%, 0.04) 40%,
+    hsla(34, 24%, 60%, 0.06)
+  );
+}
+
+.timeline-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0.3rem;
+  color: inherit;
+}
+
+.timeline-node-dot {
+  height: 0.65rem;
+  width: 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid hsla(28, 26%, 44%, 0.55);
+  background: hsl(38, 54%, 92%);
+  box-shadow:
+    0 0 0 5px hsla(36, 84%, 74%, 0.14),
+    0 1px 0 hsla(0, 0%, 100%, 0.55) inset;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.timeline-node-label {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsla(24, 18%, 36%, 0.9);
+  opacity: 0;
+  transform: translateY(-1px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.timeline-viewport[data-node-labels="on"] .timeline-node-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.timeline-node:hover .timeline-node-dot,
+.timeline-node:focus-visible .timeline-node-dot {
+  border-color: hsla(24, 34%, 28%, 0.62);
+  background: hsl(36, 92%, 88%);
+  box-shadow:
+    0 0 0 7px hsla(36, 86%, 70%, 0.22),
+    0 1px 0 hsla(0, 0%, 100%, 0.6) inset;
+  transform: translateY(-1px);
+}
+
+.timeline-node:hover .timeline-node-label,
+.timeline-node:focus-visible .timeline-node-label,
+.timeline-node.is-selected .timeline-node-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.timeline-node.is-selected .timeline-node-dot {
+  border-color: hsla(22, 52%, 34%, 0.85);
+  background: hsl(33, 92%, 74%);
+  box-shadow:
+    0 0 0 9px hsla(36, 84%, 64%, 0.26),
+    0 1px 0 hsla(0, 0%, 100%, 0.62) inset;
+}
+
+.timeline-node:focus-visible {
+  outline: none;
+}
+
+.dark .timeline-node-dot {
+  border-color: hsla(34, 30%, 60%, 0.38);
+  background: hsl(28, 18%, 18%);
+  box-shadow:
+    0 0 0 5px hsla(28, 26%, 56%, 0.12),
+    0 1px 0 hsla(0, 0%, 100%, 0.08) inset;
+}
+
+.dark .timeline-node-label {
+  color: hsla(34, 26%, 88%, 0.86);
+}
+
+.dark .timeline-node:hover .timeline-node-dot,
+.dark .timeline-node:focus-visible .timeline-node-dot {
+  border-color: hsla(34, 30%, 74%, 0.72);
+  background: hsl(28, 18%, 20%);
+  box-shadow:
+    0 0 0 7px hsla(28, 38%, 62%, 0.18),
+    0 1px 0 hsla(0, 0%, 100%, 0.08) inset;
+}
+
+.timeline-locate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid hsla(32, 18%, 78%, 0.95);
+  background: hsla(0, 0%, 100%, 0.55);
+  padding: 0.35rem 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsl(24, 22%, 24%);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease;
+}
+
+.timeline-locate:hover:not(:disabled) {
+  background: hsla(0, 0%, 100%, 0.72);
+  border-color: hsla(28, 22%, 66%, 0.95);
+}
+
+.timeline-brace {
+  position: absolute;
+  height: 18px;
+  border-top: 1px solid hsla(28, 22%, 52%, 0.4);
+  border-bottom: 1px solid hsla(28, 22%, 52%, 0.12);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.timeline-brace-label {
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsla(24, 18%, 40%, 0.8);
+  background: hsla(36, 70%, 96%, 0.9);
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid hsla(32, 18%, 80%, 0.75);
+}
+
+.dark .timeline-brace {
+  border-top-color: hsla(34, 24%, 60%, 0.22);
+  border-bottom-color: hsla(34, 24%, 60%, 0.12);
+}
+
+.dark .timeline-brace-label {
+  color: hsla(34, 26%, 90%, 0.75);
+  background: hsla(26, 18%, 14%, 0.86);
+  border-color: hsla(34, 18%, 34%, 0.95);
+}
+
+.timeline-locate:disabled {
+  opacity: 0.45;
+}
+
+.dark .timeline-locate {
+  border-color: hsla(34, 18%, 34%, 0.95);
+  background: hsla(26, 18%, 14%, 0.6);
+  color: hsl(34, 26%, 88%);
+}
+
+.dark .timeline-locate:hover:not(:disabled) {
+  background: hsla(26, 18%, 14%, 0.78);
+  border-color: hsla(34, 24%, 44%, 0.95);
+}
+
 .web-extension-header {
   background:
     linear-gradient(135deg, hsla(35, 100%, 95%, 0.96), hsla(28, 62%, 91%, 0.94));
