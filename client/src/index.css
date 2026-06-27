@@ -613,23 +613,19 @@
 .chapter-prose sup[data-footnote],
 .chapter-prose sup[data-footnote-key] {
   position: relative;
-  top: -0.2em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  padding: 0 0.35rem;
-  margin-left: 0.25rem;
-  border-radius: 9999px;
-  background: hsl(185, 35%, 88%);
-  color: hsl(184, 42%, 32%);
-  font-family: var(--font-sans);
+  top: -0.45em;
+  display: inline;
+  padding: 0 0.06em;
+  margin-left: 0.08em;
+  background: none;
+  color: hsl(var(--primary));
+  font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 0.65rem;
-  letter-spacing: 0.02em;
+  font-size: 0.72em;
+  line-height: 0;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: background-color 150ms ease, transform 150ms ease;
+  transition: color 150ms ease;
 }
 
 /* A marker that directly follows another marker hugs its neighbour, so a
@@ -639,28 +635,18 @@
 }
 
 .chapter-prose sup[data-footnote-origin="syntopicon"] {
-  background: hsl(185, 35%, 88%);
-  color: hsl(184, 42%, 32%);
+  color: hsl(184, 42%, 34%);
 }
 
 .chapter-prose sup[data-footnote-origin="web-extension"] {
-  background: hsl(34, 84%, 86%);
-  color: hsl(20, 65%, 28%);
+  color: hsl(28, 60%, 38%);
 }
 
 .chapter-prose sup[data-footnote]:hover,
 .chapter-prose sup[data-footnote-key]:hover {
-  background: hsl(185, 45%, 82%);
-  transform: translateY(-1px);
-}
-
-.chapter-prose sup[data-footnote-origin="web-extension"]:hover {
-  background: hsl(34, 84%, 80%);
-}
-
-.chapter-prose sup[data-footnote]:active,
-.chapter-prose sup[data-footnote-key]:active {
-  transform: translateY(0);
+  color: hsl(var(--gilt));
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 [data-footnote-panel-origin="syntopicon"] {
@@ -673,59 +659,52 @@
   color: hsl(20, 65%, 28%);
 }
 
+/* Web-extension reference: an inline scholarly tag, not a glossy button.
+   A hairline-ruled label in small caps with a leading section mark. */
 .chapter-prose .web-extension-chip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 2.6rem;
-  min-height: 1.8rem;
-  padding: 0.12rem 0.72rem;
-  margin-left: 0.4rem;
-  border-radius: 9999px;
-  border: 1px solid hsla(28, 56%, 44%, 0.28);
-  background: linear-gradient(180deg, hsl(35, 100%, 92%), hsl(31, 92%, 85%));
-  color: hsl(20, 68%, 24%);
+  gap: 0.28em;
+  padding: 0.05rem 0.5rem 0.08rem;
+  margin: 0 0.1rem;
+  border-radius: 0.2rem;
+  border: 1px solid hsl(var(--codex-rule));
+  background: transparent;
+  color: hsl(var(--primary));
   font-family: var(--font-sans);
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.035em;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-decoration: none;
-  vertical-align: middle;
-  box-shadow:
-    0 1px 0 hsla(0, 0%, 100%, 0.6) inset,
-    0 6px 16px -12px rgba(113, 67, 21, 0.45);
+  white-space: nowrap;
+  vertical-align: baseline;
   transition:
-    background-color 150ms ease,
     border-color 150ms ease,
-    box-shadow 150ms ease,
-    transform 150ms ease;
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+.chapter-prose .web-extension-chip::before {
+  content: "\00A7"; /* section sign — the mark of an apparatus reference */
+  color: hsl(var(--gilt));
+  font-weight: 700;
 }
 
 .chapter-prose .web-extension-chip:hover {
-  border-color: hsla(28, 58%, 38%, 0.42);
-  background: linear-gradient(180deg, hsl(35, 100%, 89%), hsl(31, 92%, 80%));
-  box-shadow:
-    0 1px 0 hsla(0, 0%, 100%, 0.7) inset,
-    0 10px 20px -14px rgba(113, 67, 21, 0.52);
-  transform: translateY(-1px);
-}
-
-.chapter-prose .web-extension-chip:active {
-  transform: translateY(0);
+  border-color: hsl(var(--gilt) / 0.6);
+  background: hsl(var(--gilt) / 0.08);
+  color: hsl(var(--foreground));
 }
 
 .dark .chapter-prose .web-extension-chip {
-  border-color: hsla(34, 70%, 70%, 0.28);
-  background: linear-gradient(180deg, hsla(28, 48%, 26%, 0.96), hsla(22, 52%, 20%, 0.96));
-  color: hsl(36, 100%, 88%);
-  box-shadow:
-    0 1px 0 hsla(35, 42%, 54%, 0.16) inset,
-    0 8px 16px -14px rgba(0, 0, 0, 0.65);
+  border-color: hsl(var(--codex-rule));
+  color: hsl(36, 60%, 78%);
 }
 
 .dark .chapter-prose .web-extension-chip:hover {
-  border-color: hsla(34, 78%, 74%, 0.42);
-  background: linear-gradient(180deg, hsla(28, 52%, 30%, 0.98), hsla(22, 54%, 24%, 0.98));
+  border-color: hsl(var(--gilt) / 0.5);
+  background: hsl(var(--gilt) / 0.12);
 }
 
 .chapter-prose .timeline-date-trigger {
@@ -1676,4 +1655,84 @@ body.timeline-open {
 
 .gloss-margin-label {
   margin-bottom: 1.5rem;
+}
+
+/* --- Notes apparatus: printed-footnote register at the foot of an extension ---
+   A restrained academic block: hanging numerals, a single hairline above,
+   serif notes set a touch smaller than the body. No chips, no fills. */
+.gloss-apparatus {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid hsl(var(--codex-rule) / 0.6);
+}
+
+.gloss-apparatus-heading {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: hsl(var(--codex-ink-soft));
+  margin-bottom: 1.75rem;
+}
+
+.gloss-apparatus-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: none;
+}
+
+.gloss-note {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  column-gap: 0.85rem;
+  padding: 0.9rem 0.4rem 0.9rem 0;
+  scroll-margin-top: 5.5rem;
+  border-radius: 0.25rem;
+  transition: background-color 320ms ease;
+}
+
+.gloss-note + .gloss-note {
+  border-top: 1px solid hsl(var(--codex-rule) / 0.4);
+}
+
+/* A momentary wash when the reader jumps here from a marker — no permanent fill */
+.gloss-note.gloss-target-focus {
+  background: hsl(var(--gilt) / 0.1);
+}
+
+.gloss-note-number {
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.7;
+  text-align: right;
+  color: hsl(var(--primary));
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.gloss-note-number:hover {
+  color: hsl(var(--gilt));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.gloss-note-body {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  line-height: 1.72;
+  color: hsl(var(--codex-ink-soft));
+}
+
+.gloss-note-body p {
+  margin: 0 0 0.6rem;
+}
+
+.gloss-note-body p:last-child {
+  margin-bottom: 0;
 }

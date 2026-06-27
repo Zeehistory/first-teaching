@@ -38,7 +38,7 @@ export default function SectionAudioPlayer({
         aria-label={controller.isPlaying ? "Pause narration" : "Play narration"}
       >
         <span
-          className="pointer-events-none absolute inset-0 rounded-full border border-[hsl(var(--gilt)/0.55)] transition-transform duration-300 group-hover:scale-105"
+          className="pointer-events-none absolute inset-0 rounded-full border border-[hsl(var(--codex-rule))] transition-colors duration-300 group-hover:border-[hsl(var(--primary)/0.6)]"
           aria-hidden="true"
         />
         {controller.isPlaying ? (
@@ -55,7 +55,7 @@ export default function SectionAudioPlayer({
           </span>
           <span className="flex-shrink-0 font-heading text-base tabular-nums text-[hsl(var(--codex-ink-soft))]">
             {formatDuration(controller.elapsed)}
-            <span className="px-1 text-[hsl(var(--gilt))]">·</span>
+            <span className="px-1 text-[hsl(var(--codex-ink-soft)/0.5)]">·</span>
             {formatDuration(controller.duration)}
           </span>
         </div>
