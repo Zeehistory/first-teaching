@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,6 +14,11 @@ import Glossary from "@/pages/Glossary";
 import AskAssistant from "@/components/AskAssistant";
 import MobileBlocker from "@/components/MobileBlocker";
 import OnboardingTour from "@/components/OnboardingTour";
+
+// Static (GitHub Pages) builds set these. On Vercel they are undefined, so the
+// app behaves exactly as before: served from "/" with the backend assistant on.
+const ROUTER_BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+const IS_STATIC_BUILD = import.meta.env.VITE_STATIC_BUILD === "true";
 
 function ProtectedRoute({ component: Comp }: { component: any }) {
   return <Comp />;
@@ -44,8 +49,12 @@ function App() {
           <Toaster />
           <MobileBlocker />
           <OnboardingTour />
-          <Router />
-          <AskAssistant />
+          <WouterRouter base={ROUTER_BASE}>
+            <Router />
+          </WouterRouter>
+          {/* The AI study assistant needs the Express backend; omit it on
+              static (GitHub Pages) builds where no backend exists. */}
+          {!IS_STATIC_BUILD && <AskAssistant />}
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>

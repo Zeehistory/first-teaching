@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "wouter";
 import type { Section, Footnote } from "@shared/schema";
 import { glossary, type GlossaryEntry } from "@shared/glossary";
 import OrnamentalDivider from "./OrnamentalDivider";
@@ -228,6 +229,11 @@ export default function ChapterContent({
   const isBare = variant === "bare";
   const contentRef = useRef<HTMLDivElement | null>(null);
   const articleRef = useRef<HTMLElement | null>(null);
+  // wouter-aware navigation for in-content links (e.g. web-extension chips) so
+  // they respect the router base path on static (GitHub Pages) sub-path hosting.
+  const [, navigate] = useLocation();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const highlightRefs = useRef<HTMLElement[]>([]);
   const glossaryBuilt = useRef(false);
   const [hoveredFootnote, setHoveredFootnote] = useState<{
@@ -724,6 +730,14 @@ export default function ChapterContent({
           : null;
       if (extensionLink) {
         captureReadingReturnState();
+        // The chip's href is an app-absolute path (e.g. "/v/1/dedication/web-extension").
+        // Route it through wouter so the router base is applied — required for
+        // static sub-path hosting (GitHub Pages) and a no-op on Vercel ("/").
+        const target = extensionLink.getAttribute("href");
+        if (target && target.startsWith("/") && !e.defaultPrevented) {
+          e.preventDefault();
+          navigateRef.current(target);
+        }
         return;
       }
 

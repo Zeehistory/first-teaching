@@ -15,6 +15,12 @@ export type GalleryItem = {
   footnote?: GalleryFootnote;
 };
 
+// Prefix bundled public assets with the build base path so they resolve under
+// sub-path hosting (GitHub Pages /first-teaching/). On Vercel BASE_URL is "/",
+// so this is a no-op.
+const asset = (p: string) =>
+  `${(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}${p}`;
+
 export const imageCatalogue: GalleryItem[] = [
   {
     id: "image-1",
@@ -31,8 +37,8 @@ export const imageCatalogue: GalleryItem[] = [
     subtitle: "Image 2",
     description:
       "Al-Sayyid ‘Abd-al-Shakūr, compliments of Ithar Abusheikha.",
-    imageSrc: "/images/tarbha-waale-baba.jpg",
-    modalImageSrc: "/images/tarbha-waale-baba.jpg",
+    imageSrc: asset("/images/tarbha-waale-baba.jpg"),
+    modalImageSrc: asset("/images/tarbha-waale-baba.jpg"),
   },
   {
     id: "[EXAMPLE]image-2",
@@ -58,8 +64,8 @@ export const imageCatalogue: GalleryItem[] = [
     subtitle: "Cornell over Cayuga Valley",
     description:
       "“The unexamined life is not worth having any man live it.” — Socrates. Reflections across Cayuga Lake at dawn.",
-    imageSrc: "/images/cayuga-valley.jpg",
-    modalImageSrc: "/images/cayuga-valley-detail.jpg",
+    imageSrc: asset("/images/cayuga-valley.jpg"),
+    modalImageSrc: asset("/images/cayuga-valley-detail.jpg"),
     layout: "floated",
     footnote: {
       id: "fn-13",
