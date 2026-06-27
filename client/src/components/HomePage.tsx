@@ -1,8 +1,6 @@
-import { Book, Search as SearchIcon, ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import type { BookData } from "@shared/schema";
-import OrnamentalDivider from "./OrnamentalDivider";
 
 interface HomePageProps {
   bookData: BookData;
@@ -18,117 +16,104 @@ export default function HomePage({
   onBackToLibrary,
 }: HomePageProps) {
   return (
-    <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto px-6 py-16">
-        {onBackToLibrary && (
-          <div className="mb-10">
-            <Button
-              variant="ghost"
-              onClick={onBackToLibrary}
-              className="gap-2 text-muted-foreground hover:text-foreground"
+    <div className="min-h-screen bg-background">
+      {/* ---------- Volume masthead ---------- */}
+      <header className="border-b border-[hsl(var(--codex-rule)/0.7)]">
+        <div className="mx-auto max-w-4xl px-6 pt-12 pb-12 md:pt-16 md:pb-16">
+          <div className="flex items-center justify-between">
+            {onBackToLibrary ? (
+              <button
+                type="button"
+                onClick={onBackToLibrary}
+                className="group inline-flex items-center gap-2 codex-label transition hover:text-foreground"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+                The Library
+              </button>
+            ) : (
+              <span />
+            )}
+            <span className="codex-label text-sm">
+              Volume {bookData.volumeNumber} / {bookData.totalVolumes}
+            </span>
+          </div>
+
+          <p className="mt-10 codex-label">{bookData.seriesTitle}</p>
+          <h1 className="masthead-title mt-4 text-[2.4rem] leading-[0.96] sm:text-5xl md:text-6xl">
+            {bookData.volumeTitle}
+          </h1>
+          <p className="mt-5 font-heading text-2xl italic text-[hsl(var(--codex-ink-soft))]">
+            {bookData.seriesSubtitle}
+          </p>
+
+          <div className="codex-rule-gilt mt-9 w-24" />
+
+          <p className="mt-8 max-w-2xl text-lg leading-relaxed text-foreground/85 versal">
+            {bookData.introduction}
+          </p>
+
+          <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-3">
+            <span className="codex-label">
+              by{" "}
+              <span className="font-serif text-sm font-normal normal-case tracking-normal text-foreground">
+                {bookData.author}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={onSearchClick}
+              data-testid="button-open-search"
+              data-tour="home-search"
+              className="group inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-[hsl(var(--gilt))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-sm"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Main Library
-            </Button>
-          </div>
-        )}
-
-        <div className="text-center mb-16">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <Book className="h-12 w-12 text-primary" />
-            </div>
-          </div>
-          
-          <div className="mb-3">
-            <p className="text-sm font-sans uppercase tracking-wide text-primary mb-2">
-              Volume {bookData.volumeNumber} of {bookData.totalVolumes}
-            </p>
-            <h2 className="text-2xl md:text-3xl font-heading italic text-muted-foreground mb-4">
-              {bookData.volumeTitle}
-            </h2>
-          </div>
-
-          <OrnamentalDivider />
-
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-heading font-semibold mb-3">
-              {bookData.seriesTitle}
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground font-heading italic">
-              {bookData.seriesSubtitle}
-            </p>
-          </div>
-
-          <p className="text-base font-sans text-muted-foreground mb-6">
-            by {bookData.author}
-          </p>
-
-          <OrnamentalDivider />
-
-          <div className="max-w-2xl mx-auto">
-            <p className="text-lg leading-relaxed">
-              {bookData.introduction}
-            </p>
+              <SearchIcon className="h-4 w-4" />
+              Search all chapters
+            </button>
           </div>
         </div>
+      </header>
 
-        <div className="flex justify-center mb-12">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={onSearchClick}
-            data-testid="button-open-search"
-            className="gap-2"
-            data-tour="home-search"
-          >
-            <SearchIcon className="h-4 w-4" />
-            Search All Chapters
-          </Button>
+      {/* ---------- Chapter ledger ---------- */}
+      <section className="mx-auto max-w-4xl px-6 py-14">
+        <div className="mb-2 flex items-end justify-between">
+          <h2 className="codex-label">Contents</h2>
+          <span className="codex-label text-sm text-[hsl(var(--codex-ink-soft))]/70">
+            {bookData.chapters.length} chapters
+          </span>
         </div>
 
-        <div className="mb-8">
-          <h3 className="text-2xl font-heading font-medium text-center mb-5">Table of Contents</h3>
-          <p className="mx-auto max-w-2xl text-center text-sm text-muted-foreground">
-            Compact view. Hover for a quick summary. Click a tile to open the chapter.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-2 gap-4">
+        <div role="list">
           {bookData.chapters.map((chapter, idx) => (
-            <Card
+            <button
               key={chapter.id}
-              className="group p-4 hover-elevate active-elevate-2 cursor-pointer"
+              type="button"
+              role="listitem"
               onClick={() => onChapterClick(chapter.id)}
               data-testid={`chapter-card-${chapter.id}`}
               title={chapter.description}
+              className="ledger-row group"
             >
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border bg-muted/40 font-heading text-sm text-foreground/80">
-                  {idx + 1}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-heading font-medium leading-snug break-words">
-                    {chapter.title}
-                  </h2>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground/90">
-                    {chapter.description}
-                  </p>
-                </div>
-              </div>
-            </Card>
+              <span className="ledger-index">{String(idx + 1).padStart(2, "0")}</span>
+              <span className="min-w-0">
+                <span className="block font-heading text-lg font-medium leading-snug text-foreground md:text-xl">
+                  {chapter.title}
+                </span>
+                <span className="mt-1 line-clamp-1 block text-sm text-[hsl(var(--codex-ink-soft))]">
+                  {chapter.description}
+                </span>
+              </span>
+              <ArrowUpRight className="h-4 w-4 self-center text-primary opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
+            </button>
           ))}
+          <div className="border-t border-[hsl(var(--codex-rule)/0.7)]" />
         </div>
 
-        <div className="mt-16 text-center">
-          <p className="text-sm text-muted-foreground font-sans leading-relaxed">
-            This companion website provides extended discussions and detailed commentary referenced in the physical book.
-            <br />
-            Look for page numbers throughout the text to find corresponding sections in your printed copy.
-            <br />
-          </p>
-        </div>
-      </div>
+        <p className="mt-10 max-w-xl text-sm leading-relaxed text-[hsl(var(--codex-ink-soft))]">
+          This companion provides extended discussions and detailed commentary referenced in
+          the physical book. Look for page numbers throughout the text to find corresponding
+          sections in your printed copy.
+        </p>
+      </section>
     </div>
   );
 }

@@ -31,17 +31,78 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
 const SOURCE_DIR = path.join(ROOT, "content", "source");
-const MAIN_ALIAS = path.join(SOURCE_DIR, "Syntopicon-Volume18_25page.docx alias");
-const EXT_ALIAS = path.join(SOURCE_DIR, "Volume18_WebExt.docx alias");
-const OUTPUT_MAIN = path.join(ROOT, "client", "src", "lib", "content", "volume18.ts");
-const OUTPUT_EXT = path.join(
-  ROOT,
-  "client",
-  "src",
-  "lib",
-  "content",
-  "volume18WebExtensions.ts"
-);
+const CONFIGS = {
+  1: {
+    mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume1_25-page.docx alias"),
+    extAlias: path.join(SOURCE_DIR, "Volume1_WebExt.docx alias"),
+    mainFallback: path.join(
+      os.homedir(),
+      "Library",
+      "CloudStorage",
+      "OneDrive-Personal",
+      "The First Teaching",
+      "25p - First Teaching",
+      "Volume 1 - 25p",
+      "Syntopicon-Volume1_25-page.docx"
+    ),
+    extFallback: path.join(
+      os.homedir(),
+      "Library",
+      "CloudStorage",
+      "OneDrive-Personal",
+      "The First Teaching",
+      "25p - First Teaching",
+      "Volume 1 - 25p",
+      "Volume1_WebExt.docx"
+    ),
+    outputMain: path.join(ROOT, "client", "src", "lib", "content", "volume1.ts"),
+    outputExt: path.join(ROOT, "client", "src", "lib", "content", "volume1WebExtensions.ts"),
+    exportMainName: "volumeOneData",
+    exportExtName: "volumeOneWebExtensions",
+    volumeTitle: "Speaking the Truth with Love",
+    expectedChapters: 12,
+    bodyStartText: "Dedication (1:1)",
+    extensionStartPattern: /^Opening of Web-?Extension \(1:1\)$/,
+    introduction:
+      "Syntopicon 1 gathers the main text for Speaking the Truth with Love with linked chapter-by-chapter web extensions and inline supporting footnotes where the extension material directly clarifies the main text.",
+  },
+  18: {
+    mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume18_25page.docx alias"),
+    extAlias: path.join(SOURCE_DIR, "Volume18_WebExt.docx alias"),
+    mainFallback: path.join(
+      os.homedir(),
+      "Library",
+      "CloudStorage",
+      "OneDrive-Personal (1-26-26 10:32)",
+      "The First Teaching",
+      "25p - First Teaching",
+      "Volume 18 - 25p",
+      "Volume18_25page.docx"
+    ),
+    extFallback: path.join(
+      os.homedir(),
+      "Library",
+      "CloudStorage",
+      "OneDrive-Personal (1-26-26 10:32)",
+      "The First Teaching",
+      "25p - First Teaching",
+      "Volume 18 - 25p",
+      "Volume18_WebExt.docx"
+    ),
+    outputMain: path.join(ROOT, "client", "src", "lib", "content", "volume18.ts"),
+    outputExt: path.join(ROOT, "client", "src", "lib", "content", "volume18WebExtensions.ts"),
+    exportMainName: "volumeEighteenData",
+    exportExtName: "volumeEighteenWebExtensions",
+    volumeTitle: "The Hereafter: Otherworldly Eschatology",
+    expectedChapters: 18,
+    bodyStartText: "Obligatory Creedal Belief in the Hereafter &amp; Otherworldly Eschatology",
+    extensionStartPattern: /^Opening of Webextension \(18:1\)$/,
+    introduction:
+      "Syntopicon 18 gathers the main text on the Hereafter with linked chapter-by-chapter web extensions and inline supporting footnotes where the extension material directly clarifies the main text.",
+  },
+} as const;
+
+type ImportConfig = (typeof CONFIGS)[keyof typeof CONFIGS];
 
 const SERIES_TITLE = "First Teaching of the Last Message";
 const SERIES_SUBTITLE = "The Divine Science & Its Six Pillars";
@@ -75,7 +136,9 @@ async function findFileRecursive(root: string, targetName: string): Promise<stri
   return null;
 }
 
-async function resolveSourcePath(aliasPath: string): Promise<string> {
+async function resolveSourcePath(aliasPath: string, fallbackPath?: string): Promise<string> {
+  if (fallbackPath && (await pathExists(fallbackPath))) return fallbackPath;
+
   const basename = path.basename(aliasPath).replace(/ alias$/, "");
   const localCandidate = path.join(path.dirname(aliasPath), basename);
   if (await pathExists(localCandidate)) return localCandidate;
@@ -178,26 +241,99 @@ function buildSnippet(html: string, length = 240) {
   return `${text.slice(0, cutoff > 100 ? cutoff : length).trim()}…`;
 }
 
-function parseTocEntries(rawText: string): TocEntry[] {
+function extractPrimaryFootnoteAnchor(content: string) {
+  const strongMatch = content.match(/<strong\b[^>]*>([\s\S]*?)<\/strong>/i);
+  if (!strongMatch) return null;
+  const anchor = normalizeText(strongMatch[1]);
+  if (anchor.length < 3 || anchor.length > 160) return null;
+  return anchor;
+}
+
+function isDistinctiveAnchorCandidate(candidate: string) {
+  const clean = normalizeText(candidate);
+  if (!clean) return false;
+
+  const tokens = clean.split(/\s+/).filter(Boolean);
+  if (!tokens.length) return false;
+
+  const weakWords = new Set([
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "but",
+    "by",
+    "for",
+    "from",
+    "has",
+    "have",
+    "he",
+    "her",
+    "his",
+    "in",
+    "is",
+    "it",
+    "its",
+    "of",
+    "on",
+    "or",
+    "she",
+    "that",
+    "the",
+    "their",
+    "them",
+    "they",
+    "this",
+    "to",
+    "was",
+    "were",
+    "which",
+    "who",
+    "with",
+  ]);
+
+  const meaningfulTokens = tokens.filter((token) => {
+    const comparable = normalizeComparableText(token);
+    return comparable.length >= 4 && !weakWords.has(comparable);
+  });
+  const hasScholarlyOrProperSignal = /[A-ZĀĪŪṢḌṬẒḤḪΑ-ΩΆΈΉΊΌΎΏא-תܐ-ܬ]/u.test(clean);
+  const hasDiacritics = /[ĀĪŪṢḌṬẒḤḪāīūṣḍṭẓḥḫáéíóúàèìòùâêîôûäëïöüñʿʻ’]/u.test(clean);
+
+  if (tokens.length <= 2 && meaningfulTokens.length === 0) return false;
+  if (tokens.length <= 2) return hasScholarlyOrProperSignal || hasDiacritics || meaningfulTokens.length >= 1;
+  return meaningfulTokens.length >= 2 || hasScholarlyOrProperSignal || hasDiacritics;
+}
+
+function parseTocEntries(rawText: string, volumeNumber: number, expectedChapters: number): TocEntry[] {
   const entries = new Map<number, TocEntry>();
-  const regex = /^(.*?)\s*\(18:(\d+)\)\t(\d+)$/gm;
+  const regex = new RegExp(`^(.*?)\\s*\\(${volumeNumber}:(\\d+)\\)\\t(\\d+)$`, "gm");
   let match: RegExpExecArray | null;
   while ((match = regex.exec(rawText)) !== null) {
     const markerNumber = Number(match[2]);
     if (entries.has(markerNumber)) continue;
     entries.set(markerNumber, {
-      markerCode: `18:${markerNumber}`,
+      markerCode: `${volumeNumber}:${markerNumber}`,
       markerNumber,
       pageReference: Number(match[3]),
     });
-    if (entries.size === 18) break;
+    if (entries.size === expectedChapters) break;
   }
+  return Array.from(entries.values()).sort((a, b) => a.markerNumber - b.markerNumber);
+}
+
+function mergeTocEntries(primary: TocEntry[], fallback: TocEntry[]) {
+  const entries = new Map<number, TocEntry>();
+  fallback.forEach((entry) => entries.set(entry.markerNumber, entry));
+  primary.forEach((entry) => entries.set(entry.markerNumber, entry));
   return Array.from(entries.values()).sort((a, b) => a.markerNumber - b.markerNumber);
 }
 
 function parseParagraphs(html: string) {
   const paragraphs: Array<{ html: string; text: string; start: number; end: number }> = [];
-  const regex = /<p>[\s\S]*?<\/p>/g;
+  const regex = /<(?:p|h[1-6])\b[^>]*>[\s\S]*?<\/(?:p|h[1-6])>/g;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(html)) !== null) {
     const paragraphHtml = match[0];
@@ -240,6 +376,7 @@ function buildAnchorCandidates(prefixText: string) {
       .trim();
     if (!candidate) continue;
     if (candidate.length < 3) continue;
+    if (!isDistinctiveAnchorCandidate(candidate)) continue;
     if (length === 1) {
       const comparable = normalizeComparableText(candidate);
       const looksLikeName = /[A-ZĀĪŪṢḌṬẒḤḪʻ’'\-]/u.test(candidate);
@@ -403,16 +540,15 @@ function wrapAnchorAndInsertMarker(
   };
 }
 
-function findMainBodyStart(html: string) {
-  const bodyTitle = "<p>Obligatory Creedal Belief in the Hereafter &amp; Otherworldly Eschatology</p>";
-  const index = html.indexOf(bodyTitle);
-  if (index === -1) {
-    throw new Error("Unable to find main Volume 18 body start");
+function findMainBodyStart(html: string, config: ImportConfig) {
+  const paragraph = parseParagraphs(html).find((entry) => entry.text === config.bodyStartText);
+  if (!paragraph) {
+    throw new Error(`Unable to find main Volume body start: ${config.bodyStartText}`);
   }
-  return index;
+  return paragraph.start;
 }
 
-function findMainHeadings(bodyHtml: string): HeadingMatch[] {
+function findMainHeadings(bodyHtml: string, volumeNumber: number, expectedChapters: number): HeadingMatch[] {
   const paragraphs = parseParagraphs(bodyHtml);
   const headings: HeadingMatch[] = [];
 
@@ -424,12 +560,12 @@ function findMainHeadings(bodyHtml: string): HeadingMatch[] {
     start: paragraphs[0].start,
     end: paragraphs[0].end,
     text: paragraphs[0].text,
-    markerCode: "18:1",
+    markerCode: `${volumeNumber}:1`,
     markerNumber: 1,
   });
 
   paragraphs.forEach((paragraph) => {
-    const match = paragraph.text.match(/^(.*)\((18:\d+)\)$/);
+    const match = paragraph.text.match(new RegExp(`^(.*)\\((${volumeNumber}:\\d+)\\):?$`));
     if (!match) return;
     const markerNumber = Number(match[2].split(":")[1]);
     if (markerNumber === 1) return;
@@ -445,14 +581,14 @@ function findMainHeadings(bodyHtml: string): HeadingMatch[] {
   });
 
   const ordered = headings.sort((a, b) => a.markerNumber - b.markerNumber);
-  if (ordered.length !== 18) {
-    throw new Error(`Expected 18 main headings, found ${ordered.length}`);
+  if (ordered.length !== expectedChapters) {
+    throw new Error(`Expected ${expectedChapters} main headings, found ${ordered.length}`);
   }
   return ordered;
 }
 
 function extractMainChapterTitle(heading: HeadingMatch) {
-  return heading.text.replace(/\s*\(18:\d+\)\s*$/, "").trim();
+  return heading.text.replace(/\s*\(\d+:\d+\):?\s*$/, "").trim();
 }
 
 function extractExtensionFootnotes(
@@ -738,36 +874,43 @@ function replaceMainMarkerWithLink(
   chapterHtml: string,
   markerCode: string,
   ordinal: number,
+  volumeNumber: number,
   chapterId: string
 ) {
-  const marker = `(${markerCode})`;
-  const link = `<a href="/v/18/${chapterId}/web-extension" class="web-extension-chip" data-web-extension-link="true" aria-label="Open web extension ${ordinal}">Web-Extension ${ordinal}</a>`;
+  const [volumePrefix, markerNumber] = markerCode.split(":");
+  const marker = new RegExp(`\\(${volumePrefix}:${markerNumber}\\.?\\)`);
+  const link = `<a href="/v/${volumeNumber}/${chapterId}/web-extension" class="web-extension-chip" data-web-extension-link="true" aria-label="Open web extension ${ordinal}">Web-Extension ${ordinal}</a>`;
   return chapterHtml.replace(marker, link).trim();
 }
 
-function findExtensionStart(html: string) {
-  const marker = "<p><em>Opening of Webextension (18:1)</em></p>";
-  const index = html.indexOf(marker);
-  if (index === -1) {
+function findExtensionStart(html: string, config: ImportConfig) {
+  const paragraph = parseParagraphs(html).find((entry) =>
+    config.extensionStartPattern.test(entry.text)
+  );
+  if (!paragraph) {
     throw new Error("Unable to find web extension body start");
   }
-  return index;
+  return paragraph.start;
 }
 
-function findExtensionMarkers(bodyHtml: string) {
+function findExtensionMarkers(bodyHtml: string, volumeNumber: number) {
   const paragraphs = parseParagraphs(bodyHtml);
   const openings = new Map<number, { start: number; end: number }>();
   const endings = new Map<number, { start: number; end: number }>();
 
   paragraphs.forEach((paragraph) => {
-    const opening = paragraph.text.match(/^Opening of Webextension \((18:\d+)\)$/);
+    const opening = paragraph.text.match(
+      new RegExp(`^Opening of Web-?Extension \\((${volumeNumber}:\\d+)\\)$`)
+    );
     if (opening) {
       const markerNumber = Number(opening[1].split(":")[1]);
       openings.set(markerNumber, { start: paragraph.start, end: paragraph.end });
       return;
     }
 
-    const ending = paragraph.text.match(/^End of Webextension(?: \+ Draft)? \((18:\d+)\)$/);
+    const ending = paragraph.text.match(
+      new RegExp(`^End of Web-?Extension(?: \\+ Draft)? \\((${volumeNumber}:\\d+)\\)$`)
+    );
     if (ending) {
       const markerNumber = Number(ending[1].split(":")[1]);
       endings.set(markerNumber, { start: paragraph.start, end: paragraph.end });
@@ -842,9 +985,9 @@ function renumberVolumeMainFootnotes(chapters: BookData["chapters"]) {
   });
 }
 
-async function main() {
-  const mainPath = await resolveSourcePath(MAIN_ALIAS);
-  const extensionPath = await resolveSourcePath(EXT_ALIAS);
+async function runImport(config: ImportConfig, volumeNumber: number) {
+  const mainPath = await resolveSourcePath(config.mainAlias, "mainFallback" in config ? config.mainFallback : undefined);
+  const extensionPath = await resolveSourcePath(config.extAlias, "extFallback" in config ? config.extFallback : undefined);
 
   const [{ value: mainHtml }, { value: extensionHtml }, { value: mainText }] = await Promise.all([
     mammoth.convertToHtml({ path: mainPath }),
@@ -852,14 +995,18 @@ async function main() {
     mammoth.extractRawText({ path: mainPath }),
   ]);
 
-  const tocEntries = parseTocEntries(mainText);
-  if (tocEntries.length !== 18) {
-    throw new Error(`Expected 18 TOC entries, found ${tocEntries.length}`);
+  const { value: extensionText } = await mammoth.extractRawText({ path: extensionPath });
+  const tocEntries = mergeTocEntries(
+    parseTocEntries(mainText, volumeNumber, config.expectedChapters),
+    parseTocEntries(extensionText, volumeNumber, config.expectedChapters)
+  );
+  if (tocEntries.length !== config.expectedChapters) {
+    throw new Error(`Expected ${config.expectedChapters} TOC entries, found ${tocEntries.length}`);
   }
 
   const cleanedMainHtml = cleanMainHtml(mainHtml);
-  const mainBodyHtml = cleanedMainHtml.slice(findMainBodyStart(cleanedMainHtml));
-  const headings = findMainHeadings(mainBodyHtml);
+  const mainBodyHtml = cleanedMainHtml.slice(findMainBodyStart(cleanedMainHtml, config));
+  const headings = findMainHeadings(mainBodyHtml, volumeNumber, config.expectedChapters);
 
   const chapters: BookData["chapters"] = [];
   const chapterMetaByMarker = new Map<
@@ -906,9 +1053,9 @@ async function main() {
   });
 
   const cleanedExtensionHtml = cleanExtensionHtml(extensionHtml);
-  const extensionBodyHtml = cleanedExtensionHtml.slice(findExtensionStart(cleanedExtensionHtml));
+  const extensionBodyHtml = cleanedExtensionHtml.slice(findExtensionStart(cleanedExtensionHtml, config));
   const globalExtensionFootnotes = extractGlobalExtensionFootnotes(cleanedExtensionHtml);
-  const { openings, endings } = findExtensionMarkers(extensionBodyHtml);
+  const { openings, endings } = findExtensionMarkers(extensionBodyHtml, volumeNumber);
   const extensionEntries: Record<string, WebExtensionEntry> = {};
 
   tocEntries.forEach((entry) => {
@@ -945,6 +1092,7 @@ async function main() {
       imported.content,
       entry.markerCode,
       entry.markerNumber,
+      volumeNumber,
       chapterMeta.chapterId
     );
     mainChapter.sections[0].footnotes = imported.footnotes;
@@ -954,7 +1102,7 @@ async function main() {
       id: extSectionId,
       markerCode: entry.markerCode,
       ordinal: entry.markerNumber,
-      volumeNumber: 18,
+      volumeNumber,
       chapterId: chapterMeta.chapterId,
       chapterTitle: chapterMeta.chapterTitle,
       title: `Web Extensions for "${chapterMeta.chapterTitle}"`,
@@ -966,34 +1114,40 @@ async function main() {
   renumberVolumeMainFootnotes(chapters);
 
   const volumeData: BookData = {
-    volumeNumber: 18,
-    volumeTitle: "The Hereafter: Otherworldly Eschatology",
+    volumeNumber,
+    volumeTitle: config.volumeTitle,
     seriesTitle: SERIES_TITLE,
     seriesSubtitle: SERIES_SUBTITLE,
     author: AUTHOR,
-    introduction:
-      "Syntopicon 18 gathers the main text on the Hereafter with linked chapter-by-chapter web extensions and inline supporting footnotes where the extension material directly clarifies the main text.",
+    introduction: config.introduction,
     totalVolumes: 19,
     chapters,
   };
 
-  const mainFile = `import type { BookData } from "@shared/schema";\n\nexport const volumeEighteenData: BookData = ${JSON.stringify(
+  const mainFile = `import type { BookData } from "@shared/schema";\n\nexport const ${config.exportMainName}: BookData = ${JSON.stringify(
     volumeData,
     null,
     2
   )};\n`;
 
-  const extFile = `import type { WebExtensionEntry } from "@shared/schema";\n\nexport const volumeEighteenWebExtensions: Record<string, WebExtensionEntry> = ${JSON.stringify(
+  const extFile = `import type { WebExtensionEntry } from "@shared/schema";\n\nexport const ${config.exportExtName}: Record<string, WebExtensionEntry> = ${JSON.stringify(
     extensionEntries,
     null,
     2
   )};\n`;
 
-  await fs.writeFile(OUTPUT_MAIN, mainFile, "utf-8");
-  await fs.writeFile(OUTPUT_EXT, extFile, "utf-8");
+  await fs.writeFile(config.outputMain, mainFile, "utf-8");
+  await fs.writeFile(config.outputExt, extFile, "utf-8");
 
-  console.log(`[volume18] Wrote ${OUTPUT_MAIN}`);
-  console.log(`[volume18] Wrote ${OUTPUT_EXT}`);
+  console.log(`[volume${volumeNumber}] Wrote ${config.outputMain}`);
+  console.log(`[volume${volumeNumber}] Wrote ${config.outputExt}`);
+}
+
+async function main() {
+  const requestedVolume = Number(process.argv[2] ?? 1);
+  const config = CONFIGS[requestedVolume as keyof typeof CONFIGS];
+  if (!config) throw new Error(`Unsupported syntopicon volume: ${requestedVolume}`);
+  await runImport(config, requestedVolume);
 }
 
 main().catch((error) => {

@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { ListOrdered } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import type { Chapter, Footnote } from "@shared/schema";
 import { getFootnoteDisplayNumber, getFootnoteOrigin } from "@/lib/footnotes";
 
@@ -72,38 +69,42 @@ export default function PageReferenceInput({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
+        <button
+          type="button"
           data-testid="button-page-reference"
           aria-label="Find by extension number"
-          className={cn(matchNavigationButton && "h-10 w-10")}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
         >
           <ListOrdered className="h-4 w-4" />
-        </Button>
+        </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" data-testid="page-reference-popover">
+      <PopoverContent
+        className="w-72 rounded-xl border-[hsl(var(--codex-rule))] p-4"
+        data-testid="page-reference-popover"
+      >
         <form onSubmit={handleSubmit}>
-          <div className="space-y-3">
-            <div>
-              <h4 className="font-medium text-sm mb-1">Find by Extension Number</h4>
-              <p className="text-xs text-muted-foreground">
-                Jump straight to any numbered extension in this volume.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                placeholder="e.g., 23"
-                value={extensionValue}
-                onChange={(e) => setExtensionValue(e.target.value)}
-                data-testid="input-page-number"
-                className="flex-1"
-              />
-              <Button type="submit" data-testid="button-go-to-page">
-                Go
-              </Button>
-            </div>
+          <h4 className="font-heading text-lg font-semibold leading-tight">
+            Jump to an extension
+          </h4>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Enter any extension number in this volume.
+          </p>
+          <div className="mt-3 flex items-center gap-2 border-b border-[hsl(var(--codex-rule))] pb-1.5 focus-within:border-[hsl(var(--gilt))]">
+            <input
+              type="number"
+              placeholder="e.g. 23"
+              value={extensionValue}
+              onChange={(e) => setExtensionValue(e.target.value)}
+              data-testid="input-page-number"
+              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
+            <button
+              type="submit"
+              data-testid="button-go-to-page"
+              className="text-sm font-medium text-primary transition hover:text-[hsl(var(--gilt))]"
+            >
+              Go
+            </button>
           </div>
         </form>
       </PopoverContent>

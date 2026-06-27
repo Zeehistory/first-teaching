@@ -118,64 +118,57 @@ export default function FootnotePanel({
         }}
       />
 
-      <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-5">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-3 px-6 pt-6 pb-4">
+        <div className="flex items-baseline gap-2.5">
           <span
-            className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-heading text-lg shadow-sm"
-            data-footnote-panel-origin={footnoteOrigin}
+            className="font-heading text-xl font-semibold leading-none text-primary"
           >
             {displayNumber}
           </span>
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-              {footnoteOrigin === "web-extension" ? "Web Ext Footnote" : "Syntopicon Footnote"}
-            </div>
-          </div>
+          <span className="codex-label text-sm">
+            {footnoteOrigin === "web-extension" ? "Web Extension Gloss" : "Syntopicon Footnote"}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            aria-label="Collapse footnote window"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:text-foreground"
+            aria-label="Collapse footnote"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
             onClick={() => setIsCollapsed(true)}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
           <button
             type="button"
-            onClick={() => {
-              onClose();
-            }}
+            onClick={onClose}
             data-testid="button-close-footnote"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:text-foreground"
-            aria-label="Hide footnote window"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+            aria-label="Hide footnote"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
       </header>
 
-      <div className="flex flex-1 min-h-0 flex-col px-5 pb-6 pt-4">
-        <div className="mb-4 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition hover:border-primary/40 hover:text-primary"
-            onClick={handleReturnToText}
-            aria-label="Back to text"
-          >
-            <CornerDownLeft className="h-4 w-4" />
-          </button>
-        </div>
-
+      <div className="flex flex-1 min-h-0 flex-col px-6 pb-6">
         <div
           ref={contentRef}
-          className="minimal-scrollbar flex-1 overflow-y-auto rounded-2xl border border-border/60 bg-muted/15 px-5 py-5 text-base leading-relaxed"
+          className="minimal-scrollbar flex-1 overflow-y-auto pr-1 text-base leading-relaxed"
         >
           <div
             className="prose prose-primary max-w-none space-y-4 text-foreground/90 chapter-prose"
             dangerouslySetInnerHTML={{ __html: footnote.content }}
           />
         </div>
+
+        <button
+          type="button"
+          onClick={handleReturnToText}
+          className="mt-4 inline-flex items-center gap-2 self-start codex-label transition hover:text-foreground"
+        >
+          <CornerDownLeft className="h-3.5 w-3.5" />
+          Back to the text
+        </button>
       </div>
     </aside>
   );

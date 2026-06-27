@@ -41,6 +41,156 @@ function extractFootnoteSnippet(content: string, limit = 180) {
   return `${text.slice(0, limit).trimEnd()}…`;
 }
 
+const OPEN_Q = /[“"«]/;
+const CLOSE_Q = /[”"»]/;
+const ATTRIBUTION = /^\s*(?:[~—–-]\s*\S|—)/; // "~ Emily Dickinson", "— T. S. Eliot"
+const LEADIN_COLON = /[:：]\s*$/;
+
+function plain(el: Element | null): string {
+  return (el?.textContent || "").replace(/ /g, " ").trim();
+}
+
+/**
+ * Robust quotation + verse classifier.
+ *
+ * Rather than "starts with a quote mark → blockquote", we read several
+ * structural signals and group consecutive lines into a single quote block:
+ *
+ *  - lead-in:  a paragraph ending in a colon introduces the quote/verse that
+ *    follows (e.g. `T. S. Eliot says in the Four Quartets:`)
+ *  - wrapped:  a paragraph whose quotation marks span most of its text (a
+ *    genuine pull-quote) — NOT prose that merely opens with a quoted word
+ *  - verse:    short, separate lines (a poem) — detected by line length and
+ *    by following a colon lead-in
+ *  - attribution: a trailing `~ Name` / `— Name (d. …)` binds to the block
+ *
+ * Marks: `.tt-quote` (prose quotation), `.tt-verse` (poem line),
+ * `.tt-verse-start` / `.tt-verse-end` (bookends), `.tt-attribution`.
+ */
+function classifyQuotations(container: HTMLElement) {
+  container
+    .querySelectorAll(
+      ".auto-blockquote, .tt-quote, .tt-verse, .tt-verse-start, .tt-verse-end, .tt-attribution"
+    )
+    .forEach((el) => {
+      el.classList.remove(
+        "auto-blockquote",
+        "tt-quote",
+        "tt-verse",
+        "tt-verse-start",
+        "tt-verse-end",
+        "tt-attribution"
+      );
+    });
+
+  const blocks = Array.from(container.children).filter(
+    (el) => el.tagName === "P"
+  ) as HTMLElement[];
+
+  const wordCount = (t: string) => (t ? t.split(/\s+/).length : 0);
+
+  const isWrappedQuote = (t: string) => {
+    if (t.length < 24 || !OPEN_Q.test(t[0])) return false;
+    const endsQuoted = /[”"»][.?!,;]?$/.test(t);
+    if (!endsQuoted) return false;
+    // The quoted span must cover most of the paragraph — reject prose that
+    // only opens with a quoted word (e.g. “Syntopicon” is a neologism …).
+    const firstClose = t.search(CLOSE_Q);
+    return firstClose >= t.length * 0.6;
+  };
+
+  const isAttribution = (t: string) =>
+    ATTRIBUTION.test(t) && wordCount(t) <= 12;
+
+  // A line that reads as verse: short, and not a flowing prose sentence.
+  // Prose paragraphs are long and end in a period; verse lines are short and
+  // tend to end in a comma / question mark / dash / nothing, or are a fragment.
+  const isVerseLine = (t: string) => {
+    if (!t || t.length > 95 || wordCount(t) > 15) return false;
+    if (isAttribution(t)) return false;
+    return true;
+  };
+
+  for (let i = 0; i < blocks.length; i++) {
+    const el = blocks[i];
+    if (el.dataset.ttClassified === "done") continue;
+    const text = plain(el);
+    if (!text) continue;
+
+    const prevText = plain(el.previousElementSibling);
+    const afterLeadIn = LEADIN_COLON.test(prevText);
+
+    // --- Verse run -------------------------------------------------------
+    // Collect consecutive verse-like lines. A run qualifies as verse when it
+    // either follows a colon lead-in (≥2 lines) or stands alone as a cluster
+    // of ≥3 short lines — so poems without a colon are still caught.
+    if (isVerseLine(text) || (afterLeadIn && OPEN_Q.test(text[0]))) {
+      const run: HTMLElement[] = [];
+      let j = i;
+      while (j < blocks.length) {
+        const cand = blocks[j];
+        const ct = plain(cand);
+        if (!ct || !isVerseLine(ct)) break;
+        run.push(cand);
+        j++;
+      }
+      const qualifies =
+        (afterLeadIn && run.length >= 2) || run.length >= 3;
+      if (qualifies) {
+        run.forEach((line, idx) => {
+          line.classList.add("tt-verse");
+          if (idx === 0) line.classList.add("tt-verse-start");
+          if (idx === run.length - 1) line.classList.add("tt-verse-end");
+          line.dataset.ttClassified = "done";
+        });
+        const attr = blocks[j];
+        if (attr && isAttribution(plain(attr))) {
+          attr.classList.add("tt-attribution", "tt-verse");
+          attr.dataset.ttClassified = "done";
+          j++;
+        }
+        i = j - 1;
+        continue;
+      }
+    }
+
+    // --- Prose pull-quote ------------------------------------------------
+    // A quotation block is signalled by either:
+    //   • a wrapped quotation (opens & closes with quote marks), or
+    //   • a colon lead-in introducing a passage that is ITSELF a quotation.
+    //
+    // After a colon, only elevate when the paragraph is genuinely the quote —
+    // i.e. it BEGINS with a quote mark, or it carries NO quote marks at all
+    // (an unmarked citation like a hadith: `the Prophet said:` → the saying).
+    // A paragraph that opens with the author's own words but contains embedded
+    // quotes inside it (e.g. "When the Qur'ān speaks of …") is commentary, not
+    // a quotation, and must stay as normal prose.
+    const beginsQuoted = OPEN_Q.test(text[0]);
+    const hasAnyQuoteMark = OPEN_Q.test(text) || CLOSE_Q.test(text);
+    // A lead-in that explicitly points at "the following paragraph / example /
+    // rule / dates" introduces an ILLUSTRATION, not a quotation — keep it prose.
+    const EXAMPLE_LEADIN =
+      /(following|above|below|preceding)\s+\w*\s*(paragraph|example|passage|sentence|rule|manner|way|cases?|dates?|illustration)\b/i;
+    const leadInQuote =
+      afterLeadIn &&
+      text.length >= 40 &&
+      !LEADIN_COLON.test(text) && // don't chain into a sub-lead-in
+      !EXAMPLE_LEADIN.test(prevText) &&
+      (beginsQuoted || !hasAnyQuoteMark);
+    if (isWrappedQuote(text) || leadInQuote) {
+      el.classList.add("tt-quote");
+      el.dataset.ttClassified = "done";
+      const next = blocks[i + 1];
+      if (next && isAttribution(plain(next))) {
+        next.classList.add("tt-attribution", "tt-quote");
+        next.dataset.ttClassified = "done";
+        i += 1;
+      }
+      continue;
+    }
+  }
+}
+
 interface ChapterContentProps {
   section: Section;
   chapterTitle: string;
@@ -57,6 +207,9 @@ interface ChapterContentProps {
     range: Range;
   }) => void;
   sectionMarkupOverride?: string;
+  /* "bare" omits the internal heading and article chrome so a host page
+     (e.g. the web-extension leaf) can supply its own header and layout. */
+  variant?: "default" | "bare";
 }
 
 export default function ChapterContent({
@@ -70,7 +223,9 @@ export default function ChapterContent({
   onFootnoteClick,
   onRequestNote,
   sectionMarkupOverride,
+  variant = "default",
 }: ChapterContentProps) {
+  const isBare = variant === "bare";
   const contentRef = useRef<HTMLDivElement | null>(null);
   const articleRef = useRef<HTMLElement | null>(null);
   const highlightRefs = useRef<HTMLElement[]>([]);
@@ -166,40 +321,7 @@ export default function ChapterContent({
   useEffect(() => {
     const container = contentRef.current;
     if (!container) return;
-
-    const paragraphs = Array.from(
-      container.querySelectorAll<HTMLParagraphElement>("p.auto-blockquote")
-    );
-    paragraphs.forEach((paragraph) => paragraph.classList.remove("auto-blockquote"));
-
-    const candidates = Array.from(container.querySelectorAll<HTMLParagraphElement>("p"));
-    const shouldElevate = (paragraph: HTMLParagraphElement): boolean => {
-      const text = (paragraph.textContent || "").trim();
-      if (!text || text.length < 40) return false;
-
-      const hasQuote = /[“”"]/.test(text);
-      if (!hasQuote) return false;
-
-      if (/^["“].+[”"]$/.test(text)) {
-        return true;
-      }
-
-      const previous = paragraph.previousElementSibling;
-      if (previous) {
-        const prevText = (previous.textContent || "").trim();
-        if (prevText && /[:：]\s*$/.test(prevText)) {
-          return true;
-        }
-      }
-
-      return false;
-    };
-
-    candidates.forEach((paragraph) => {
-      if (shouldElevate(paragraph)) {
-        paragraph.classList.add("auto-blockquote");
-      }
-    });
+    classifyQuotations(container);
   }, [section.id]);
 
   useEffect(() => {
@@ -290,6 +412,48 @@ export default function ChapterContent({
     }
 
     const markers = container.querySelectorAll<HTMLElement>("sup[data-footnote], sup[data-footnote-key]");
+
+    // Collapse doubled-up markers: when two footnote markers are separated by
+    // nothing but whitespace/empty wrappers in the reading flow, group them so
+    // they read as one tight cluster (e.g. ¹⁶¹⁷) instead of two stray
+    // superscripts with a gap. Compares each marker to the next in document
+    // order using a Range, so it works across nesting like </strong><sup>.
+    const markerList = Array.from(markers);
+    for (let m = 0; m < markerList.length - 1; m++) {
+      const a = markerList[m];
+      const bMarker = markerList[m + 1];
+      try {
+        const between = document.createRange();
+        between.setStartAfter(a);
+        between.setEndBefore(bMarker);
+        // Only whitespace between the two markers → they're a doubled cluster.
+        if (!between.toString().trim()) {
+          // strip any pure-whitespace text nodes sitting between them
+          const walker = document.createTreeWalker(
+            between.commonAncestorContainer,
+            NodeFilter.SHOW_TEXT
+          );
+          const toRemove: Node[] = [];
+          let node = walker.nextNode();
+          while (node) {
+            if (
+              between.intersectsNode(node) &&
+              !(node.textContent || "").trim() &&
+              node !== a &&
+              node !== bMarker
+            ) {
+              toRemove.push(node);
+            }
+            node = walker.nextNode();
+          }
+          toRemove.forEach((n) => n.parentNode?.removeChild(n));
+          bMarker.classList.add("footnote-marker-grouped-next");
+        }
+      } catch {
+        /* non-contiguous markers — ignore */
+      }
+    }
+
     markers.forEach((marker) => {
       const footnote = resolveFootnote(marker);
       if (footnote) {
@@ -891,31 +1055,36 @@ export default function ChapterContent({
 
   return (
     <>
-      <article className="max-w-3xl mx-auto px-6 py-10" ref={articleRef}>
-      <div className="mb-6 space-y-3">
-        {sectionTrail.length > 0 && (
-          <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-sans uppercase tracking-[0.35em] text-muted-foreground">
-            {sectionTrail.map((ancestor, index) => (
-              <span key={ancestor.id} className="flex items-center gap-3">
-                <span className="truncate max-w-[14rem] opacity-80">{ancestor.title}</span>
-                {index < sectionTrail.length - 1 && (
-                  <span className="h-px w-6 bg-muted opacity-60" />
-                )}
-              </span>
-            ))}
-          </nav>
-        )}
-        <h1 className="text-4xl md:text-5xl font-heading font-semibold mb-1">
-          {chapterTitle}
-        </h1>
-        {section.title !== chapterTitle && (
-          <p className="text-muted-foreground font-sans text-base md:text-lg">
-            {section.title}
-          </p>
-        )}
-      </div>
+      <article
+        className={isBare ? "" : "max-w-3xl mx-auto px-6 py-10"}
+        ref={articleRef}
+      >
+      {!isBare && (
+        <div className="mb-6 space-y-3">
+          {sectionTrail.length > 0 && (
+            <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-sans uppercase tracking-[0.35em] text-muted-foreground">
+              {sectionTrail.map((ancestor, index) => (
+                <span key={ancestor.id} className="flex items-center gap-3">
+                  <span className="truncate max-w-[14rem] opacity-80">{ancestor.title}</span>
+                  {index < sectionTrail.length - 1 && (
+                    <span className="h-px w-6 bg-muted opacity-60" />
+                  )}
+                </span>
+              ))}
+            </nav>
+          )}
+          <h1 className="text-4xl md:text-5xl font-heading font-semibold mb-1">
+            {chapterTitle}
+          </h1>
+          {section.title !== chapterTitle && (
+            <p className="text-muted-foreground font-sans text-base md:text-lg">
+              {section.title}
+            </p>
+          )}
+        </div>
+      )}
 
-      <div className="mt-6">
+      <div className={isBare ? "mb-8" : "mt-6"}>
         <SectionAudioPlayer
           sectionTitle={section.title}
           chapterTitle={chapterTitle}
@@ -923,7 +1092,7 @@ export default function ChapterContent({
         />
       </div>
 
-      <OrnamentalDivider className="my-6" />
+      {!isBare && <OrnamentalDivider className="my-6" />}
 
       {section.pageReference && (
         <div className="mt-4 text-sm font-sans text-muted-foreground">

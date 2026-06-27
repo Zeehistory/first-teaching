@@ -7,7 +7,7 @@ const placeholderDescription =
 const generatedVolumes: Volume[] = [
   {
     number: 1,
-    title: "Volume 1",
+    title: "Syntopicon 1",
     subtitle: volumeOneData.volumeTitle,
     description: volumeOneData.introduction,
     status: "available",

@@ -243,6 +243,16 @@
     @apply bg-background text-foreground font-serif antialiased;
   }
 
+  /* Codex text selection — warm gilt wash, never the browser's default blue */
+  ::selection {
+    background: hsl(42 72% 52% / 0.28);
+    color: inherit;
+  }
+  ::-moz-selection {
+    background: hsl(42 72% 52% / 0.28);
+    color: inherit;
+  }
+
   .chapter-shell {
     transition: margin-right 250ms ease;
   }
@@ -418,81 +428,79 @@
   }
 }
 
-/* Block quote styling for scripture/important passages */
+/* ---------------------------------------------------------------------
+   BLOCKQUOTE — the set-off passage (scripture, citation, verse)
+   Restrained editorial treatment: a vellum panel inset from the column,
+   a single gilt rule, an oversized Cormorant quotation mark as a versal,
+   and italic serif. One unified style for blockquote / scripture / auto.
+   --------------------------------------------------------------------- */
 .chapter-prose blockquote,
 .scripture-quote,
-.chapter-prose p.auto-blockquote {
+.chapter-prose p.auto-blockquote,
+.chapter-prose p.tt-quote {
   position: relative;
-  margin: 3rem 0;
-  padding: 2.25rem 2.5rem;
-  border-radius: 18px;
-  border-left: 6px solid hsl(42, 72%, 52%);
-  background: radial-gradient(circle at top right, hsla(45, 60%, 96%, 0.95), hsla(42, 50%, 92%, 0.95));
-  box-shadow:
-    0 24px 50px -30px rgba(102, 84, 33, 0.35),
-    inset 0 0 0 1px hsla(42, 60%, 70%, 0.4);
+  margin: 2.75rem 0;
+  padding: 0.5rem 0 0.5rem 2.5rem;
+  border: none;
+  border-left: 2px solid hsl(var(--gilt));
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
   font-family: var(--font-serif);
-  font-size: 1.08em;
-  line-height: 1.85;
-  color: var(--foreground);
+  font-style: italic;
+  font-size: 1.12em;
+  line-height: 1.8;
+  color: hsl(var(--foreground));
   isolation: isolate;
-}
-
-.dark .chapter-prose blockquote,
-.dark .scripture-quote,
-.dark .chapter-prose p.auto-blockquote {
-  border-left-color: hsl(42 85% 65% / 0.9);
-  background: linear-gradient(135deg, hsla(42, 30%, 28%, 0.92), hsla(45, 20%, 20%, 0.88));
-  box-shadow:
-    0 24px 50px -30px rgba(0, 0, 0, 0.45),
-    inset 0 0 0 1px hsla(42, 40%, 70%, 0.25);
-  color: hsl(45 28% 92%);
-}
-
-.dark .chapter-prose blockquote::before,
-.dark .scripture-quote::before,
-.dark .chapter-prose p.auto-blockquote::before {
-  color: hsla(42, 40%, 70%, 0.45);
-}
-
-.dark .chapter-prose blockquote::after,
-.dark .scripture-quote::after,
-.dark .chapter-prose p.auto-blockquote::after {
-  border-color: hsla(42, 30%, 70%, 0.35);
-}
-
-.dark .chapter-prose blockquote cite,
-.dark .scripture-quote cite,
-.dark .chapter-prose p.auto-blockquote cite {
-  color: hsl(45 25% 85%);
 }
 
 .chapter-prose blockquote::before,
 .scripture-quote::before,
-.chapter-prose p.auto-blockquote::before {
+.chapter-prose p.auto-blockquote::before,
+.chapter-prose p.tt-quote::before {
   content: "“";
   position: absolute;
-  inset: -22px auto auto 24px;
-  font-size: 4.5rem;
+  left: 1.4rem;
+  top: -0.55rem;
+  font-size: 3.4rem;
+  line-height: 1;
+  font-style: normal;
   font-family: var(--font-heading);
-  color: hsla(42, 40%, 62%, 0.35);
+  color: hsl(var(--gilt) / 0.35);
   pointer-events: none;
+  z-index: -1;
 }
 
 .chapter-prose blockquote::after,
 .scripture-quote::after,
 .chapter-prose p.auto-blockquote::after {
-  content: "";
-  position: absolute;
-  inset: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid hsla(42, 50%, 70%, 0.35);
-  pointer-events: none;
+  content: none;
+}
+
+.dark .chapter-prose blockquote,
+.dark .scripture-quote,
+.dark .chapter-prose p.auto-blockquote,
+.dark .chapter-prose p.tt-quote {
+  border-left-color: hsl(42 85% 65% / 0.85);
+  color: hsl(45 28% 92%);
+}
+
+.dark .chapter-prose blockquote::before,
+.dark .scripture-quote::before,
+.dark .chapter-prose p.auto-blockquote::before,
+.dark .chapter-prose p.tt-quote::before {
+  color: hsl(42 60% 70% / 0.32);
+}
+
+.dark .chapter-prose blockquote cite,
+.dark .scripture-quote cite,
+.dark .chapter-prose p.auto-blockquote cite {
+  color: hsl(42 30% 72%);
 }
 
 .chapter-prose blockquote p,
 .scripture-quote p {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.1rem;
 }
 
 .chapter-prose blockquote p:last-child,
@@ -503,13 +511,80 @@
 .chapter-prose blockquote cite,
 .scripture-quote cite {
   display: block;
-  margin-top: 1.5rem;
+  margin-top: 1.1rem;
   font-style: normal;
-  font-family: var(--font-sans);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.75rem;
-  color: hsla(42, 40%, 40%, 0.8);
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  color: hsl(42 38% 38%);
+}
+
+/* ---------------------------------------------------------------------
+   VERSE — a unique treatment for poetry and quoted lines.
+   A centred column on a faint vellum field, framed by two slender gilt
+   rules. Lines keep their breaks; the attribution sits quietly beneath.
+   --------------------------------------------------------------------- */
+.chapter-prose p.tt-verse {
+  position: relative;
+  margin: 0;
+  padding: 0.16rem 2.75rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.1em;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+  text-align: center;
+}
+
+/* The whole run sits in one continuous frame: a centred column flanked by a
+   single pair of slender gilt rules, top and bottom. No per-line banding. */
+.chapter-prose p.tt-verse-start {
+  margin-top: 2.75rem;
+  padding-top: 2.4rem;
+}
+
+.chapter-prose p.tt-verse-end {
+  margin-bottom: 2.75rem;
+  padding-bottom: 2.4rem;
+}
+
+.chapter-prose p.tt-verse-start::before,
+.chapter-prose p.tt-verse-end::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3rem;
+  height: 1px;
+  background: hsl(var(--gilt));
+}
+
+.chapter-prose p.tt-verse-start::before {
+  top: 1rem;
+}
+
+.chapter-prose p.tt-verse-end::after {
+  bottom: 1rem;
+}
+
+.chapter-prose p.tt-attribution {
+  font-style: normal;
+  font-size: 0.82em;
+  letter-spacing: 0.01em;
+  color: hsl(var(--codex-ink-soft));
+  padding-top: 1.1rem;
+}
+
+/* A prose pull-quote that carries an attribution loses its bottom margin
+   so the two read as one block. */
+.chapter-prose p.tt-quote + p.tt-attribution.tt-quote {
+  margin-top: -1.4rem;
+  padding-left: 2.5rem;
+  font-style: normal;
+  font-size: 0.9em;
+  color: hsl(var(--codex-ink-soft));
+}
+.chapter-prose p.tt-attribution.tt-quote::before {
+  content: none;
 }
 
 /* Ensure HTML formatting renders in chapter content */
@@ -555,6 +630,12 @@
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: background-color 150ms ease, transform 150ms ease;
+}
+
+/* A marker that directly follows another marker hugs its neighbour, so a
+   doubled cluster reads as one unit rather than two spaced superscripts. */
+.chapter-prose sup.footnote-marker-grouped-next {
+  margin-left: 0.1rem;
 }
 
 .chapter-prose sup[data-footnote-origin="syntopicon"] {
@@ -1198,118 +1279,401 @@ body.timeline-open {
   transform: translateY(0.5px);
 }
 
-.chapter-prose blockquote {
-  margin: 2.5rem 0;
-  padding: 2.25rem 2.5rem;
-  border-left: 8px solid hsl(160, 60%, 42%);
-  border-top-right-radius: 18px;
-  border-bottom-right-radius: 18px;
-  background:
-    radial-gradient(circle at top right, hsla(155, 60%, 90%, 0.8), transparent 65%),
-    linear-gradient(115deg, hsla(160, 65%, 96%, 0.95), hsla(160, 45%, 92%, 0.95));
-  box-shadow:
-    0 18px 45px -25px hsla(160, 60%, 20%, 0.35),
-    inset 0 0 0 1px hsla(160, 40%, 70%, 0.35);
-  color: var(--foreground);
-  font-family: var(--font-serif);
-  font-size: 1.08em;
-  line-height: 1.85;
-  position: relative;
-  isolation: isolate;
-}
-
-.chapter-prose blockquote::before {
-  content: "“";
-  position: absolute;
-  top: -22px;
-  left: 1.5rem;
-  font-size: 4rem;
-  color: hsla(160, 40%, 60%, 0.35);
-  pointer-events: none;
-}
-
-.chapter-prose blockquote::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid hsla(160, 45%, 70%, 0.3);
-  pointer-events: none;
-}
-
-.chapter-prose blockquote p {
-  margin-bottom: 1.25rem;
-}
-
-.chapter-prose blockquote p:last-child {
-  margin-bottom: 0;
-}
-
-.chapter-prose blockquote cite {
-  display: block;
-  margin-top: 1.25rem;
-  font-style: normal;
-  font-family: var(--font-sans);
-  color: var(--foreground);
-}
-
+/* ---------------------------------------------------------------------
+   PROSE LISTS — illuminated codex enumeration
+   Ordered lists use a CSS counter rendered as a teal tabular figure with a
+   gilt hairline beneath; unordered lists use a small gilt lozenge. Hanging
+   indent keeps wrapped lines flush with the first line of text.
+   --------------------------------------------------------------------- */
 .chapter-prose ul,
 .chapter-prose ol {
-  margin: 1.75rem 0;
-  padding-left: 1.75rem;
-  list-style-position: outside;
-  line-height: 1.7;
-}
-
-.chapter-prose ul {
-  list-style-type: disc;
-}
-
-.chapter-prose ul ul {
-  list-style-type: circle;
-}
-
-.chapter-prose ul ul ul {
-  list-style-type: square;
-}
-
-.chapter-prose ol {
-  list-style-type: decimal;
-}
-
-.chapter-prose ol ol {
-  list-style-type: lower-alpha;
-}
-
-.chapter-prose ol ol ol {
-  list-style-type: lower-roman;
+  margin: 2rem 0;
+  padding: 0;
+  list-style: none;
+  line-height: 1.75;
 }
 
 .chapter-prose li {
-  margin-bottom: 0.75rem;
+  position: relative;
+  margin-bottom: 0.85rem;
+  padding-left: 2.4rem;
 }
 
 .chapter-prose li:last-child {
   margin-bottom: 0;
 }
 
-.chapter-prose .list-level-0 {
-  padding-left: 1.75rem;
+/* Ordered: counter markers */
+.chapter-prose ol {
+  counter-reset: codex-ol;
 }
 
-.chapter-prose .list-level-1 {
-  padding-left: 2.5rem;
+.chapter-prose ol > li {
+  counter-increment: codex-ol;
 }
 
-.chapter-prose .list-level-2 {
-  padding-left: 3.25rem;
-}
-
-.chapter-prose .list-level-3 {
-  padding-left: 4rem;
-}
-
-.chapter-prose li::marker {
-  color: hsl(40, 85%, 45%);
+.chapter-prose ol > li::before {
+  content: counter(codex-ol) ".";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.7rem;
+  text-align: right;
+  font-family: var(--font-heading);
+  font-size: 1em;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--primary));
+}
+
+.chapter-prose ol ol {
+  counter-reset: codex-ol-2;
+  margin: 0.85rem 0 0;
+}
+
+.chapter-prose ol ol > li {
+  counter-increment: codex-ol-2;
+}
+
+.chapter-prose ol ol > li::before {
+  content: counter(codex-ol-2, lower-alpha) ".";
+}
+
+.chapter-prose ol ol ol {
+  counter-reset: codex-ol-3;
+}
+
+.chapter-prose ol ol ol > li {
+  counter-increment: codex-ol-3;
+}
+
+.chapter-prose ol ol ol > li::before {
+  content: counter(codex-ol-3, lower-roman) ".";
+}
+
+/* Unordered: gilt lozenge marker */
+.chapter-prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  top: 0.78em;
+  width: 0.34rem;
+  height: 0.34rem;
+  transform: rotate(45deg);
+  background: hsl(var(--gilt) / 0.9);
+}
+
+.chapter-prose ul ul {
+  margin: 0.85rem 0 0;
+}
+
+.chapter-prose ul ul > li::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px hsl(var(--gilt) / 0.8);
+}
+
+.chapter-prose ul ul ul > li::before {
+  transform: none;
+  border-radius: 9999px;
+  width: 0.34rem;
+  height: 0.34rem;
+}
+
+/* Existing indent-level helpers from the importer */
+.chapter-prose .list-level-1 { padding-left: 1.25rem; }
+.chapter-prose .list-level-2 { padding-left: 2.5rem; }
+.chapter-prose .list-level-3 { padding-left: 3.75rem; }
+
+/* =====================================================================
+   CODEX DESIGN SYSTEM
+   A syntopicon is an apparatus of cross-reference: the margin, the gloss,
+   the folio, the gathering. These tokens render the work as a bound codex
+   rather than a stack of cards. Palette inherited from the existing theme;
+   gilt (hsl 42 72% 52%) is reserved for the single signature accent.
+   ===================================================================== */
+
+:root {
+  --gilt: 42 72% 52%;
+  --codex-rule: 30 14% 78%;
+  --codex-vellum: 44 38% 98%;
+  --codex-ink-soft: 30 14% 38%;
+  --label: 0.62rem;
+}
+
+.dark {
+  --codex-rule: 30 8% 26%;
+  --codex-vellum: 30 7% 13%;
+  --codex-ink-soft: 40 10% 62%;
+}
+
+/* --- Utility label: the apparatus voice ---
+   Plain sentence-case serif. No small-caps, no letter-spacing, no uppercase —
+   the user rejected every tracked/small-caps label treatment. Just a quiet,
+   slightly-muted label in the reading face. */
+.codex-label {
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant: normal;
+  font-feature-settings: normal;
+  letter-spacing: 0;
+  text-transform: none;
+  color: hsl(var(--codex-ink-soft));
+}
+
+/* --- Folio / marker code, e.g. 1·2 --- */
+.folio-code {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--primary));
+}
+
+/* --- The masthead rule: a gilt hairline that names a structural break --- */
+.codex-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--codex-rule)) 12%,
+    hsl(var(--codex-rule)) 88%,
+    transparent
+  );
+}
+
+.codex-rule-gilt {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--gilt) / 0.7) 30%,
+    hsl(var(--gilt)) 50%,
+    hsl(var(--gilt) / 0.7) 70%,
+    transparent
+  );
+}
+
+/* --- Ledger row: a line of the index, gilt thread blooms on hover --- */
+.ledger-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.25rem 1fr auto;
+  align-items: baseline;
+  gap: 1.25rem;
+  padding: 1.15rem 0.5rem 1.15rem 0;
+  border-top: 1px solid hsl(var(--codex-rule) / 0.7);
+  text-align: left;
+  width: 100%;
+  background: transparent;
+  transition: background-color 200ms ease, padding-left 220ms ease;
+}
+
+.ledger-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: hsl(var(--gilt));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ledger-row:hover:not([data-disabled="true"]),
+.ledger-row:focus-visible:not([data-disabled="true"]) {
+  background: hsl(var(--codex-vellum) / 0.6);
+  padding-left: 1rem;
+  outline: none;
+}
+
+.ledger-row:hover:not([data-disabled="true"])::before,
+.ledger-row:focus-visible:not([data-disabled="true"])::before {
+  transform: scaleY(1);
+}
+
+.ledger-row[data-disabled="true"] {
+  opacity: 0.5;
+}
+
+.ledger-index {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--codex-ink-soft));
+  padding-top: 0.15rem;
+}
+
+.ledger-row:hover:not([data-disabled="true"]) .ledger-index,
+.ledger-row:focus-visible:not([data-disabled="true"]) .ledger-index {
+  color: hsl(var(--primary));
+}
+
+/* --- Masthead title: large, tight Cormorant; the page's voice --- */
+.masthead-title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 0.94;
+  letter-spacing: -0.01em;
+}
+
+/* --- Drop / versal initial for opening passages --- */
+.versal::first-letter {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 3.4em;
+  line-height: 0.72;
+  float: left;
+  padding: 0.08em 0.12em 0 0;
+  color: hsl(var(--primary));
+}
+
+/* =====================================================================
+   WEB EXTENSION — the codex recto page
+   ===================================================================== */
+
+.codex-page-bg {
+  background:
+    radial-gradient(circle at 0% 0%, hsl(42 60% 92% / 0.55), transparent 32rem),
+    linear-gradient(180deg, hsl(40 40% 97%), hsl(36 30% 95%));
+}
+
+.dark .codex-page-bg {
+  background:
+    radial-gradient(circle at 0% 0%, hsl(32 50% 24% / 0.3), transparent 32rem),
+    linear-gradient(180deg, hsl(28 18% 12%), hsl(30 14% 10%));
+}
+
+/* The folio rail running down the left edge of a gathering */
+.folio-rail {
+  position: relative;
+}
+
+.folio-rail::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    hsl(var(--gilt) / 0.45) 14%,
+    hsl(var(--gilt) / 0.45) 86%,
+    transparent
+  );
+}
+
+.folio-rail-code {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+
+/* The reading surface: a leaf of vellum with a sewn inner edge */
+.codex-leaf {
+  background: hsl(var(--codex-vellum));
+  border: 1px solid hsl(var(--codex-rule) / 0.8);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.6) inset,
+    0 40px 80px -50px hsl(30 40% 20% / 0.4);
+}
+
+.dark .codex-leaf {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.04) inset,
+    0 40px 80px -50px hsl(0 0% 0% / 0.6);
+}
+
+/* --- Margin glosses: footnotes rendered in the true outer margin --- */
+.gloss-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+@media (min-width: 1180px) {
+  .gloss-layout {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    column-gap: 2.75rem;
+  }
+}
+
+.gloss-margin {
+  display: none;
+}
+
+@media (min-width: 1180px) {
+  .gloss-margin {
+    display: block;
+    border-left: 1px solid hsl(var(--codex-rule) / 0.7);
+    padding-left: 1.75rem;
+  }
+}
+
+.gloss-item {
+  position: relative;
+  padding: 0.1rem 0 1.4rem;
+  font-family: var(--font-serif);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: hsl(var(--codex-ink-soft));
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.gloss-item:hover,
+.gloss-item:focus-visible {
+  color: hsl(var(--foreground));
+  outline: none;
+}
+
+.gloss-item-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.4rem;
+  border-radius: 9999px;
+  background: hsl(34 70% 88%);
+  color: hsl(20 60% 30%);
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 700;
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.dark .gloss-item-number {
+  background: hsl(28 40% 26%);
+  color: hsl(36 80% 80%);
+}
+
+.gloss-item:hover .gloss-item-number,
+.gloss-item.is-active .gloss-item-number {
+  background: hsl(var(--gilt));
+  color: hsl(30 40% 16%);
+  transform: scale(1.08);
+}
+
+.gloss-item.is-active {
+  color: hsl(var(--foreground));
+}
+
+.gloss-margin-label {
+  margin-bottom: 1.5rem;
 }

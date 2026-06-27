@@ -6,7 +6,7 @@ export const volumeEighteenData: BookData = {
   "seriesTitle": "First Teaching of the Last Message",
   "seriesSubtitle": "The Divine Science & Its Six Pillars",
   "author": "Umar F. Abd-Allah Wymann-Landgraf",
-  "introduction": "Syntopicon 18 gathers the main text on the Hereafter with linked chapter-by-chapter web extensions and inline supporting footnotes where the extension material directly clarifies the main text.",
+  "introduction": "This volume sets out the Islamic doctrine of the Hereafter, tracing the soul's journey from the Resurrection of the dead through the Last Judgment to its final home. It walks through the great stations of that Day—the Gathering, the weighing of deeds in the Scales, the Quenching Pool, and the crossing of the Traverse—on the authority of the Qur'an and Sunna. It then turns to the two eternal destinations, the Fire and the Garden, and the obligatory belief in their permanence. Throughout, it distinguishes settled creed from the areas where sound scholars have differed.",
   "totalVolumes": 19,
   "chapters": [
     {

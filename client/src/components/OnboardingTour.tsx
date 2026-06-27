@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sparkles, ArrowRight, MousePointer2, Map, Search, BookOpen, Wand2, MoonStar, PenSquare } from "lucide-react";
+import { ArrowRight, Search, MoonStar, PenSquare } from "lucide-react";
 
 type Step = {
   id: string;
@@ -246,20 +245,6 @@ export default function OnboardingTour() {
     } as React.CSSProperties;
   }
 
-  const Icon = currentStep.id === "welcome"
-    ? Sparkles
-    : currentStep.id === "open-volume"
-    ? Map
-    : currentStep.id === "search-volume"
-    ? Search
-    : currentStep.id === "open-chapter"
-    ? BookOpen
-    : currentStep.id === "reading-tools"
-    ? Wand2
-    : currentStep.id === "ask-ai"
-    ? Sparkles
-    : MousePointer2;
-
   return (
     <div ref={overlayRef} className="pointer-events-auto">
       {/* Backdrop */}
@@ -284,67 +269,61 @@ export default function OnboardingTour() {
 
       {/* Floating card */}
       <Card
-        className="z-60 relative overflow-hidden border-border/70 bg-card/95 shadow-2xl"
+        className="z-60 relative overflow-hidden rounded-lg border-border/70 bg-card shadow-xl"
         style={cardStyle}
       >
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/60 to-primary/30" />
-        <div className="p-5">
-          <div className="mb-3 flex items-center gap-2 text-primary">
-            <Icon className="h-5 w-5" />
-            <div className="text-[10px] font-semibold uppercase tracking-[0.35em]">Quick Tour</div>
-          </div>
-          <h3 className="mb-2 text-xl font-heading font-semibold leading-tight">
+        <div className="absolute inset-x-0 top-0 h-px bg-[hsl(var(--gilt))]" />
+        <div className="p-6">
+          <div className="codex-label mb-4">Quick tour</div>
+          <h3 className="mb-2 font-heading text-2xl font-semibold leading-tight">
             {currentStep.title}
           </h3>
-          <p className="mb-4 text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             {currentStep.description}
           </p>
 
           {/* Hints for the reading tools step */}
           {currentStep.id === "reading-tools" && (
-            <div className="mb-3 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
-                <Search className="h-3.5 w-3.5 text-foreground/70" />
-                Search
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
-                <PenSquare className="h-3.5 w-3.5 text-foreground/70" />
-                Notes
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
-                <MoonStar className="h-3.5 w-3.5 text-foreground/70" />
-                Theme
-              </div>
-              <div className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/60 px-2 py-1">
-                A⇵
-                Text Size
-              </div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Search className="h-3.5 w-3.5" /> Search
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <PenSquare className="h-3.5 w-3.5" /> Notes
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <MoonStar className="h-3.5 w-3.5" /> Theme
+              </span>
+              <span className="inline-flex items-center gap-1.5">A⇵ Text size</span>
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground/80">
-              Step {index + 1} of {steps.length}
-              {!onCorrectRoute && <span className="ml-2">Navigate to continue…</span>}
+          <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4">
+            <div className="codex-label text-sm">
+              {index + 1} / {steps.length}
+              {!onCorrectRoute && (
+                <span className="ml-2 normal-case tracking-normal">navigate to continue…</span>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <button
                 type="button"
                 onClick={handleSkip}
-                className="text-xs uppercase tracking-[0.3em] text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground transition hover:text-foreground"
               >
                 Skip
               </button>
-              <Button size="sm" className="rounded-full" onClick={gotoNext} disabled={!onCorrectRoute}>
-                {index < steps.length - 1 ? (
-                  <>
-                    Next
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </>
-                ) : (
-                  "Finish"
+              <button
+                type="button"
+                onClick={gotoNext}
+                disabled={!onCorrectRoute}
+                className="group inline-flex items-center gap-1.5 text-sm font-medium text-primary transition hover:text-[hsl(var(--gilt))] disabled:opacity-40"
+              >
+                {index < steps.length - 1 ? "Next" : "Finish"}
+                {index < steps.length - 1 && (
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

@@ -4,12 +4,11 @@ import { seriesOverview, volumes } from "@/lib/volumes";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const featuredVolumes = volumes.filter((volume) => volume.number === 18);
 
   return (
     <VolumesLanding
       overview={seriesOverview}
-      volumes={featuredVolumes}
+      volumes={volumes}
       onSelectVolume={(volumeNumber) => setLocation(`/v/${volumeNumber}`)}
     />
   );

@@ -1,5 +1,4 @@
-import { Home, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Home } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { hasRenderableContent } from "@/lib/content";
 import type { Chapter } from "@shared/schema";
@@ -22,85 +21,137 @@ export default function ChapterSidebar({
   onSectionClick,
 }: ChapterSidebarProps) {
   return (
-    <div className="h-full flex flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="p-4 border-b border-sidebar-border">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2"
+    <div className="flex h-full flex-col bg-sidebar">
+      <div className="px-5 pt-5 pb-3">
+        <button
+          type="button"
           onClick={() => onHomeClick(volumeNumber)}
           data-testid="button-home"
+          className="group inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
         >
-          <Home className="h-4 w-4" />
-          <span className="font-sans">Home</span>
-        </Button>
+          <Home className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+          Volume contents
+        </button>
       </div>
-
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
-          {chapters.map((chapter) => {
-            const baseLevel =
-              chapter.sections.length > 0
-                ? Math.min(...chapter.sections.map((s) => s.level))
-                : 0;
-            return (
-              <div key={chapter.id} className="space-y-2">
-                <h3 className="text-sm font-sans font-semibold text-sidebar-foreground uppercase tracking-wide">
-                  {chapter.title}
-                </h3>
-                <div className="space-y-1">
-                  {chapter.sections.map((section) => {
-                    const isActive =
-                      currentChapterId === chapter.id &&
-                      currentSectionId === section.id;
-                    const indentLevel = Math.max(0, section.level - baseLevel);
-                    const isDisabled = !hasRenderableContent(section.content);
-                    const showCaret = !isDisabled;
-                    return (
-                      <button
-                        key={section.id}
-                        type="button"
-                        onClick={
-                          isDisabled
-                            ? undefined
-                            : () => onSectionClick(volumeNumber, chapter.id, section.id)
-                        }
-                        disabled={isDisabled}
-                        aria-disabled={isDisabled}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : isDisabled
-                              ? "text-sidebar-foreground/80 cursor-not-allowed"
-                              : "text-sidebar-foreground hover-elevate active-elevate-2"
+        <nav className="px-5 pb-6 pt-1">
+          <ol className="space-y-7">
+            {chapters.map((chapter, chapterIdx) => {
+              const baseLevel =
+                chapter.sections.length > 0
+                  ? Math.min(...chapter.sections.map((s) => s.level))
+                  : 0;
+              const isChapterActive = currentChapterId === chapter.id;
+              /* Normalise the heading: a title like "Book Thirteen: Crossing
+                 the Great Traverse (al-Ṣirāṭ)" splits into a short heading
+                 ("Book Thirteen") and a subtitle ("Crossing the Great
+                 Traverse…"), so every chapter reads the same clean way. */
+              const titleParts = chapter.title.split(/:\s*([\s\S]+)/);
+              const headingLabel = titleParts[1] ? titleParts[0].trim() : chapter.title.trim();
+              const headingSubtitle = titleParts[1]?.trim() ?? null;
+              /* Hide a lone section row that just repeats the chapter title;
+                 the chapter heading itself becomes the link in that case. */
+              const onlyEcho =
+                chapter.sections.length === 1 &&
+                (chapter.sections[0].title.trim() === chapter.title.trim() ||
+                  (headingSubtitle != null &&
+                    chapter.sections[0].title.trim() === headingSubtitle));
+              const echoSection = onlyEcho ? chapter.sections[0] : null;
+              const echoActive =
+                echoSection != null &&
+                isChapterActive &&
+                currentSectionId === echoSection.id;
+              const echoDisabled =
+                echoSection != null && !hasRenderableContent(echoSection.content);
+
+              return (
+                <li key={chapter.id}>
+                  <button
+                    type="button"
+                    onClick={
+                      echoSection && !echoDisabled
+                        ? () => onSectionClick(volumeNumber, chapter.id, echoSection.id)
+                        : undefined
+                    }
+                    disabled={!echoSection || echoDisabled}
+                    className={`group flex w-full items-baseline gap-3 text-left ${
+                      echoSection && !echoDisabled ? "cursor-pointer" : "cursor-default"
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 font-sans text-[0.7rem] font-semibold tabular-nums transition-colors ${
+                        echoActive
+                          ? "text-[hsl(var(--gilt))]"
+                          : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
+                      }`}
+                    >
+                      {String(chapterIdx + 1).padStart(2, "0")}
+                    </span>
+                    <span className="min-w-0">
+                      <span
+                        className={`block font-heading text-[1.05rem] font-medium leading-snug transition-colors ${
+                          echoActive
+                            ? "text-primary"
+                            : "text-sidebar-foreground group-hover:text-primary"
                         }`}
-                        style={{ paddingLeft: `${12 + indentLevel * 16}px` }}
-                        data-testid={`section-link-${section.id}`}
                       >
-                        <div className="flex items-center gap-2">
-                          {showCaret ? (
-                            <ChevronRight
-                              className={`h-3 w-3 flex-shrink-0 transition-transform ${
-                                isActive ? "rotate-90" : ""
+                        {headingLabel}
+                      </span>
+                      {headingSubtitle && onlyEcho && (
+                        <span className="mt-0.5 block font-serif text-sm leading-snug text-sidebar-foreground/60">
+                          {headingSubtitle}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+
+                  {!onlyEcho && (
+                    <ul className="mt-2.5 space-y-px border-l border-sidebar-border/70 pl-3">
+                      {chapter.sections.map((section) => {
+                        const isActive =
+                          currentChapterId === chapter.id &&
+                          currentSectionId === section.id;
+                        const indentLevel = Math.max(0, section.level - baseLevel);
+                        const isDisabled = !hasRenderableContent(section.content);
+                        return (
+                          <li key={section.id}>
+                            <button
+                              type="button"
+                              onClick={
+                                isDisabled
+                                  ? undefined
+                                  : () => onSectionClick(volumeNumber, chapter.id, section.id)
+                              }
+                              disabled={isDisabled}
+                              aria-disabled={isDisabled}
+                              className={`relative w-full rounded-sm py-1.5 pr-2 text-left text-sm leading-snug transition-colors ${
+                                isActive
+                                  ? "text-primary"
+                                  : isDisabled
+                                    ? "cursor-not-allowed text-sidebar-foreground/35"
+                                    : "text-sidebar-foreground/75 hover:text-foreground"
                               }`}
-                            />
-                          ) : (
-                            <span className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
-                          )}
-                          <span className="line-clamp-2">{section.title}</span>
-                        </div>
-                        {section.pageReference && (
-                          <div className="text-xs text-muted-foreground mt-1 ml-5 font-sans">
-                            Physical book p. {section.pageReference}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                              style={{ paddingLeft: `${indentLevel * 14}px` }}
+                              data-testid={`section-link-${section.id}`}
+                            >
+                              {isActive && (
+                                <span
+                                  className="absolute -left-[13px] top-1/2 h-4 w-px -translate-y-1/2 bg-[hsl(var(--gilt))]"
+                                  aria-hidden="true"
+                                />
+                              )}
+                              <span className="line-clamp-2">{section.title}</span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       </ScrollArea>
     </div>
   );

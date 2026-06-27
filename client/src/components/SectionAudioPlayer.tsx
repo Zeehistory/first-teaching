@@ -1,6 +1,5 @@
 import { useMemo, useRef, type MouseEvent as ReactMouseEvent } from "react";
-import { Headphones, Pause, Play } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Pause, Play } from "lucide-react";
 import type { SectionAudioController } from "@/hooks/useSectionAudioController";
 import { formatDuration } from "@/lib/time";
 
@@ -31,61 +30,54 @@ export default function SectionAudioPlayer({
   };
 
   return (
-    <div
-      className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-primary/15 via-primary/8 to-primary/18 p-5 shadow-sm backdrop-blur-sm"
-      data-tour="section-audio"
-    >
-      <div className="absolute inset-0 pointer-events-none opacity-40">
-        <div className="absolute -bottom-16 -right-14 h-48 w-48 rounded-full bg-primary/25 blur-3xl" />
-        <div className="absolute -top-12 -left-12 h-36 w-36 rounded-full bg-[hsl(185,70%,88%)] blur-3xl" />
-      </div>
-
-      <div className="relative flex items-center gap-5">
-        <button
-          type="button"
-          onClick={controller.togglePlay}
-          className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-border/70 bg-background/90 text-primary shadow-md transition hover:border-primary/40 hover:text-primary"
-          aria-label={controller.isPlaying ? "Pause narration preview" : "Play narration preview"}
-        >
-          {controller.isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 translate-x-[2px]" />}
-        </button>
-
-        <div className="flex-1 space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground/70">
-            <Headphones className="h-3.5 w-3.5" />
-            <span>Audio Companion</span>
-          </div>
-          <div className="font-heading text-lg sm:text-xl text-foreground/90 line-clamp-1">
-            {chapterTitle}
-          </div>
-          <p className="text-sm text-muted-foreground/80 line-clamp-2">
-            {sectionTitle}
-          </p>
-        </div>
-
-        <div className="flex flex-col items-end text-xs font-mono text-muted-foreground/80">
-          <span>{formatDuration(controller.elapsed)}</span>
-          <span className="opacity-70">/{formatDuration(controller.duration)}</span>
-        </div>
-      </div>
-
-      <div
-        ref={progressBarRef}
-        className="relative mt-5 h-2 w-full cursor-pointer overflow-hidden rounded-full bg-foreground/10"
-        onClick={handleProgressClick}
-        aria-label="Scrub audio preview"
+    <div className="flex items-center gap-5 py-1" data-tour="section-audio">
+      <button
+        type="button"
+        onClick={controller.togglePlay}
+        className="group relative inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        aria-label={controller.isPlaying ? "Pause narration" : "Play narration"}
       >
-        <div
-          className={cn(
-            "absolute left-0 top-0 h-full rounded-full bg-primary/80 transition-all duration-300 ease-out",
-            controller.isPlaying ? "shadow-[0_0_12px_rgba(45,140,140,0.35)]" : "shadow-none"
-          )}
-          style={{ width: `${progressPercent}%` }}
+        <span
+          className="pointer-events-none absolute inset-0 rounded-full border border-[hsl(var(--gilt)/0.55)] transition-transform duration-300 group-hover:scale-105"
+          aria-hidden="true"
         />
-      </div>
+        {controller.isPlaying ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="h-4 w-4 translate-x-[1px]" />
+        )}
+      </button>
 
-      <div className="relative mt-3 flex text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground/60">
-        <span>Narrated By: Dr. Umar Faruq Abd-Allah</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="font-serif text-sm italic text-[hsl(var(--codex-ink-soft))]">
+            Narrated by Dr. Umar Faruq Abd-Allah
+          </span>
+          <span className="flex-shrink-0 font-heading text-base tabular-nums text-[hsl(var(--codex-ink-soft))]">
+            {formatDuration(controller.elapsed)}
+            <span className="px-1 text-[hsl(var(--gilt))]">·</span>
+            {formatDuration(controller.duration)}
+          </span>
+        </div>
+
+        {/* Scrubber — a hairline track with a slender caret marker */}
+        <div
+          ref={progressBarRef}
+          className="group relative mt-2.5 h-3 w-full cursor-pointer"
+          onClick={handleProgressClick}
+          aria-label="Scrub narration"
+        >
+          <span className="absolute top-1/2 left-0 h-px w-full -translate-y-1/2 bg-[hsl(var(--codex-rule))]" />
+          <span
+            className="absolute top-1/2 left-0 h-px -translate-y-1/2 bg-[hsl(var(--gilt))] transition-[width] duration-300 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
+          <span
+            className="absolute top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-[hsl(var(--gilt))] transition-opacity duration-200"
+            style={{ left: `${progressPercent}%` }}
+            aria-hidden="true"
+          />
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import {
   PenSquare,
   Menu,
   ChevronLeft,
+  Highlighter,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -893,46 +895,48 @@ export default function Chapter() {
 
       <div className="chapter-shell relative flex h-screen overflow-hidden">
         {!studyPaneCollapsed && (
-          <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-border bg-muted/10">
-            <div className="border-b border-border px-4 py-4">
-              <div className="flex items-center justify-between">
-                <div className="text-s font-semibold tracking-[0.3em] text-muted-foreground">
-                  Study Pane
-                </div>
-                <button
-                  type="button"
-                  aria-label="Collapse study pane"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition hover:text-foreground"
-                  onClick={() => setStudyPaneCollapsed(true)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2" data-tour="notes-toggle">
+          <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+            <div className="flex items-center justify-between gap-6 px-5 pt-5">
+              <div className="flex items-center gap-5" data-tour="notes-toggle">
                 <button
                   type="button"
                   onClick={() => setLeftPaneMode("navigation")}
-                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                  className={`relative pb-1 text-sm transition-colors ${
                     leftPaneMode === "navigation"
-                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
-                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Navigate
+                  Contents
+                  {leftPaneMode === "navigation" && (
+                    <span className="absolute inset-x-0 -bottom-px h-px bg-[hsl(var(--gilt))]" />
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => setLeftPaneMode("notes")}
-                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                  className={`relative pb-1 text-sm transition-colors ${
                     leftPaneMode === "notes"
-                      ? "border-foreground/20 bg-background text-foreground shadow-sm"
-                      : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Notes
+                  {leftPaneMode === "notes" && (
+                    <span className="absolute inset-x-0 -bottom-px h-px bg-[hsl(var(--gilt))]" />
+                  )}
                 </button>
               </div>
+              <button
+                type="button"
+                aria-label="Collapse study pane"
+                className="-mr-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+                onClick={() => setStudyPaneCollapsed(true)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
             </div>
+            <div className="mx-5 mt-4 border-t border-sidebar-border/70" />
             <div className="flex-1 min-h-0 overflow-hidden">
               {leftPaneMode === "navigation" ? (
                 <div className="h-full">
@@ -967,31 +971,21 @@ export default function Chapter() {
                               <button
                                 type="button"
                                 onClick={() => focusNoteHighlight(note)}
-                                className="group relative w-full overflow-hidden rounded-2xl border border-border/60 bg-background/90 px-5 py-5 text-left shadow-sm transition hover:border-primary/35 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                                title={trail ? `${primary} · ${trail}` : primary}
+                                className="group w-full border-l-2 border-[hsl(var(--codex-rule))] pl-4 text-left transition-colors hover:border-[hsl(var(--gilt))] focus-visible:outline-none"
                               >
-                                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground/60">
-                                  <span>Note</span>
-                                  <span className="font-sans tracking-[0.2em] text-muted-foreground/50">
-                                    {timeLabel}
-                                  </span>
+                                <div className="text-xs text-muted-foreground/60">
+                                  {timeLabel}
                                 </div>
-                                <div className="pointer-events-none absolute left-5 right-5 top-8 rounded-lg border border-primary/20 bg-background/95 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.35em] text-[hsl(184,42%,32%)] opacity-0 shadow-sm transition-all duration-200 ease-out -translate-y-2 group-hover:translate-y-0 group-hover:opacity-100">
-                                  <span>{primary}</span>
-                                  {trail && (
-                                    <span className="mt-1.5 block text-[9px] font-medium tracking-[0.28em] text-muted-foreground/65">
-                                      {trail}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="mt-5 text-sm font-serif leading-relaxed text-foreground/90">
+                                <p className="mt-1.5 font-serif text-sm leading-relaxed text-foreground/90">
                                   {note.note}
                                 </p>
-                                <blockquote className="mt-3 border-l border-primary/20 pl-4 text-xs italic text-muted-foreground/75">
-                                  “{note.excerpt}”
-                                </blockquote>
-                                <span className="mt-4 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-primary/75">
+                                <p className="mt-2 text-xs italic leading-relaxed text-muted-foreground/70 line-clamp-2">
+                                  {note.excerpt}
+                                </p>
+                                <span className="mt-2.5 inline-flex items-center gap-1.5 text-xs text-primary/80 transition group-hover:text-[hsl(var(--gilt))]">
                                   Jump to highlight
-                                  <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1" />
+                                  <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
                                 </span>
                               </button>
                             </li>
@@ -1009,7 +1003,7 @@ export default function Chapter() {
           <button
             type="button"
             aria-label="Expand study pane"
-            className="hidden lg:flex absolute left-4 top-4 z-30 h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:border-primary/40"
+            className="hidden lg:flex absolute left-4 top-4 z-30 h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
             onClick={() => setStudyPaneCollapsed(false)}
           >
             <Menu className="h-4 w-4" />
@@ -1081,7 +1075,7 @@ export default function Chapter() {
                     type="button"
                     onClick={handleAssistantButton}
                     aria-label="Open study assistant"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground transition hover:border-primary/50 hover:text-primary"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                     data-tour="assistant-button"
                   >
                     <AssistantMark className="h-4 w-4" />
@@ -1089,23 +1083,23 @@ export default function Chapter() {
                   {showAssistantIntro && (
                     <div className="absolute right-0 top-full z-30 mt-3 w-64 rounded-xl border border-border bg-background px-4 py-3 text-left shadow-2xl">
                       <span className="pointer-events-none absolute -top-2 right-6 block h-3 w-3 rotate-45 border border-border border-b-0 border-r-0 bg-background" />
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.4em] text-primary/70">
-                        New
+                      <div className="font-heading text-base font-semibold text-foreground">
+                        Meet Ask Al
                       </div>
-                      <p className="mt-2 text-sm text-muted-foreground/90">
-                        Meet Ask Al—your AI guide for summaries, clarifications, and deeper context.
+                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground/90">
+                        Your guide for summaries, clarifications, and deeper context.
                       </p>
-                      <div className="mt-3 flex items-center gap-3">
+                      <div className="mt-3 flex items-center gap-4">
                         <button
                           type="button"
-                          className="flex-1 rounded-md bg-primary/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary-foreground transition hover:bg-primary"
+                          className="rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground transition hover:brightness-105"
                           onClick={handleAssistantButton}
                         >
                           Try it
                         </button>
                         <button
                           type="button"
-                          className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground transition hover:text-foreground"
+                          className="text-sm text-muted-foreground transition hover:text-foreground"
                           onClick={dismissAssistantIntro}
                         >
                           Later
@@ -1114,26 +1108,26 @@ export default function Chapter() {
                     </div>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
+                  type="button"
                   onClick={() => setIsSearchOpen(true)}
                   data-testid="button-search"
                   data-tour="chapter-search"
+                  aria-label="Search"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
                   <SearchIcon className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     captureReadingReturnState();
                     setLocation("/glossary");
                   }}
-                  className="hidden sm:inline-flex"
+                  className="hidden rounded-full px-3 py-1.5 text-sm text-muted-foreground transition hover:text-foreground sm:inline-flex"
                 >
                   Glossary
-                </Button>
+                </button>
                 <span data-tour="theme-toggle">
                   <ThemeToggle />
                 </span>
@@ -1281,34 +1275,37 @@ function NoteComposer({
 
   return createPortal(
     <div
-      className="fixed z-50 w-[min(360px,calc(100vw-32px))] rounded-2xl border border-border bg-background/95 p-5 shadow-2xl backdrop-blur"
+      className="fixed z-50 w-[min(360px,calc(100vw-32px))] rounded-xl border border-[hsl(var(--codex-rule))] bg-background p-4 shadow-[0_16px_40px_-20px_rgba(40,30,20,0.45)]"
       style={{ top, left, width }}
       role="dialog"
       aria-label="Add a note"
     >
-      <div className="text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground/70">
-        Quick note
-      </div>
-      <p className="mt-2 text-xs italic text-muted-foreground/80 line-clamp-4">“{excerpt}”</p>
-      <Textarea
+      <p className="border-l-2 border-[hsl(var(--gilt))] pl-3 text-xs italic leading-relaxed text-muted-foreground line-clamp-3">
+        {excerpt}
+      </p>
+      <textarea
         ref={textareaRef}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Capture your insight..."
-        className="mt-3 min-h-[120px] resize-none"
+        placeholder="Write a note…"
+        className="mt-3 min-h-[96px] w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0"
       />
-      <div className="mt-3 flex items-center gap-2">
-        <Button
+      <div className="mt-2 flex items-center justify-end gap-1 border-t border-[hsl(var(--codex-rule)/0.7)] pt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+        >
+          Cancel
+        </button>
+        <button
           type="button"
           onClick={onSave}
           disabled={disableSave}
-          className="flex-1"
+          className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition hover:brightness-105 disabled:opacity-40"
         >
           Save note
-        </Button>
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
+        </button>
       </div>
     </div>,
     document.body
@@ -1334,32 +1331,34 @@ function SelectionToolbar({ rect, onHighlight, onAddNote, onDismiss }: Selection
 
   return createPortal(
     <div
-      className="fixed z-50 flex h-11 items-center gap-1 rounded-full border border-border bg-background/95 px-2 shadow-2xl backdrop-blur"
+      className="fixed z-50 flex h-10 items-center rounded-full border border-border bg-background/95 px-1 shadow-lg backdrop-blur"
       style={{ top, left, width: toolbarWidth }}
       role="toolbar"
     >
       <button
         type="button"
         onClick={onHighlight}
-        className="flex-1 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+        className="flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-foreground transition hover:text-primary"
       >
+        <Highlighter className="h-3.5 w-3.5" />
         Highlight
       </button>
-      <span className="h-6 w-px bg-border" aria-hidden="true" />
+      <span className="h-4 w-px bg-border" aria-hidden="true" />
       <button
         type="button"
         onClick={onAddNote}
-        className="flex-1 rounded-full px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+        className="flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-foreground transition hover:text-primary"
       >
-        Add Note
+        <PenSquare className="h-3.5 w-3.5" />
+        Note
       </button>
       <button
         type="button"
         onClick={onDismiss}
-        className="rounded-full px-2 py-1 text-muted-foreground transition hover:text-foreground"
+        className="ml-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
         aria-label="Dismiss selection"
       >
-        x
+        <X className="h-3.5 w-3.5" />
       </button>
     </div>,
     document.body
