@@ -55,7 +55,21 @@ if (!existsSync(path.join(OUT, "index.html"))) {
 // 2. SPA deep-link fallback + Jekyll opt-out.
 copyFileSync(path.join(OUT, "index.html"), path.join(OUT, "404.html"));
 writeFileSync(path.join(OUT, ".nojekyll"), "");
-console.log("\nBuilt dist/pages (with 404.html + .nojekyll).");
+
+// 3. Neutralize Vercel for this branch. Vercel auto-builds every pushed branch
+//    using the project's cached settings ("vite build"), which fails here since
+//    gh-pages has no node_modules. This vercel.json turns the branch into a
+//    no-build static serve, so any Vercel pickup succeeds instead of erroring.
+//    (Production at first-teaching.vercel.app still only tracks `main`.)
+writeFileSync(
+  path.join(OUT, "vercel.json"),
+  JSON.stringify(
+    { buildCommand: null, outputDirectory: ".", installCommand: null, framework: null },
+    null,
+    2,
+  ) + "\n",
+);
+console.log("\nBuilt dist/pages (with 404.html, .nojekyll, vercel.json no-build).");
 
 if (buildOnly) {
   console.log("--build given: skipping publish.");
