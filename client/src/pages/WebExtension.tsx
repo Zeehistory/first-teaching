@@ -7,7 +7,7 @@ import FootnotePanel from "@/components/FootnotePanel";
 import ThemeToggle from "@/components/ThemeToggle";
 import TextSizeControl from "@/components/TextSizeControl";
 import type { Footnote, Section } from "@shared/schema";
-import { volumeEighteenWebExtensions } from "@/lib/content";
+import { volumeOneWebExtensions, volumeEighteenWebExtensions } from "@/lib/content";
 import { buildFootnoteSelector } from "@/lib/footnotes";
 import { readReadingReturnState } from "@/lib/readingReturn";
 
@@ -27,7 +27,11 @@ export default function WebExtension() {
   const volumeNumber = params?.volumeNumber ? parseInt(params.volumeNumber, 10) : NaN;
   const chapterId = params?.id ?? "";
   const extension =
-    volumeNumber === 18 ? volumeEighteenWebExtensions[chapterId] ?? null : null;
+    volumeNumber === 1
+      ? volumeOneWebExtensions[chapterId] ?? null
+      : volumeNumber === 18
+        ? volumeEighteenWebExtensions[chapterId] ?? null
+        : null;
   const returnState = useMemo(() => readReadingReturnState(), []);
 
   const focusFootnoteMarker = useCallback((footnote: Footnote) => {
