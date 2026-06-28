@@ -1353,20 +1353,33 @@ body.timeline-open {
 /* ===========================================================================
    Glossary browser — searchable index + detail pane, with an A–Z rail.
    =========================================================================== */
+/* Minimal underline search: no box, just a hairline rule that draws to teal
+   on focus from the centre out. */
 .glossary-search {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  border: 1px solid hsl(var(--codex-rule) / 0.8);
-  border-radius: 0.6rem;
-  background: hsl(var(--codex-vellum) / 0.6);
-  padding: 0.6rem 0.85rem;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  background: transparent;
+  padding: 0.5rem 0.1rem;
+  border-bottom: 1px solid hsl(var(--codex-rule) / 0.8);
 }
 
-.glossary-search:focus-within {
-  border-color: hsl(var(--primary) / 0.6);
-  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+.glossary-search::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1.5px;
+  background: hsl(var(--primary));
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glossary-search:focus-within::after {
+  transform: scaleX(1);
 }
 
 .glossary-letter-heading {

@@ -129,18 +129,16 @@ export default function Glossary() {
               {glossary.length} terms
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setIndexCollapsed((v) => !v)}
-            aria-label={indexCollapsed ? "Show term list" : "Hide term list"}
-            className="ml-auto hidden h-9 w-9 items-center justify-center rounded-full text-[hsl(var(--codex-ink-soft))] transition hover:bg-[hsl(var(--codex-vellum))] hover:text-foreground md:inline-flex"
-          >
-            {indexCollapsed ? (
+          {indexCollapsed && (
+            <button
+              type="button"
+              onClick={() => setIndexCollapsed(false)}
+              aria-label="Show term list"
+              className="ml-auto hidden h-9 w-9 items-center justify-center rounded-full text-[hsl(var(--codex-ink-soft))] transition hover:bg-[hsl(var(--codex-vellum))] hover:text-foreground md:inline-flex"
+            >
               <PanelLeftOpen className="h-[18px] w-[18px]" />
-            ) : (
-              <PanelLeftClose className="h-[18px] w-[18px]" />
-            )}
-          </button>
+            </button>
+          )}
         </div>
       </header>
 
@@ -152,15 +150,15 @@ export default function Glossary() {
             indexCollapsed ? "md:hidden" : ""
           }`}
         >
-          <div className="flex-shrink-0 px-5 pb-4 pt-5 md:px-6">
-            <div className="glossary-search">
-              <Search className="h-4 w-4 flex-shrink-0 text-[hsl(var(--codex-ink-soft))]" />
+          <div className="flex flex-shrink-0 items-center gap-2 px-5 pb-4 pt-5 md:px-6">
+            <div className="glossary-search group flex-1">
+              <Search className="h-4 w-4 flex-shrink-0 text-[hsl(var(--codex-ink-soft))] transition-colors group-focus-within:text-[hsl(var(--primary))]" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search terms…"
-                className="min-w-0 flex-1 bg-transparent text-[0.95rem] text-foreground placeholder:text-[hsl(var(--codex-ink-soft))] focus:outline-none"
+                placeholder="Search the glossary…"
+                className="min-w-0 flex-1 bg-transparent text-[0.95rem] text-foreground placeholder:text-[hsl(var(--codex-ink-soft))]/70 focus:outline-none"
                 aria-label="Search glossary terms"
               />
               {query && (
@@ -174,6 +172,14 @@ export default function Glossary() {
                 </button>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => setIndexCollapsed(true)}
+              aria-label="Hide term list"
+              className="hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[hsl(var(--codex-ink-soft))] transition hover:bg-[hsl(var(--codex-vellum))] hover:text-foreground md:inline-flex"
+            >
+              <PanelLeftClose className="h-[18px] w-[18px]" />
+            </button>
           </div>
 
           <div
