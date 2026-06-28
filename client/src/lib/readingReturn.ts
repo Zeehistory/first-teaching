@@ -59,6 +59,31 @@ export function clearReadingReturnState() {
   window.sessionStorage.removeItem(READING_RETURN_STATE_KEY);
 }
 
+/**
+ * Briefly flash a soft band across the reading column at the viewport center,
+ * marking where the reader left off. Works regardless of whether the original
+ * glossary term can be located.
+ */
+function flashReadingPosition(container: HTMLElement) {
+  if (typeof document === "undefined") return;
+  const host = container.querySelector<HTMLElement>(
+    '[data-testid="chapter-text-content"]',
+  );
+  const target = host ?? container;
+  const cs = window.getComputedStyle(target);
+  if (cs.position === "static") target.style.position = "relative";
+
+  const band = document.createElement("div");
+  band.className = "reading-return-band";
+  // Place the band at the vertical center of the visible reading area,
+  // relative to the (now positioned) content host.
+  const hostRect = target.getBoundingClientRect();
+  const centerY = window.innerHeight / 2 - hostRect.top;
+  band.style.top = `${Math.max(0, centerY - 24)}px`;
+  target.appendChild(band);
+  window.setTimeout(() => band.remove(), 2000);
+}
+
 export function restoreReadingReturnScroll(path: string) {
   const state = readReadingReturnState();
   if (!state || state.path !== toRouterPath(path)) return false;
@@ -70,7 +95,10 @@ export function restoreReadingReturnScroll(path: string) {
   const slug = state.glossarySlug;
   clearReadingReturnState();
 
-  // Glow the glossary term the reader had opened, so the eye relands on it.
+  // Primary cue: a transient band at the reading position.
+  window.setTimeout(() => flashReadingPosition(container), 80);
+
+  // If we can find the exact glossary term the reader opened, glow it too.
   if (slug && typeof document !== "undefined") {
     let tries = 0;
     const tick = () => {
@@ -78,7 +106,6 @@ export function restoreReadingReturnScroll(path: string) {
         `[data-glossary="${CSS.escape(slug)}"]`,
       );
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
         el.classList.add("glossary-term-return-focus");
         window.setTimeout(
           () => el.classList.remove("glossary-term-return-focus"),

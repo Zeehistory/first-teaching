@@ -1671,6 +1671,33 @@ body.timeline-open {
 }
 
 /* Inline citation chips used inside Ask Assistant answers */
+/* "Back to reading" cue — a soft teal band that flashes across the reading
+   column at the spot the reader left off, then fades. */
+.reading-return-band {
+  position: absolute;
+  left: -1.5rem;
+  right: -1.5rem;
+  height: 3rem;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 0.5rem;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--primary) / 0) 0%,
+    hsl(var(--primary) / 0.14) 50%,
+    hsl(var(--primary) / 0) 100%
+  );
+  box-shadow: 0 0 24px 4px hsl(var(--primary) / 0.12);
+  animation: reading-return-flash 2s ease-out forwards;
+}
+
+@keyframes reading-return-flash {
+  0% { opacity: 0; transform: scaleY(0.6); }
+  18% { opacity: 1; transform: scaleY(1); }
+  70% { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
 /* Search snippet highlight — quiet teal wash, no heavy chip. */
 .search-hit {
   background: hsl(var(--primary) / 0.12);

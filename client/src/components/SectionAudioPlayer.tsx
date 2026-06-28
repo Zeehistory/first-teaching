@@ -69,11 +69,11 @@ export default function SectionAudioPlayer({
         >
           <span className="absolute top-1/2 left-0 h-px w-full -translate-y-1/2 bg-[hsl(var(--codex-rule))]" />
           <span
-            className="absolute top-1/2 left-0 h-px -translate-y-1/2 bg-[hsl(var(--gilt))] transition-[width] duration-300 ease-out"
+            className="absolute top-1/2 left-0 h-px -translate-y-1/2 bg-[hsl(var(--primary))] transition-[width] duration-300 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
           <span
-            className="absolute top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-[hsl(var(--gilt))] transition-opacity duration-200"
+            className="absolute top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-[hsl(var(--primary))] transition-opacity duration-200"
             style={{ left: `${progressPercent}%` }}
             aria-hidden="true"
           />
