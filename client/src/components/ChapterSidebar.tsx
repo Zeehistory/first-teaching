@@ -98,12 +98,11 @@ export default function ChapterSidebar({
                   ? Math.min(...chapter.sections.map((s) => s.level))
                   : 0;
               const isChapterActive = currentChapterId === chapter.id;
-              /* Normalise the heading: a title like "Book Thirteen: Crossing
-                 the Great Traverse (al-Ṣirāṭ)" splits into a short heading
-                 ("Book Thirteen") and a subtitle ("Crossing the Great
-                 Traverse…"), so every chapter reads the same clean way. */
+              /* Show the full chapter title on one line (e.g. "Book One: The
+                 Coming of the Hour (al-Sāʿa)"). The colon split is kept only to
+                 detect the echo-section case below. */
               const titleParts = chapter.title.split(/:\s*([\s\S]+)/);
-              const headingLabel = titleParts[1] ? titleParts[0].trim() : chapter.title.trim();
+              const headingLabel = chapter.title.trim();
               const headingSubtitle = titleParts[1]?.trim() ?? null;
               /* Hide a lone section row that just repeats the chapter title;
                  the chapter heading itself becomes the link in that case. */
@@ -130,21 +129,10 @@ export default function ChapterSidebar({
                         : undefined
                     }
                     disabled={!echoSection || echoDisabled}
-                    className={`group flex w-full items-baseline gap-3 text-left ${
+                    className={`group flex w-full items-baseline text-left ${
                       echoSection && !echoDisabled ? "cursor-pointer" : "cursor-default"
                     }`}
                   >
-                    <span
-                      className={`mt-0.5 font-sans text-[0.7rem] font-semibold tabular-nums transition-colors ${
-                        echoActive
-                          ? "text-primary"
-                          : isPart
-                            ? "text-primary/70 group-hover:text-primary"
-                            : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
-                      }`}
-                    >
-                      {String(chapterIdx + 1).padStart(2, "0")}
-                    </span>
                     <span className="min-w-0">
                       <span
                         className={`block font-heading leading-snug transition-colors ${

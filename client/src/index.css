@@ -1670,6 +1670,56 @@ body.timeline-open {
 }
 
 /* Inline citation chips used inside Ask Assistant answers */
+/* ── AI assistant "thinking" indicator ── */
+.ai-thinking {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+}
+
+.ai-thinking-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1.5px solid transparent;
+  border-top-color: hsl(var(--primary) / 0.7);
+  border-right-color: hsl(var(--primary) / 0.3);
+  animation: ai-orbit 1100ms linear infinite;
+}
+
+.ai-thinking-orbit-2 {
+  inset: 10px;
+  border-top-color: hsl(14 58% 50% / 0.55);
+  border-right-color: hsl(14 58% 50% / 0.2);
+  animation: ai-orbit 1500ms linear infinite reverse;
+}
+
+.ai-thinking-core {
+  color: hsl(var(--primary));
+  animation: ai-core-pulse 1600ms ease-in-out infinite;
+}
+
+.ai-thinking-label {
+  animation: ai-label-pulse 1800ms ease-in-out infinite;
+}
+
+@keyframes ai-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ai-core-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+
+@keyframes ai-label-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 .ai-citation {
   display: inline-flex;
   align-items: center;
@@ -1885,6 +1935,11 @@ body.timeline-open {
   width: 100%;
   background: transparent;
   transition: background-color 200ms ease, padding-left 220ms ease;
+}
+
+/* Variant without the leading index column (chapter contents). */
+.ledger-row-nonum {
+  grid-template-columns: 1fr auto;
 }
 
 .ledger-row::before {

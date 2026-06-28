@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, Bookmark, GraduationCap, ScrollText, Wand2 } from "lucide-react";
+import { ArrowUpRight, BookOpen, Bookmark, Compass, GraduationCap, ScrollText } from "lucide-react";
 import { useLocation } from "wouter";
 import Transliterated from "@/components/Transliterated";
 import type { Volume } from "@shared/schema";
@@ -81,11 +81,10 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
                   new CustomEvent("start-onboarding-tour", { detail: { step: 0 } })
                 )
               }
-              className="group inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/60 hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="group inline-flex items-center gap-1.5 text-sm text-[hsl(var(--codex-ink-soft))] underline-offset-4 transition hover:text-primary hover:underline focus-visible:outline-none focus-visible:text-primary"
             >
-              <Wand2 className="h-4 w-4" />
+              <Compass className="h-3.5 w-3.5 opacity-70 transition-opacity group-hover:opacity-100" />
               Take a quick tour
-              <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </button>
           </div>
         </div>

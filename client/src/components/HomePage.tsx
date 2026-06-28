@@ -102,9 +102,8 @@ export default function HomePage({
                   onClick={() => onChapterClick(chapter.id)}
                   data-testid={`chapter-card-${chapter.id}`}
                   title={chapter.description}
-                  className="ledger-row group"
+                  className="ledger-row ledger-row-nonum group"
                 >
-                  <span className="ledger-index">{String(idx + 1).padStart(2, "0")}</span>
                   <span className="min-w-0">
                     <span className="block font-heading text-lg font-medium leading-snug text-foreground md:text-xl">
                       <Transliterated text={chapter.title} />

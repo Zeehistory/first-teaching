@@ -48,6 +48,8 @@ function looksLikeSubhead(text: string): boolean {
   if (/[.!?;:]\s/.test(text)) return false;
   if (/[.!?:]$/.test(text)) return false;
   if (/[,;]$/.test(text)) return false;
+  // A trailing dash/em-dash signals enjambed verse, not a heading.
+  if (/[-–—]$/.test(text)) return false;
   // Editorial placeholders are not headings.
   if (/please define/i.test(text)) return false;
   // A line that opens with a discourse connective is running prose, not a head.
@@ -75,29 +77,79 @@ export interface ProcessedContent {
   subsections: Subsection[];
 }
 
+/** Is the paragraph's whole visible content italic (poetry / verse / a
+ *  transliterated line)? Such lines are never crossheadings. */
+function isWhollyItalic(inner: string): boolean {
+  const stripped = inner
+    .replace(/<(em|i)\b[^>]*>[\s\S]*?<\/\1>/gi, "") // remove italic runs
+    .replace(/<[^>]+>/g, "")
+    .replace(/&[a-z]+;/gi, " ")
+    .trim();
+  // If nothing remains outside the italic runs, the line is wholly italic.
+  return stripped.length === 0 && /<(em|i)\b/i.test(inner);
+}
+
 /**
  * Detect crossheads in `html`, tag them, and return the tagged html plus the
  * ordered list of subsections. `keyPrefix` keeps ids unique across sections.
+ *
+ * Detection is context-aware: a crosshead must be a *standalone* title-like
+ * line. If its immediate neighbours are also short title-like (or italic)
+ * lines, it belongs to a verse/poetry run and is left as body text.
  */
 export function processSubsections(html: string, keyPrefix = "sub"): ProcessedContent {
   const subsections: Subsection[] = [];
   const seen = new Set<string>();
   let counter = 0;
 
-  // Only consider plain <p>…</p> with no attributes — tagged/structural
-  // paragraphs (blockquotes, web-extension chips, etc.) are excluded.
-  const tagged = html.replace(/<p>([\s\S]*?)<\/p>/g, (match, inner) => {
-    // Skip paragraphs that contain block-level markers we never treat as heads.
-    if (/data-|class=|<a\b|<img\b/i.test(inner)) return match;
-    const text = plain(inner);
-    if (!looksLikeSubhead(text)) return match;
+  // First pass: index every plain <p> and classify it in isolation.
+  const paras: Array<{ start: number; end: number; inner: string; candidate: boolean }> = [];
+  const re = /<p>([\s\S]*?)<\/p>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    const inner = m[1];
+    const structural = /data-|class=|<a\b|<img\b/i.test(inner);
+    const italic = isWhollyItalic(inner);
+    const candidate =
+      !structural && !italic && looksLikeSubhead(plain(inner));
+    paras.push({ start: m.index, end: re.lastIndex, inner, candidate });
+  }
 
-    let id = `${keyPrefix}-${slugify(text)}`;
-    while (seen.has(id)) id = `${keyPrefix}-${slugify(text)}-${++counter}`;
-    seen.add(id);
-    subsections.push({ id, title: text });
-    return `<p id="${id}" class="${SUBHEAD_CLASS}">${inner}</p>`;
+  // A "short/verse-like" neighbour disqualifies a candidate (poetry run).
+  const neighbourLooksLikeVerse = (idx: number): boolean => {
+    const p = paras[idx];
+    if (!p) return false;
+    if (isWhollyItalic(p.inner)) return true;
+    const t = plain(p.inner);
+    if (!t) return false; // empty paragraph = a real separator, fine
+    const words = t.split(/\s+/);
+    // A neighbour that is itself short and lacks terminal punctuation reads as
+    // verse rather than body prose.
+    return words.length <= 9 && !/[.!?:]$/.test(t);
+  };
+
+  // Second pass: keep only standalone candidates; rebuild html.
+  let out = "";
+  let cursor = 0;
+  paras.forEach((p, i) => {
+    const standalone =
+      p.candidate &&
+      !neighbourLooksLikeVerse(i - 1) &&
+      !neighbourLooksLikeVerse(i + 1);
+    out += html.slice(cursor, p.start);
+    if (standalone) {
+      const text = plain(p.inner);
+      let id = `${keyPrefix}-${slugify(text)}`;
+      while (seen.has(id)) id = `${keyPrefix}-${slugify(text)}-${++counter}`;
+      seen.add(id);
+      subsections.push({ id, title: text });
+      out += `<p id="${id}" class="${SUBHEAD_CLASS}">${p.inner}</p>`;
+    } else {
+      out += html.slice(p.start, p.end);
+    }
+    cursor = p.end;
   });
+  out += html.slice(cursor);
 
-  return { html: tagged, subsections };
+  return { html: out, subsections };
 }

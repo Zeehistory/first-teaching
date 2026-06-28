@@ -49,6 +49,14 @@ const OPEN_Q = /[“"«]/;
 const CLOSE_Q = /[”"»]/;
 const ATTRIBUTION = /^\s*(?:[~—–-]\s*\S|—)/; // "~ Emily Dickinson", "— T. S. Eliot"
 const LEADIN_COLON = /[:：]\s*$/;
+// A lead-in ending in a verb of saying + colon ("the Prophet said:", "the
+// Qur'ān states:", "Muslim … transmit … that the Prophet said:") strongly
+// introduces a quotation — even one with embedded dialogue/quote marks.
+const SAYING_LEADIN =
+  /\b(said|says|saying|state[sd]?|stating|transmit(?:s|ted)?|narrate[sd]?|report[sd]?|relate[sd]?|recite[sd]?|announce[sd]?|declare[sd]?|proclaim[sd]?|reads?|wrote|writes?|asks?|asked|replie[sd]|responded|continued|added|noted)\b[^:：]{0,40}[:：]\s*$/i;
+// A paragraph ending in a parenthetical scripture/source citation, e.g.
+// "(Scattering Winds, 51:13-14)" or "(The Momentous Announcement, 78:40)".
+const TRAILING_CITATION = /\([^()]*\d+[:.,][^()]*\)[.”"»]?\s*$/;
 
 function plain(el: Element | null): string {
   return (el?.textContent || "").replace(/ /g, " ").trim();
@@ -192,12 +200,17 @@ function classifyQuotations(container: HTMLElement) {
     // rule / dates" introduces an ILLUSTRATION, not a quotation — keep it prose.
     const EXAMPLE_LEADIN =
       /(following|above|below|preceding)\s+\w*\s*(paragraph|example|passage|sentence|rule|manner|way|cases?|dates?|illustration)\b/i;
+    // A strong "X said:/states:" lead-in introduces a quotation even when the
+    // passage carries embedded dialogue (a Hadith narration, a Qur'ān verse
+    // with quoted speech). A trailing scripture citation is the same signal.
+    const strongSayingLeadIn = SAYING_LEADIN.test(prevText);
+    const endsWithCitation = TRAILING_CITATION.test(text);
     const leadInQuote =
       afterLeadIn &&
       text.length >= 40 &&
       !LEADIN_COLON.test(text) && // don't chain into a sub-lead-in
       !EXAMPLE_LEADIN.test(prevText) &&
-      (beginsQuoted || !hasAnyQuoteMark);
+      (beginsQuoted || !hasAnyQuoteMark || strongSayingLeadIn || endsWithCitation);
     if (isWrappedQuote(text) || leadInQuote) {
       el.classList.add("tt-quote");
       el.dataset.ttClassified = "done";

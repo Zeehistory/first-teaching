@@ -315,9 +315,13 @@ export default function AskAssistant() {
                 )}
 
                 {askMutation.status === "pending" && (
-                  <div className="flex h-full min-h-[260px] w-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Consulting the Teaching…</span>
+                  <div className="flex h-full min-h-[260px] w-full flex-col items-center justify-center gap-5 text-sm text-muted-foreground">
+                    <span className="ai-thinking" aria-hidden="true">
+                      <span className="ai-thinking-orbit" />
+                      <span className="ai-thinking-orbit ai-thinking-orbit-2" />
+                      <Sparkles className="ai-thinking-core h-5 w-5" />
+                    </span>
+                    <span className="ai-thinking-label">Consulting the Teaching…</span>
                   </div>
                 )}
 
