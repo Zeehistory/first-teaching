@@ -1042,8 +1042,7 @@ export default function ChapterContent({
         aria-live="polite"
       >
         <div className="footnote-preview-eyebrow">
-          <span className="footnote-preview-mark" aria-hidden="true" />
-          Note {hoveredFootnote.footnote.number}
+          Footnote {hoveredFootnote.footnote.number}
         </div>
         <p className="footnote-preview-body">{preview}</p>
       </div>,
@@ -1139,12 +1138,6 @@ export default function ChapterContent({
       </div>
 
       {!isBare && <OrnamentalDivider className="my-6" />}
-
-      {section.pageReference && (
-        <div className="mt-4 text-sm font-sans text-muted-foreground">
-          Physical book p. {section.pageReference}
-        </div>
-      )}
 
       <div
         ref={contentRef}

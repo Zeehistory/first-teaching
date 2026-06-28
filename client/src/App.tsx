@@ -14,6 +14,7 @@ import Glossary from "@/pages/Glossary";
 import AskAssistant from "@/components/AskAssistant";
 import MobileBlocker from "@/components/MobileBlocker";
 import OnboardingTour from "@/components/OnboardingTour";
+import PageTransition from "@/components/PageTransition";
 
 // Static (GitHub Pages) builds set these. On Vercel they are undefined, so the
 // app behaves exactly as before: served from "/" with the backend assistant on.
@@ -51,6 +52,7 @@ function App() {
           <OnboardingTour />
           <WouterRouter base={ROUTER_BASE}>
             <Router />
+            <PageTransition />
           </WouterRouter>
           {/* The AI study assistant needs the Express backend; omit it on
               static (GitHub Pages) builds where no backend exists. */}

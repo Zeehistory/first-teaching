@@ -1030,16 +1030,16 @@ export default function Chapter() {
           <button
             type="button"
             aria-label="Expand study pane"
-            className="hidden lg:flex absolute left-4 top-4 z-30 h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+            className="hidden lg:flex absolute left-5 top-3.5 z-30 h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted/60 hover:text-foreground"
             onClick={() => setStudyPaneCollapsed(false)}
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="h-[18px] w-[18px]" />
           </button>
         )}
         <div className="flex-1 flex overflow-hidden">
           <div className="flex flex-1 flex-col overflow-hidden">
             <header className="flex items-center justify-between border-b border-border bg-background px-6 py-4">
-              <div className={cn("flex items-center gap-2", studyPaneCollapsed && "lg:ml-14")}>
+              <div className={cn("flex items-center gap-3", studyPaneCollapsed && "lg:ml-16")}>
                 <PageReferenceInput
                   volumeNumber={bookData.volumeNumber}
                   chapters={bookData.chapters}

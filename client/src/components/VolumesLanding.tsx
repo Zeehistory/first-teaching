@@ -1,4 +1,5 @@
 import { ArrowUpRight, BookOpen, Bookmark, GraduationCap, ScrollText, Wand2 } from "lucide-react";
+import { useLocation } from "wouter";
 import type { Volume } from "@shared/schema";
 
 interface VolumesLandingProps {
@@ -38,10 +39,12 @@ const referenceTiles = [
     title: "Teaching Glossary",
     description: "Refined definitions and hover-ready terms throughout.",
     icon: GraduationCap,
+    href: "/glossary",
   },
 ];
 
 export default function VolumesLanding({ overview, volumes, onSelectVolume }: VolumesLandingProps) {
+  const [, setLocation] = useLocation();
   return (
     <div className="min-h-screen bg-background">
       {/* ---------- Masthead ---------- */}
@@ -165,16 +168,41 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
           <div className="mt-10 grid gap-px overflow-hidden rounded-sm border border-[hsl(var(--codex-rule)/0.7)] bg-[hsl(var(--codex-rule)/0.5)] md:grid-cols-3">
             {referenceTiles.map((tile) => {
               const Icon = tile.icon;
+              const isLinked = Boolean(tile.href);
+              const handleOpen = () => {
+                if (tile.href) setLocation(tile.href);
+              };
               return (
                 <div
                   key={tile.id}
-                  className="flex flex-col gap-3 bg-background p-6"
+                  role={isLinked ? "button" : undefined}
+                  tabIndex={isLinked ? 0 : undefined}
+                  onClick={isLinked ? handleOpen : undefined}
+                  onKeyDown={
+                    isLinked
+                      ? (event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            handleOpen();
+                          }
+                        }
+                      : undefined
+                  }
+                  className={`group flex flex-col gap-3 bg-background p-6 transition ${
+                    isLinked
+                      ? "cursor-pointer hover:bg-[hsl(var(--codex-vellum))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      : ""
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <Icon className="h-5 w-5 text-primary" />
-                    <span className="codex-label text-xs text-[hsl(var(--codex-ink-soft))]/60">
-                      Soon
-                    </span>
+                    {isLinked ? (
+                      <ArrowUpRight className="h-4 w-4 text-primary transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    ) : (
+                      <span className="codex-label text-xs text-[hsl(var(--codex-ink-soft))]/60">
+                        Soon
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-heading text-xl font-medium">{tile.title}</h3>
                   <p className="text-sm leading-relaxed text-[hsl(var(--codex-ink-soft))]">
