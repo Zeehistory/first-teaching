@@ -4,7 +4,9 @@ import { seriesOverview, volumes } from "@/lib/volumes";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const featuredVolumes = volumes.filter((volume) => volume.number === 18);
+  const featuredVolumes = volumes.filter(
+    (volume) => volume.number === 1 || volume.number === 18,
+  );
 
   return (
     <VolumesLanding

@@ -49,6 +49,8 @@ const referenceTiles = [
 ];
 
 export default function VolumesLanding({ overview, volumes, onSelectVolume }: VolumesLandingProps) {
+  // "Featured" view = a curated subset of available volumes (not the full 19).
+  const isFeaturedView = volumes.length > 0 && volumes.length < 19;
   const hasSingleFeaturedVolume = volumes.length === 1;
 
   return (
@@ -106,11 +108,15 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
           <Sparkles className="h-6 w-6 text-primary" />
           <div>
             <h2 className="text-2xl font-heading font-semibold">
-              {hasSingleFeaturedVolume ? "Featured Volume" : "The Nineteen-Volume Curriculum"}
+              {isFeaturedView
+                ? hasSingleFeaturedVolume
+                  ? "Featured Volume"
+                  : "Featured Volumes"
+                : "The Nineteen-Volume Curriculum"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {hasSingleFeaturedVolume
-                ? "Open the current digital Syntopicon volume."
+              {isFeaturedView
+                ? "Open the available digital Syntopicon volumes."
                 : "Explore the structured roadmap of The First Teaching of the Last Message."}
             </p>
           </div>
