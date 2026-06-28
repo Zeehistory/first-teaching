@@ -613,19 +613,25 @@
 .chapter-prose sup[data-footnote],
 .chapter-prose sup[data-footnote-key] {
   position: relative;
-  top: -0.45em;
-  display: inline;
-  padding: 0 0.06em;
-  margin-left: 0.08em;
-  background: none;
+  top: -0.32em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.05em;
+  height: 1.05em;
+  padding: 0 0.18em;
+  margin-left: 0.12em;
+  border-radius: 0.28em;
+  background: hsl(var(--primary) / 0.1);
   color: hsl(var(--primary));
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 0.72em;
-  line-height: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.62em;
+  line-height: 1;
   letter-spacing: 0;
+  vertical-align: baseline;
   cursor: pointer;
-  transition: color 150ms ease;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 /* A marker that directly follows another marker hugs its neighbour, so a
@@ -635,18 +641,29 @@
 }
 
 .chapter-prose sup[data-footnote-origin="syntopicon"] {
-  color: hsl(184, 42%, 34%);
+  background: hsl(184, 42%, 34% / 0.12);
+  color: hsl(184, 44%, 30%);
 }
 
 .chapter-prose sup[data-footnote-origin="web-extension"] {
-  color: hsl(28, 60%, 38%);
+  background: hsl(28, 60%, 40% / 0.14);
+  color: hsl(24, 64%, 34%);
 }
 
 .chapter-prose sup[data-footnote]:hover,
 .chapter-prose sup[data-footnote-key]:hover {
-  color: hsl(var(--gilt));
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.chapter-prose sup[data-footnote-origin="web-extension"]:hover {
+  background: hsl(24, 64%, 38%);
+  color: hsl(40, 60%, 96%);
+}
+
+.dark .chapter-prose sup[data-footnote],
+.dark .chapter-prose sup[data-footnote-key] {
+  background: hsl(var(--primary) / 0.2);
 }
 
 [data-footnote-panel-origin="syntopicon"] {
@@ -1151,31 +1168,161 @@ body.timeline-open {
     linear-gradient(90deg, hsla(34, 30%, 60%, 0.05) 1px, transparent 1px);
 }
 
+/* Glossary term — a quiet dotted underline that warms on hover. No fills. */
 .chapter-prose .glossary-term-chip {
-  position: relative;
   display: inline;
-  border-bottom: 1px dashed hsla(35, 78%, 48%, 0.55);
-  background-image: linear-gradient(120deg, hsla(35, 100%, 92%, 0.9), hsla(20, 90%, 85%, 0.65));
-  background-size: 100% 40%;
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  padding: 0 0.15em;
-  border-radius: 0.25em;
+  padding: 0 0.04em;
+  border-radius: 0.2em;
   color: inherit;
+  text-decoration: none;
+  background-image: linear-gradient(hsl(var(--gilt) / 0.55), hsl(var(--gilt) / 0.55));
+  background-repeat: no-repeat;
+  background-position: 0 1.05em;
+  background-size: 100% 1px;
   cursor: pointer;
-  transition: background-position 200ms ease, color 200ms ease, box-shadow 200ms ease;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 .chapter-prose .glossary-term-chip:hover,
 .chapter-prose .glossary-term-chip:focus-visible {
-  background-position: 0 0;
-  color: hsl(20, 65%, 30%);
-  box-shadow: 0 6px 18px -12px rgba(120, 80, 25, 0.65);
+  background-color: hsl(var(--gilt) / 0.12);
+  color: hsl(var(--foreground));
   outline: none;
 }
 
 .chapter-prose .glossary-term-chip:focus-visible {
-  box-shadow: 0 0 0 2px hsla(35, 75%, 55%, 0.6);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.4);
+}
+
+/* Glossary hover preview — minimalist vellum card on the codex palette */
+.glossary-preview {
+  border-radius: 0.6rem;
+  border: 1px solid hsl(var(--codex-rule) / 0.8);
+  background: hsl(var(--codex-vellum) / 0.97);
+  padding: 0.85rem 1rem 0.9rem;
+  box-shadow: 0 18px 44px -28px hsl(30 40% 20% / 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.dark .glossary-preview {
+  box-shadow: 0 18px 44px -28px hsl(0 0% 0% / 0.7);
+}
+
+.glossary-preview-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+
+.glossary-preview-title {
+  margin-top: 0.35rem;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: hsl(var(--foreground));
+}
+
+.glossary-preview-hint {
+  margin-top: 0.3rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: hsl(var(--codex-ink-soft));
+}
+
+/* ===========================================================================
+   Glossary browser — searchable index + detail pane, with an A–Z rail.
+   =========================================================================== */
+.glossary-search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid hsl(var(--codex-rule) / 0.8);
+  border-radius: 0.6rem;
+  background: hsl(var(--codex-vellum) / 0.6);
+  padding: 0.6rem 0.85rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.glossary-search:focus-within {
+  border-color: hsl(var(--primary) / 0.6);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+.glossary-letter-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0.5rem 0 0.25rem;
+  padding: 0.3rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: hsl(var(--primary));
+  background: linear-gradient(
+    hsl(var(--background)) 60%,
+    hsl(var(--background) / 0)
+  );
+  backdrop-filter: blur(2px);
+}
+
+.glossary-term-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.45rem;
+  font-family: var(--font-serif);
+  font-size: 0.98rem;
+  line-height: 1.3;
+  color: hsl(var(--codex-ink-soft));
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.glossary-term-row:hover {
+  background: hsl(var(--codex-rule) / 0.35);
+  color: hsl(var(--foreground));
+}
+
+.glossary-term-row.is-active {
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  font-weight: 600;
+  box-shadow: inset 0.18rem 0 0 hsl(var(--primary));
+}
+
+.glossary-azrail {
+  flex-shrink: 0;
+}
+
+.glossary-azrail-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.05rem;
+  width: 1.35rem;
+  border-radius: 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: hsl(var(--codex-ink-soft));
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.glossary-azrail-letter:hover:not(:disabled) {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+}
+
+.glossary-azrail-letter:disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 
 .chapter-prose mark[data-highlight] {
@@ -1657,82 +1804,139 @@ body.timeline-open {
   margin-bottom: 1.5rem;
 }
 
-/* --- Notes apparatus: printed-footnote register at the foot of an extension ---
-   A restrained academic block: hanging numerals, a single hairline above,
-   serif notes set a touch smaller than the body. No chips, no fills. */
-.gloss-apparatus {
-  margin-top: 4rem;
-  padding-top: 2rem;
-  border-top: 1px solid hsl(var(--codex-rule) / 0.6);
+/* ===========================================================================
+   Note panel — a clean right-hand drawer for web-extension footnotes.
+   Fixed to the viewport edge so it never disturbs the reading column's flow;
+   the column itself eases left a touch when the panel is open on wide screens.
+   =========================================================================== */
+.note-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: min(420px, 92vw);
+  padding: 2.25rem 2rem 2rem;
+  background: hsl(var(--codex-vellum));
+  border-left: 1px solid hsl(var(--codex-rule) / 0.7);
+  box-shadow: -24px 0 60px -40px hsl(30 40% 20% / 0.45);
+  transform: translateX(100%);
+  transition: transform 360ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
 }
 
-.gloss-apparatus-heading {
+.note-panel.is-open {
+  transform: translateX(0);
+}
+
+.dark .note-panel {
+  box-shadow: -24px 0 60px -40px hsl(0 0% 0% / 0.7);
+}
+
+/* Reading column eases aside for the panel on wide screens only */
+@media (min-width: 1280px) {
+  .web-extension-shell[data-panel-open="true"] main > article {
+    transform: translateX(-7rem);
+    transition: transform 360ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .web-extension-shell main > article {
+    transition: transform 360ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+/* Scrim — only meaningful on narrow screens where the panel overlays content */
+.note-panel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  background: hsl(30 30% 12% / 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+
+.note-panel-scrim.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (min-width: 1280px) {
+  .note-panel-scrim.is-open {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.note-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid hsl(var(--codex-rule) / 0.6);
+}
+
+.note-panel-eyebrow {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
   font-family: var(--font-sans);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: hsl(var(--codex-ink-soft));
-  margin-bottom: 1.75rem;
 }
 
-.gloss-apparatus-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  counter-reset: none;
-}
-
-.gloss-note {
-  display: grid;
-  grid-template-columns: 1.75rem 1fr;
-  column-gap: 0.85rem;
-  padding: 0.9rem 0.4rem 0.9rem 0;
-  scroll-margin-top: 5.5rem;
-  border-radius: 0.25rem;
-  transition: background-color 320ms ease;
-}
-
-.gloss-note + .gloss-note {
-  border-top: 1px solid hsl(var(--codex-rule) / 0.4);
-}
-
-/* A momentary wash when the reader jumps here from a marker — no permanent fill */
-.gloss-note.gloss-target-focus {
-  background: hsl(var(--gilt) / 0.1);
-}
-
-.gloss-note-number {
-  font-family: var(--font-serif);
-  font-size: 0.92rem;
+.note-panel-numeral {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
   font-weight: 600;
-  line-height: 1.7;
-  text-align: right;
+  letter-spacing: 0;
+  line-height: 1;
   color: hsl(var(--primary));
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: color 160ms ease;
 }
 
-.gloss-note-number:hover {
-  color: hsl(var(--gilt));
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.gloss-note-body {
-  font-family: var(--font-serif);
-  font-size: 0.95rem;
-  line-height: 1.72;
+.note-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  width: 2rem;
+  border-radius: 9999px;
   color: hsl(var(--codex-ink-soft));
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
-.gloss-note-body p {
-  margin: 0 0 0.6rem;
+.note-panel-close:hover {
+  background: hsl(var(--codex-rule) / 0.5);
+  color: hsl(var(--foreground));
 }
 
-.gloss-note-body p:last-child {
+.note-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.78;
+  color: hsl(var(--foreground) / 0.92);
+  animation: note-panel-fade 420ms ease both;
+}
+
+.note-panel-body p {
+  margin: 0 0 0.9rem;
+}
+
+.note-panel-body p:last-child {
   margin-bottom: 0;
+}
+
+@keyframes note-panel-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

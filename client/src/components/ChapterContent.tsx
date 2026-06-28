@@ -1034,18 +1034,14 @@ export default function ChapterContent({
 
     return createPortal(
       <div
-        className="pointer-events-none fixed z-50 max-w-[90vw] rounded-2xl border border-amber-200 bg-amber-50/95 px-4 py-3 text-amber-900 shadow-2xl backdrop-blur"
+        className="glossary-preview pointer-events-none fixed z-50 max-w-[90vw]"
         style={{ top, left, width }}
         role="status"
         aria-live="polite"
       >
-        <div className="text-[10px] font-semibold uppercase tracking-[0.35em] text-amber-700/70">
-          Teaching Glossary
-        </div>
-        <p className="mt-1 font-heading text-sm leading-snug">{glossaryPreview.entry.title}</p>
-        <p className="mt-1 text-xs text-amber-900/70">
-          Entry previews are abridged — click any highlighted term to open the full glossary reference.
-        </p>
+        <div className="glossary-preview-eyebrow">Glossary</div>
+        <p className="glossary-preview-title">{glossaryPreview.entry.title}</p>
+        <p className="glossary-preview-hint">Click to open the full entry</p>
       </div>,
       document.body
     );

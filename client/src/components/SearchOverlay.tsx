@@ -167,80 +167,68 @@ export default function SearchOverlay({
 
   return (
     <div
-      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-[hsl(var(--background)/0.96)] backdrop-blur-md animate-in fade-in duration-200"
       data-testid="search-overlay"
+      onClick={onClose}
     >
-      <div className="container max-w-3xl mx-auto pt-20 px-6">
-        <div className="mb-10 rounded-3xl border border-border/80 bg-card/80 shadow-xl backdrop-blur">
-          <div className="flex items-center gap-5 px-6 pt-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search the Teaching…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="h-14 rounded-2xl border border-border/80 bg-background/70 pl-14 text-lg shadow-sm focus-visible:ring-1"
-                autoFocus
-                data-testid="input-search"
-              />
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              data-testid="button-close-search"
-              className="rounded-full border border-border/70 bg-background/60 shadow-sm"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="px-6 pb-6 pt-5">
-            <div className="text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-muted-foreground/80">
-              Search Within
-            </div>
-            <div className="mt-3 flex flex-wrap gap-3">
-              {scopeOptions.map((option) => {
-                const isActive = scope === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => !option.disabled && setScope(option.value)}
-                    disabled={option.disabled}
-                    className={`group inline-flex items-center gap-3 rounded-full border px-4 py-2 transition ${
-                      isActive
-                        ? "border-primary/50 bg-primary/10 text-primary"
-                        : "border-border/70 bg-background/60 text-muted-foreground hover:border-primary/30 hover:text-primary"
-                    } ${option.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                  >
-                    <span
-                      className={`grid h-4 w-4 place-items-center rounded-full border ${
-                        isActive ? "border-primary bg-primary" : "border-border/70"
-                      }`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-background" />
-                    </span>
-                    <span className="flex flex-col items-start leading-tight">
-                      <span className="text-xs font-semibold uppercase tracking-[0.2em]">
-                        {option.label}
-                      </span>
-                      <span className="text-[0.7rem] text-muted-foreground/80">
-                        {option.description}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <div
+        className="mx-auto max-w-2xl px-6 pt-24"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Search bar — a single clean rule, no boxed chrome */}
+        <div className="flex items-center gap-4 border-b border-[hsl(var(--codex-rule))] pb-4">
+          <Search className="h-5 w-5 flex-shrink-0 text-[hsl(var(--codex-ink-soft))]" />
+          <Input
+            type="search"
+            placeholder="Search the Teaching…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-auto flex-1 border-0 bg-transparent p-0 text-xl shadow-none focus-visible:ring-0 placeholder:text-[hsl(var(--codex-ink-soft))]"
+            autoFocus
+            data-testid="input-search"
+          />
+          <button
+            type="button"
+            onClick={onClose}
+            data-testid="button-close-search"
+            aria-label="Close search"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[hsl(var(--codex-ink-soft))] transition hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
-        <div className="space-y-6">
+        {/* Scope — a quiet inline segmented control */}
+        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <span className="text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-[hsl(var(--codex-ink-soft))]">
+            Within
+          </span>
+          {scopeOptions.map((option) => {
+            const isActive = scope === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => !option.disabled && setScope(option.value)}
+                disabled={option.disabled}
+                title={option.description}
+                className={`text-sm transition ${
+                  isActive
+                    ? "font-semibold text-primary underline decoration-1 underline-offset-[6px]"
+                    : "text-[hsl(var(--codex-ink-soft))] hover:text-foreground"
+                } ${option.disabled ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Results */}
+        <div className="mt-8 max-h-[60vh] space-y-1 overflow-y-auto minimal-scrollbar pb-12">
           {results.length === 0 && query && (
-            <p className="py-12 text-center text-muted-foreground">
-              No results for “{query.trim()}” in this scope.
+            <p className="py-12 text-center text-sm text-[hsl(var(--codex-ink-soft))]">
+              No results for “{query.trim()}”.
             </p>
           )}
           {results.map((result, index) => (
@@ -255,17 +243,17 @@ export default function SearchOverlay({
                 );
                 onClose();
               }}
-              className="block w-full rounded-2xl border border-border/70 bg-card/80 p-6 text-left shadow-sm transition hover:border-primary/30 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="block w-full rounded-lg px-4 py-3.5 text-left transition hover:bg-[hsl(var(--codex-rule)/0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               data-testid={`search-result-${index}`}
             >
-              <div className="mb-1 text-sm font-sans text-primary">
-                Volume {result.volumeNumber} • {result.chapter.title}
+              <div className="text-[0.7rem] uppercase tracking-[0.16em] text-[hsl(var(--codex-ink-soft))]">
+                Vol {result.volumeNumber} · {result.chapter.title}
               </div>
-              <div className="mb-2 text-base font-medium">
+              <div className="mt-0.5 font-heading text-base text-foreground">
                 {result.section.title}
               </div>
               <div
-                className="line-clamp-3 text-sm text-muted-foreground"
+                className="mt-1 line-clamp-2 text-sm text-[hsl(var(--codex-ink-soft))]"
                 dangerouslySetInnerHTML={{ __html: result.snippetHtml }}
               />
             </button>

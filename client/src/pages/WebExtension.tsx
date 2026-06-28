@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import ChapterContent from "@/components/ChapterContent";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -9,12 +9,10 @@ import { volumeEighteenWebExtensions, volumeOneWebExtensions } from "@/lib/conte
 import { buildFootnoteSelector, getFootnoteDisplayNumber } from "@/lib/footnotes";
 import { readReadingReturnState } from "@/lib/readingReturn";
 
-const glossAnchorId = (footnote: Footnote) =>
-  `gloss-${getFootnoteDisplayNumber(footnote)}`;
-
 export default function WebExtension() {
   const [, params] = useRoute("/v/:volumeNumber/:id/web-extension");
   const [, setLocation] = useLocation();
+  const [selectedFootnote, setSelectedFootnote] = useState<Footnote | null>(null);
   const [textSize, setTextSize] = useState(() => {
     const saved = localStorage.getItem("textSize");
     return saved ? parseInt(saved, 10) : 18;
@@ -46,26 +44,31 @@ export default function WebExtension() {
     } as { prevExt: WebExtensionEntry | null; nextExt: WebExtensionEntry | null };
   }, [extensionMap, extension]);
 
-  // Clicking a marker in the prose takes the reader down to the matching gloss
-  // in the apparatus below, the way a printed footnote reference would.
+  // Clicking a marker opens the note in the right-hand panel and gently marks
+  // the reference in the text so the reader keeps their place.
   const handleFootnoteOpen = useCallback((footnote: Footnote) => {
-    if (typeof document === "undefined") return;
-    const target = document.getElementById(glossAnchorId(footnote));
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-    target.classList.add("gloss-target-focus");
-    window.setTimeout(() => target.classList.remove("gloss-target-focus"), 1800);
-  }, []);
-
-  // Clicking a gloss number returns the reader to its reference marker.
-  const returnToMarker = useCallback((footnote: Footnote) => {
+    setSelectedFootnote(footnote);
     if (typeof document === "undefined") return;
     const marker = document.querySelector<HTMLElement>(buildFootnoteSelector(footnote));
     if (!marker) return;
-    marker.scrollIntoView({ behavior: "smooth", block: "center" });
     marker.classList.add("footnote-marker-focus");
-    window.setTimeout(() => marker.classList.remove("footnote-marker-focus"), 1800);
+    window.setTimeout(() => marker.classList.remove("footnote-marker-focus"), 2000);
   }, []);
+
+  const closePanel = useCallback(() => setSelectedFootnote(null), []);
+
+  // Close the panel with Escape.
+  useEffect(() => {
+    if (!selectedFootnote) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setSelectedFootnote(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedFootnote]);
+
+  // A new chapter/extension resets any open note.
+  useEffect(() => {
+    setSelectedFootnote(null);
+  }, [chapterId, volumeNumber]);
 
   const section = useMemo<Section | null>(() => {
     if (!extension) return null;
@@ -108,8 +111,13 @@ export default function WebExtension() {
   const goNext = () =>
     nextExt && setLocation(`/v/${nextExt.volumeNumber}/${nextExt.chapterId}/web-extension`);
 
+  const panelOpen = Boolean(selectedFootnote);
+
   return (
-    <div className="web-extension-shell codex-page-bg flex h-screen flex-col overflow-hidden">
+    <div
+      className="web-extension-shell codex-page-bg flex h-screen flex-col overflow-hidden"
+      data-panel-open={panelOpen}
+    >
       {/* ---------- Header ---------- */}
       <header className="flex-shrink-0 border-b border-[hsl(var(--codex-rule)/0.6)] bg-[hsl(var(--codex-vellum)/0.85)] backdrop-blur-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-6 px-5 py-3.5 md:px-6">
@@ -166,35 +174,6 @@ export default function WebExtension() {
             variant="bare"
           />
 
-          {/* ---------- Notes apparatus ---------- */}
-          {glosses.length > 0 && (
-            <section className="gloss-apparatus" aria-label="Notes">
-              <h2 className="gloss-apparatus-heading">Notes</h2>
-              <ol className="gloss-apparatus-list">
-                {glosses.map((footnote) => (
-                  <li
-                    key={footnote.id}
-                    id={glossAnchorId(footnote)}
-                    className="gloss-note"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => returnToMarker(footnote)}
-                      className="gloss-note-number"
-                      aria-label={`Return to reference ${getFootnoteDisplayNumber(footnote)} in the text`}
-                    >
-                      {getFootnoteDisplayNumber(footnote)}
-                    </button>
-                    <div
-                      className="gloss-note-body chapter-prose"
-                      dangerouslySetInnerHTML={{ __html: footnote.content }}
-                    />
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-
           {/* ---------- Adjacent extensions ---------- */}
           {(prevExt || nextExt) && (
             <nav className="mt-16 flex items-stretch justify-between gap-6 border-t border-[hsl(var(--codex-rule)/0.6)] pt-8">
@@ -232,6 +211,46 @@ export default function WebExtension() {
           )}
         </article>
       </main>
+
+      {/* ---------- Note panel (right-hand drawer) ---------- */}
+      <button
+        type="button"
+        aria-hidden={!panelOpen}
+        tabIndex={-1}
+        onClick={closePanel}
+        className={`note-panel-scrim ${panelOpen ? "is-open" : ""}`}
+      />
+      <aside
+        className={`note-panel ${panelOpen ? "is-open" : ""}`}
+        aria-hidden={!panelOpen}
+        aria-label="Note"
+      >
+        {selectedFootnote && (
+          <>
+            <header className="note-panel-head">
+              <span className="note-panel-eyebrow">
+                Note
+                <span className="note-panel-numeral">
+                  {getFootnoteDisplayNumber(selectedFootnote)}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={closePanel}
+                aria-label="Close note"
+                className="note-panel-close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+            <div
+              key={selectedFootnote.id}
+              className="note-panel-body chapter-prose minimal-scrollbar"
+              dangerouslySetInnerHTML={{ __html: selectedFootnote.content }}
+            />
+          </>
+        )}
+      </aside>
     </div>
   );
 }
