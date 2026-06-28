@@ -38,7 +38,7 @@ export default function Glossary() {
         </div>
         <h1 className="text-3xl text-center font-heading font-semibold">The Teaching Glossary</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Titles only. Entries’ bodies are placeholders and will be replaced later.
+          Important paradigms, cognitive frames, facts, and terms used in this work.
         </p>
       </header>
 
@@ -55,9 +55,10 @@ export default function Glossary() {
               </span>
               <div>
                 <h2 className="text-lg font-heading font-medium">{entry.title}</h2>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer feugiat, mi nec faucibus mattis, ligula magna fringilla lectus, a viverra eros arcu in nunc. Suspendisse potenti. Donec sed nunc at arcu cursus varius.
-                </div>
+                <div
+                  className="mt-1 text-xs text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: entry.bodyHtml }}
+                />
               </div>
             </div>
 
