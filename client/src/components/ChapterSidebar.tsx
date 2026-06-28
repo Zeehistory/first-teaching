@@ -51,7 +51,7 @@ export default function ChapterSidebar({
               onClick={() =>
                 onSubsectionClick?.(volumeNumber, chapter.id, sectionId, sub.id)
               }
-              className="block w-full rounded-sm py-1 pr-2 text-left font-serif text-[0.8rem] italic leading-snug text-sidebar-foreground/55 transition-colors hover:text-primary"
+              className="block w-full rounded-sm py-1.5 pr-2 text-left font-serif text-[0.92rem] italic leading-snug text-sidebar-foreground/65 transition-colors hover:text-primary"
               style={{ paddingLeft: `${baseIndentPx}px` }}
             >
               <span className="line-clamp-2"><Transliterated text={sub.title} /></span>

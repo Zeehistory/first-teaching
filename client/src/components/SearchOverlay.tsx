@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Transliterated from "@/components/Transliterated";
 import type { BookData, Chapter, Section } from "@shared/schema";
 
 interface SearchResult {
@@ -114,18 +115,29 @@ export default function SearchOverlay({
             return;
           }
 
-          const sourceText = contentMatchIndex !== -1 ? plainContent : section.title;
+          const sourceText = (
+            contentMatchIndex !== -1 ? plainContent : section.title
+          ).replace(/\s+/g, " ");
           const matchIndex = contentMatchIndex !== -1 ? contentMatchIndex : titleMatchIndex;
-          const start = Math.max(0, matchIndex - 80);
-          const end = Math.min(sourceText.length, matchIndex + trimmedQuery.length + 80);
-          const snippet = sourceText.substring(start, end);
+          // Expand to whole-word boundaries so the snippet never cuts a word.
+          let start = Math.max(0, matchIndex - 90);
+          let end = Math.min(sourceText.length, matchIndex + trimmedQuery.length + 90);
+          if (start > 0) {
+            const sp = sourceText.indexOf(" ", start);
+            if (sp !== -1 && sp < matchIndex) start = sp + 1;
+          }
+          if (end < sourceText.length) {
+            const sp = sourceText.lastIndexOf(" ", end);
+            if (sp > matchIndex + trimmedQuery.length) end = sp;
+          }
+          const snippet = sourceText.substring(start, end).trim();
           const decoratedSnippet = snippet.replace(
             highlightRegex,
-            "<mark class=\"bg-primary/15 text-primary font-semibold rounded-sm px-1\">$1</mark>"
+            "<mark class=\"search-hit\">$1</mark>"
           );
 
-          const prefix = start > 0 ? "…" : "";
-          const suffix = end < sourceText.length ? "…" : "";
+          const prefix = start > 0 ? "… " : "";
+          const suffix = end < sourceText.length ? " …" : "";
 
           searchResults.push({
             volumeNumber,
@@ -243,17 +255,17 @@ export default function SearchOverlay({
                 );
                 onClose();
               }}
-              className="block w-full rounded-lg px-4 py-3.5 text-left transition hover:bg-[hsl(var(--codex-rule)/0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="block w-full rounded-lg px-4 py-4 text-left transition hover:bg-[hsl(var(--codex-rule)/0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               data-testid={`search-result-${index}`}
             >
-              <div className="text-[0.7rem] uppercase tracking-[0.16em] text-[hsl(var(--codex-ink-soft))]">
-                Vol {result.volumeNumber} · {result.chapter.title}
+              <div className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--codex-ink-soft))]/70">
+                Vol {result.volumeNumber}
               </div>
-              <div className="mt-0.5 font-heading text-base text-foreground">
-                {result.section.title}
+              <div className="mt-1 font-heading text-[1.05rem] leading-snug text-foreground">
+                <Transliterated text={result.section.title} />
               </div>
               <div
-                className="mt-1 line-clamp-2 text-sm text-[hsl(var(--codex-ink-soft))]"
+                className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-[hsl(var(--codex-ink-soft))]"
                 dangerouslySetInnerHTML={{ __html: result.snippetHtml }}
               />
             </button>

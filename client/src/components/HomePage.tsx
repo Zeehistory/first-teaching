@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowUpRight, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Transliterated from "@/components/Transliterated";
 import { processSubsections } from "@/lib/subsections";
-import { subSummary } from "@/lib/summaries";
+import { subSummary, sectionSummary, cleanPreview } from "@/lib/summaries";
 import { groupChapters } from "@/lib/chapterGroups";
 import type { BookData } from "@shared/schema";
 
@@ -45,8 +45,8 @@ export default function HomePage({
             >
               <Transliterated text={chapter.title} />
             </span>
-            <span className="mt-1 line-clamp-1 block text-sm text-[hsl(var(--codex-ink-soft))]">
-              <Transliterated text={chapter.description} />
+            <span className="mt-1 block text-sm leading-snug text-[hsl(var(--codex-ink-soft))]">
+              <Transliterated text={cleanPreview(sectionSummary(chapter.sections[0]?.id ?? "") ?? chapter.description)} />
             </span>
           </span>
           <ArrowUpRight className="h-4 w-4 self-center text-primary opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
@@ -152,22 +152,12 @@ export default function HomePage({
         </div>
 
         <div role="list">
-          {groupChapters(bookData.chapters).map((group, gi) => {
-            if (group.part && group.books.length > 0) {
-              return (
-                <div key={group.part.chapter.id}>
-                  {renderChapter(group.part.chapter, true)}
-                  <div className="ml-[3.4rem] border-l border-[hsl(var(--codex-rule)/0.5)] pl-5">
-                    {group.books.map((b) => renderChapter(b.chapter, false))}
-                  </div>
-                </div>
-              );
-            }
-            const flat = group.part ? [group.part] : group.books;
-            return (
-              <div key={`g-${gi}`}>
-                {flat.map((e) => renderChapter(e.chapter, Boolean(group.part)))}
-              </div>
+          {groupChapters(bookData.chapters).flatMap((group) => {
+            // Contents is a flat list (no indentation): Part headers still read
+            // as bolder, but every chapter sits flush-left.
+            const entries = group.part ? [group.part, ...group.books] : group.books;
+            return entries.map((e) =>
+              renderChapter(e.chapter, group.part?.chapter.id === e.chapter.id),
             );
           })}
           <div className="border-t border-[hsl(var(--codex-rule)/0.7)]" />

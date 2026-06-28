@@ -1402,12 +1402,13 @@ body.timeline-open {
 }
 
 .glossary-term-row:hover {
-  background: hsl(var(--codex-rule) / 0.35);
+  background: hsl(var(--codex-vellum));
   color: hsl(var(--foreground));
 }
 
 .glossary-term-row.is-active {
-  background: hsl(var(--primary) / 0.1);
+  /* Solid (opaque) background so nothing shows through behind the term. */
+  background: hsl(var(--accent));
   color: hsl(var(--primary));
   font-weight: 600;
   box-shadow: inset 0.18rem 0 0 hsl(var(--primary));
@@ -1670,6 +1671,15 @@ body.timeline-open {
 }
 
 /* Inline citation chips used inside Ask Assistant answers */
+/* Search snippet highlight — quiet teal wash, no heavy chip. */
+.search-hit {
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+  border-radius: 0.2em;
+  padding: 0 0.15em;
+  font-weight: 600;
+}
+
 /* ── AI assistant "thinking" indicator ── */
 .ai-thinking {
   position: relative;
@@ -2421,8 +2431,8 @@ body.timeline-open {
    with heading type, the primary hue, and a little air + a small gilt
    tick, so they read as crossheads without becoming separate pages. */
 .chapter-prose p.content-subhead {
-  margin-top: 2.2em;
-  margin-bottom: 0.6em;
+  margin-top: 3.8em;
+  margin-bottom: 0.7em;
   font-family: var(--font-heading);
   font-size: 1.18em;
   font-weight: 600;

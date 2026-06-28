@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { glossary, type GlossaryEntry } from "@shared/glossary";
-import { ArrowLeft, Search, X, CornerDownLeft } from "lucide-react";
+import { ArrowLeft, Search, X, CornerDownLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { readReadingReturnState } from "@/lib/readingReturn";
 import Transliterated from "@/components/Transliterated";
 
@@ -25,6 +25,7 @@ export default function Glossary() {
   const [, setLocation] = useLocation();
   const returnState = useMemo(() => readReadingReturnState(), []);
   const [query, setQuery] = useState("");
+  const [indexCollapsed, setIndexCollapsed] = useState(false);
   // Initialise the selected term from the URL hash (e.g. /glossary#islam from a
   // clicked term) synchronously, so it is never overridden by the default.
   const [selectedSlug, setSelectedSlug] = useState<string | null>(() => {
@@ -128,13 +129,29 @@ export default function Glossary() {
               {glossary.length} terms
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => setIndexCollapsed((v) => !v)}
+            aria-label={indexCollapsed ? "Show term list" : "Hide term list"}
+            className="ml-auto hidden h-9 w-9 items-center justify-center rounded-full text-[hsl(var(--codex-ink-soft))] transition hover:bg-[hsl(var(--codex-vellum))] hover:text-foreground md:inline-flex"
+          >
+            {indexCollapsed ? (
+              <PanelLeftOpen className="h-[18px] w-[18px]" />
+            ) : (
+              <PanelLeftClose className="h-[18px] w-[18px]" />
+            )}
+          </button>
         </div>
       </header>
 
       {/* ---------- Two-pane browser ---------- */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 overflow-hidden px-0 md:px-8">
         {/* Index pane */}
-        <div className="glossary-index flex w-full flex-col border-r border-[hsl(var(--codex-rule)/0.6)] md:w-[22rem] lg:w-[24rem]">
+        <div
+          className={`glossary-index flex w-full flex-col border-r border-[hsl(var(--codex-rule)/0.6)] md:w-[22rem] lg:w-[24rem] ${
+            indexCollapsed ? "md:hidden" : ""
+          }`}
+        >
           <div className="flex-shrink-0 px-5 pb-4 pt-5 md:px-6">
             <div className="glossary-search">
               <Search className="h-4 w-4 flex-shrink-0 text-[hsl(var(--codex-ink-soft))]" />
@@ -196,7 +213,9 @@ export default function Glossary() {
 
         {/* A–Z rail */}
         <nav
-          className="glossary-azrail hidden flex-col items-center justify-center gap-0.5 px-1.5 md:flex"
+          className={`glossary-azrail hidden flex-col items-center justify-center gap-0.5 px-1.5 ${
+            indexCollapsed ? "" : "md:flex"
+          }`}
           aria-label="Jump to letter"
         >
           {alphabet.map((letter) => {
@@ -216,7 +235,7 @@ export default function Glossary() {
         </nav>
 
         {/* Detail pane */}
-        <div className="minimal-scrollbar hidden flex-1 overflow-y-auto md:block">
+        <div className="no-scrollbar hidden flex-1 overflow-y-auto md:block">
           {selected ? (
             <article className="mx-auto w-full max-w-3xl px-8 py-12 lg:px-12 lg:py-16">
               <div className="flex items-baseline gap-3 text-[0.7rem] uppercase tracking-[0.22em] text-[hsl(var(--codex-ink-soft))]">
