@@ -33,6 +33,7 @@ const referenceTiles = [
     title: "Bibliography",
     description: "Trace the scholarly scaffolding beneath the teaching.",
     icon: ScrollText,
+    href: "/v/19",
   },
   {
     id: "glossary",
@@ -79,7 +80,7 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
                   new CustomEvent("start-onboarding-tour", { detail: { step: 0 } })
                 )
               }
-              className="group inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-[hsl(var(--gilt))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-sm"
+              className="group inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/60 hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <Wand2 className="h-4 w-4" />
               Take a quick tour
@@ -100,7 +101,8 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
 
         <div role="list">
           {volumes.map((volume) => {
-            const isAvailable = volume.status === "available" && Boolean(volume.data);
+            const isAvailable =
+              volume.status === "available" && Boolean(volume.data || volume.bibliography);
             return (
               <button
                 key={volume.number}
