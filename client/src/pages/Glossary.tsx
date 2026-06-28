@@ -4,9 +4,6 @@ import { glossary, type GlossaryEntry } from "@shared/glossary";
 import { ArrowLeft, Search, X, CornerDownLeft } from "lucide-react";
 import { readReadingReturnState } from "@/lib/readingReturn";
 
-const PLACEHOLDER_BODY =
-  "A working definition for this term is being prepared. It will explain what the Teaching means by it, how it is used across the volumes, and the distinctions that matter for the reader-listener.";
-
 // First letter used for the A–Z index. Non-alphabetic titles fall under "#".
 function letterOf(title: string): string {
   const ch = title.trim().charAt(0).toUpperCase();
@@ -192,12 +189,10 @@ export default function Glossary() {
                 {selected.title}
               </h2>
               <hr className="mt-7 border-0 border-t border-[hsl(var(--codex-rule)/0.6)]" />
-              <p className="mt-7 font-serif text-[1.05rem] leading-relaxed text-foreground/90">
-                {PLACEHOLDER_BODY}
-              </p>
-              <p className="mt-4 text-xs italic text-[hsl(var(--codex-ink-soft))]">
-                Definition in preparation.
-              </p>
+              <div
+                className="mt-7 font-serif text-[1.05rem] leading-relaxed text-foreground/90"
+                dangerouslySetInnerHTML={{ __html: selected.bodyHtml }}
+              />
               <button
                 type="button"
                 onClick={() => setLocation(returnState?.path ?? "/v/1")}
@@ -223,9 +218,10 @@ export default function Glossary() {
           <h2 className="font-heading text-xl font-semibold text-foreground">
             {selected.title}
           </h2>
-          <p className="mt-2 font-serif text-[0.95rem] leading-relaxed text-foreground/90">
-            {PLACEHOLDER_BODY}
-          </p>
+          <div
+            className="mt-2 font-serif text-[0.95rem] leading-relaxed text-foreground/90"
+            dangerouslySetInnerHTML={{ __html: selected.bodyHtml }}
+          />
         </div>
       )}
     </div>
