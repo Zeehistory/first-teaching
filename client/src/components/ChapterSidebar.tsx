@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { hasRenderableContent } from "@/lib/content";
 import { processSubsections } from "@/lib/subsections";
+import { groupChapters } from "@/lib/chapterGroups";
 import Transliterated from "@/components/Transliterated";
 import type { Chapter } from "@shared/schema";
 
@@ -19,37 +20,6 @@ interface ChapterSidebarProps {
     sectionId: string,
     subId: string
   ) => void;
-}
-
-/* A "Book …" chapter is a subsection that nests under the most recent
-   thematic chapter (a Part). Anything that isn't a "Book" — descriptive
-   thematic titles, Introduction, Conclusion — is a Part header in its own
-   right. We group the flat chapter list accordingly so the nav reads as
-   Parts with their Books indented beneath. */
-const isBookChapter = (chapter: Chapter) =>
-  /^\s*book\b/i.test(chapter.title);
-
-interface ChapterGroup {
-  part: { chapter: Chapter; index: number } | null;
-  books: Array<{ chapter: Chapter; index: number }>;
-}
-
-function groupChapters(chapters: Chapter[]): ChapterGroup[] {
-  const groups: ChapterGroup[] = [];
-  chapters.forEach((chapter, index) => {
-    if (isBookChapter(chapter)) {
-      // A Book with no preceding Part stands on its own (no parent).
-      const current = groups[groups.length - 1];
-      if (current && current.part) {
-        current.books.push({ chapter, index });
-      } else {
-        groups.push({ part: null, books: [{ chapter, index }] });
-      }
-    } else {
-      groups.push({ part: { chapter, index }, books: [] });
-    }
-  });
-  return groups;
 }
 
 export default function ChapterSidebar({
