@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { glossary, type GlossaryEntry } from "@shared/glossary";
 import { ArrowLeft, Search, X, CornerDownLeft } from "lucide-react";
 import { readReadingReturnState } from "@/lib/readingReturn";
+import Transliterated from "@/components/Transliterated";
 
 // Sort key ignores leading quotes/punctuation and diacritics so that
 // "Identity" files under I and Ḥadīth under H — while quotes stay in display.
@@ -24,7 +25,13 @@ export default function Glossary() {
   const [, setLocation] = useLocation();
   const returnState = useMemo(() => readReadingReturnState(), []);
   const [query, setQuery] = useState("");
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  // Initialise the selected term from the URL hash (e.g. /glossary#islam from a
+  // clicked term) synchronously, so it is never overridden by the default.
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const slug = window.location.hash.replace(/^#/, "");
+    return slug && glossary.some((e) => e.slug === slug) ? slug : null;
+  });
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const goBack = () => {
@@ -73,18 +80,17 @@ export default function Glossary() {
     [selectedSlug],
   );
 
-  // Honour an incoming hash (e.g. /glossary#identity from a clicked term):
-  // select that entry and scroll its index row into view.
+  // When arriving via a term link, scroll its index row into view. selectedSlug
+  // is already set from the hash (above); this just brings it on-screen.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const slug = window.location.hash.replace(/^#/, "");
-    if (!slug || !glossary.some((e) => e.slug === slug)) return;
-    setSelectedSlug(slug);
+    if (typeof window === "undefined" || !selectedSlug) return;
     const t = window.setTimeout(() => {
-      const row = document.getElementById(`gterm-${slug}`);
+      const row = document.getElementById(`gterm-${selectedSlug}`);
       row?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 120);
+    }, 140);
     return () => window.clearTimeout(t);
+    // run once on mount for the initial hash target
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Default the detail pane to the first entry once results settle.
@@ -212,7 +218,7 @@ export default function Glossary() {
         {/* Detail pane */}
         <div className="hidden flex-1 overflow-y-auto md:block">
           {selected ? (
-            <article className="minimal-scrollbar mx-auto max-w-2xl px-8 py-12 lg:px-12 lg:py-16">
+            <article className="minimal-scrollbar w-full px-8 py-12 lg:px-16 lg:py-16">
               <div className="flex items-baseline gap-3 text-[0.7rem] uppercase tracking-[0.22em] text-[hsl(var(--codex-ink-soft))]">
                 <span>Term</span>
                 <span aria-hidden="true">·</span>
@@ -221,11 +227,11 @@ export default function Glossary() {
                 </span>
               </div>
               <h2 className="masthead-title mt-4 text-[2rem] leading-tight sm:text-4xl">
-                {selected.title}
+                <Transliterated text={selected.title} />
               </h2>
               <hr className="mt-7 border-0 border-t border-[hsl(var(--codex-rule)/0.6)]" />
               <div
-                className="mt-7 font-serif text-[1.05rem] leading-relaxed text-foreground/90"
+                className="chapter-prose glossary-entry-body mt-7 font-serif text-[1.05rem] leading-relaxed text-foreground/90"
                 dangerouslySetInnerHTML={{ __html: selected.bodyHtml }}
               />
               <button

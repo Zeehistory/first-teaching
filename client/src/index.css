@@ -610,69 +610,82 @@
   @apply bg-primary/10 ring-2 ring-primary/40 rounded-sm transition;
 }
 
-/* Footnote marker — a manuscript reference point. A clean superscript numeral
-   resting above a small gilt dot (the muḥaqqiq's mark), with no boxed chip:
-   visible and distinctive, but it adds no inline width beyond the numeral and
-   never disturbs the line. The number itself is never italicised. */
+/* Transliterated terms are set in italics (academic convention). Applies in
+   body prose, headings, and titles. Footnote-marker numerals are explicitly
+   excluded below (they keep font-style: normal). */
+.chapter-prose em.translit,
+.translit {
+  font-style: italic;
+}
+
+/* Footnote marker — a small illuminated cartouche. The numeral sits in a soft
+   tinted lozenge (clearly visible) bordered by a hairline, with a gilt seam
+   along its foot as the creative signature. Compact: it raises as a superscript
+   and adds almost no inline width. The number is never italicised. */
 .chapter-prose sup[data-footnote],
 .chapter-prose sup[data-footnote-key] {
   position: relative;
-  top: -0.5em;
-  display: inline-block;
-  margin-left: 0.06em;
-  padding: 0 0.05em 0.32em;
-  background: none;
+  top: -0.42em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15em;
+  height: 1.15em;
+  padding: 0 0.28em;
+  margin: 0 0.04em 0 0.1em;
+  border-radius: 0.32em;
+  background: hsl(var(--primary) / 0.12);
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.28), inset 0 -0.18em 0 hsl(var(--gilt) / 0.55);
   color: hsl(var(--primary));
   font-family: var(--font-sans);
   font-style: normal;
   font-weight: 700;
-  font-size: 0.62em;
+  font-size: 0.6em;
   line-height: 1;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   vertical-align: baseline;
   cursor: pointer;
-  transition: color 150ms ease;
-}
-
-/* the gilt point beneath the numeral */
-.chapter-prose sup[data-footnote]::after,
-.chapter-prose sup[data-footnote-key]::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 0.26em;
-  height: 0.26em;
-  transform: translateX(-50%) rotate(45deg);
-  background: hsl(var(--gilt));
-  transition: transform 150ms ease, background-color 150ms ease;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
 .chapter-prose sup.footnote-marker-grouped-next {
-  margin-left: 0.16em;
+  margin-left: 0.18em;
 }
 
 .chapter-prose sup[data-footnote-origin="syntopicon"] {
-  color: hsl(184, 44%, 30%);
+  background: hsl(184, 42%, 34% / 0.13);
+  box-shadow: inset 0 0 0 1px hsl(184, 42%, 34% / 0.3), inset 0 -0.18em 0 hsl(var(--gilt) / 0.5);
+  color: hsl(184, 46%, 28%);
 }
 
 .chapter-prose sup[data-footnote-origin="web-extension"] {
-  color: hsl(24, 64%, 34%);
+  background: hsl(28, 60%, 42% / 0.14);
+  box-shadow: inset 0 0 0 1px hsl(28, 60%, 42% / 0.32), inset 0 -0.18em 0 hsl(var(--gilt) / 0.6);
+  color: hsl(24, 66%, 32%);
 }
 
 .chapter-prose sup[data-footnote]:hover,
 .chapter-prose sup[data-footnote-key]:hover {
-  color: hsl(var(--gilt));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: inset 0 0 0 1px hsl(var(--primary)), inset 0 -0.18em 0 hsl(var(--gilt));
 }
 
-.chapter-prose sup[data-footnote]:hover::after,
-.chapter-prose sup[data-footnote-key]:hover::after {
-  transform: translateX(-50%) rotate(45deg) scale(1.35);
+.chapter-prose sup[data-footnote-origin="web-extension"]:hover {
+  background: hsl(24, 64%, 36%);
+  color: hsl(40, 60%, 96%);
 }
 
 .dark .chapter-prose sup[data-footnote],
 .dark .chapter-prose sup[data-footnote-key] {
-  color: hsl(36, 60%, 78%);
+  background: hsl(var(--primary) / 0.22);
+  color: hsl(180, 30%, 82%);
+}
+
+.dark .chapter-prose sup[data-footnote]:hover,
+.dark .chapter-prose sup[data-footnote-key]:hover {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
 }
 
 [data-footnote-panel-origin="syntopicon"] {
@@ -1203,6 +1216,49 @@ body.timeline-open {
 }
 
 /* Glossary hover preview — minimalist vellum card on the codex palette */
+/* Footnote hover preview — a vellum gloss-card. A gilt diamond (echoing the
+   marker) leads the eyebrow; serif body, a hairline gilt edge on the left. */
+.footnote-preview {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--codex-rule) / 0.7);
+  border-left: 2px solid hsl(var(--gilt));
+  background: hsl(var(--codex-vellum) / 0.98);
+  padding: 0.75rem 1rem 0.85rem;
+  box-shadow: 0 18px 44px -28px hsl(30 40% 20% / 0.5);
+  backdrop-filter: blur(7px);
+}
+
+.dark .footnote-preview {
+  box-shadow: 0 18px 44px -28px hsl(0 0% 0% / 0.72);
+}
+
+.footnote-preview-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+
+.footnote-preview-mark {
+  width: 0.4rem;
+  height: 0.4rem;
+  transform: rotate(45deg);
+  background: hsl(var(--gilt));
+}
+
+.footnote-preview-body {
+  margin-top: 0.5rem;
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  line-height: 1.58;
+  color: hsl(var(--foreground) / 0.88);
+}
+
 /* Glossary hover preview — pared to essentials: a thin gilt top accent, the
    term in heading type, and one quiet cue. Minimal chrome. */
 .glossary-preview {

@@ -16,6 +16,8 @@ import {
   getFootnoteOrigin,
 } from "@/lib/footnotes";
 import { captureReadingReturnState } from "@/lib/readingReturn";
+import { italicizeTransliterations } from "@/lib/transliteration";
+import Transliterated from "./Transliterated";
 
 const INLINE_IMAGE_CONFIG: Record<string, { itemId: string; variant: "default" | "floated" }> = {
   "2": { itemId: "image-tarbha", variant: "default" },
@@ -340,6 +342,15 @@ export default function ChapterContent({
       setAudioDismissed(false);
     }
   }, [audioController.isPlaying, audioController.elapsed]);
+
+  // Italicize transliterated terms (academic convention) before the quotation
+  // and glossary passes run. Keyed on content so it re-applies per section.
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container) return;
+    container.dataset.translitDone = "";
+    italicizeTransliterations(container);
+  }, [sanitizedContent]);
 
   useEffect(() => {
     const container = contentRef.current;
@@ -1025,15 +1036,16 @@ export default function ChapterContent({
 
     return createPortal(
       <div
-        className="pointer-events-none fixed z-50 max-w-[90vw] rounded-xl border border-border bg-background/95 px-4 py-3 shadow-2xl backdrop-blur transition-opacity"
+        className="footnote-preview pointer-events-none fixed z-50 max-w-[90vw]"
         style={{ top, left, width }}
         role="status"
         aria-live="polite"
       >
-        <div className="text-[10px] font-semibold uppercase tracking-[0.35em] text-muted-foreground/70">
-          Footnote {hoveredFootnote.footnote.number}
+        <div className="footnote-preview-eyebrow">
+          <span className="footnote-preview-mark" aria-hidden="true" />
+          Note {hoveredFootnote.footnote.number}
         </div>
-        <p className="mt-2 text-sm leading-snug text-muted-foreground/90">{preview}</p>
+        <p className="footnote-preview-body">{preview}</p>
       </div>,
       document.body
     );
@@ -1103,11 +1115,11 @@ export default function ChapterContent({
             </nav>
           )}
           <h1 className="text-4xl md:text-5xl font-heading font-semibold mb-1">
-            {chapterTitle}
+            <Transliterated text={chapterTitle} />
           </h1>
           {section.title !== chapterTitle && (
             <p className="text-muted-foreground font-sans text-base md:text-lg">
-              {section.title}
+              <Transliterated text={section.title} />
             </p>
           )}
         </div>
