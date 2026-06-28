@@ -61,6 +61,36 @@ export default function ChapterSidebar({
 }: ChapterSidebarProps) {
   const groups = groupChapters(chapters);
 
+  /* Crossheadings inside a section, listed in the nav as deeper-indented
+     italic sub-entries that scroll within the same page. */
+  const renderSubList = (
+    chapter: Chapter,
+    sectionId: string,
+    sectionContent: string,
+    baseIndentPx: number
+  ) => {
+    const subsections = processSubsections(sectionContent, sectionId).subsections;
+    if (subsections.length === 0) return null;
+    return (
+      <ul className="mb-2 mt-1.5 space-y-1 border-l border-sidebar-border/40 pl-3">
+        {subsections.map((sub) => (
+          <li key={sub.id}>
+            <button
+              type="button"
+              onClick={() =>
+                onSubsectionClick?.(volumeNumber, chapter.id, sectionId, sub.id)
+              }
+              className="block w-full rounded-sm py-1 pr-2 text-left font-serif text-[0.8rem] italic leading-snug text-sidebar-foreground/55 transition-colors hover:text-primary"
+              style={{ paddingLeft: `${baseIndentPx}px` }}
+            >
+              <span className="line-clamp-2">{sub.title}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   const renderChapter = (chapter: Chapter, chapterIdx: number, isPart = false) => {
               const baseLevel =
                 chapter.sections.length > 0
@@ -138,17 +168,17 @@ export default function ChapterSidebar({
                     </span>
                   </button>
 
+                  {onlyEcho && echoSection && !echoDisabled &&
+                    renderSubList(chapter, echoSection.id, echoSection.content, 14)}
+
                   {!onlyEcho && (
-                    <ul className="mt-2.5 space-y-px border-l border-sidebar-border/70 pl-3">
+                    <ul className="mt-3 space-y-1.5 border-l border-sidebar-border/70 pl-3">
                       {chapter.sections.map((section) => {
                         const isActive =
                           currentChapterId === chapter.id &&
                           currentSectionId === section.id;
                         const indentLevel = Math.max(0, section.level - baseLevel);
                         const isDisabled = !hasRenderableContent(section.content);
-                        const subsections = isDisabled
-                          ? []
-                          : processSubsections(section.content, section.id).subsections;
                         return (
                           <li key={section.id}>
                             <button
@@ -179,29 +209,13 @@ export default function ChapterSidebar({
                               <span className="line-clamp-2">{section.title}</span>
                             </button>
 
-                            {subsections.length > 0 && (
-                              <ul className="mb-1 mt-0.5 space-y-px pl-3">
-                                {subsections.map((sub) => (
-                                  <li key={sub.id}>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        onSubsectionClick?.(
-                                          volumeNumber,
-                                          chapter.id,
-                                          section.id,
-                                          sub.id
-                                        )
-                                      }
-                                      className="block w-full rounded-sm py-1 pr-2 text-left font-serif text-[0.8rem] italic leading-snug text-sidebar-foreground/55 transition-colors hover:text-primary"
-                                      style={{ paddingLeft: `${indentLevel * 14}px` }}
-                                    >
-                                      <span className="line-clamp-2">{sub.title}</span>
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
+                            {!isDisabled &&
+                              renderSubList(
+                                chapter,
+                                section.id,
+                                section.content,
+                                (indentLevel + 1) * 14
+                              )}
                           </li>
                         );
                       })}
@@ -215,13 +229,13 @@ export default function ChapterSidebar({
     <div className="flex h-full flex-col bg-sidebar">
       <ScrollArea className="flex-1">
         <nav className="px-5 pb-6 pt-4">
-          <ol className="space-y-7">
+          <ol className="space-y-10">
             {groups.map((group, groupIdx) => {
               if (group.part && group.books.length > 0) {
                 return (
                   <li key={group.part.chapter.id}>
                     {renderChapter(group.part.chapter, group.part.index, true)}
-                    <ol className="mt-4 space-y-6 border-l border-sidebar-border/60 pl-4">
+                    <ol className="mt-5 space-y-8 border-l border-sidebar-border/60 pl-5">
                       {group.books.map((book) => (
                         <li key={book.chapter.id}>
                           {renderChapter(book.chapter, book.index)}
