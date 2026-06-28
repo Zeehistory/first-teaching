@@ -48,7 +48,7 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
       <header className="border-b border-[hsl(var(--codex-rule)/0.7)]">
         <div className="mx-auto max-w-5xl px-6 pt-16 pb-12 md:pt-24 md:pb-16">
           <h1 className="masthead-title text-[2.7rem] leading-[0.95] sm:text-6xl md:text-7xl">
-            <span className="block">First Teaching</span>
+            <span className="block">The First Teaching</span>
             <span className="block text-[hsl(var(--codex-ink-soft))]">of the Last Message</span>
           </h1>
 
