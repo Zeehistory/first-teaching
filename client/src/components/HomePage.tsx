@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowUpRight, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Transliterated from "@/components/Transliterated";
 import { processSubsections } from "@/lib/subsections";
+import { subSummary } from "@/lib/summaries";
 import type { BookData } from "@shared/schema";
 
 interface HomePageProps {
@@ -117,19 +118,30 @@ export default function HomePage({
 
                 {subs.length > 0 && (
                   <ul className="mb-3 ml-[3.4rem] space-y-1.5 border-l border-[hsl(var(--codex-rule)/0.5)] pl-5">
-                    {subs.map((sub) => (
-                      <li key={sub.id}>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onChapterClick(`${chapter.id}?s=${sub.sectionId}#${sub.id}`)
-                          }
-                          className="text-left font-serif text-[0.92rem] italic leading-snug text-[hsl(var(--codex-ink-soft))] transition-colors hover:text-primary"
-                        >
-                          <Transliterated text={sub.title} />
-                        </button>
-                      </li>
-                    ))}
+                    {subs.map((sub) => {
+                      const summary = subSummary(sub.id);
+                      return (
+                        <li key={sub.id}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onChapterClick(`${chapter.id}?s=${sub.sectionId}#${sub.id}`)
+                            }
+                            title={summary ?? undefined}
+                            className="block text-left transition-colors hover:text-primary"
+                          >
+                            <span className="block font-serif text-[0.92rem] italic leading-snug text-[hsl(var(--codex-ink-soft))]">
+                              <Transliterated text={sub.title} />
+                            </span>
+                            {summary && (
+                              <span className="mt-0.5 block text-xs not-italic leading-snug text-[hsl(var(--codex-ink-soft))]/70">
+                                {summary}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

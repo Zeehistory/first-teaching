@@ -17,6 +17,7 @@ import {
 } from "@/lib/footnotes";
 import { captureReadingReturnState } from "@/lib/readingReturn";
 import { processSubsections } from "@/lib/subsections";
+import { footnoteSummary } from "@/lib/summaries";
 import { italicizeTransliterations } from "@/lib/transliteration";
 import Transliterated from "./Transliterated";
 
@@ -1047,7 +1048,10 @@ export default function ChapterContent({
       hoveredFootnote.rect.left + hoveredFootnote.rect.width / 2 - width / 2;
     const left = Math.min(Math.max(centeredLeft, 16), viewportWidth - width - 16);
     const top = hoveredFootnote.rect.bottom + spacing;
-    const preview = extractFootnoteSnippet(hoveredFootnote.footnote.content);
+    // Prefer a pre-generated summary; fall back to an excerpt of the note.
+    const preview =
+      footnoteSummary(hoveredFootnote.footnote.id) ??
+      extractFootnoteSnippet(hoveredFootnote.footnote.content);
 
     return createPortal(
       <div

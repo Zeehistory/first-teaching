@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "build:knowledge": "tsx scripts/build-embeddings.ts",
     "build:glossary": "tsx scripts/build-glossary.ts",
-    "build:glossary:txt": "tsx scripts/build-glossary-from-txt.ts"
+    "build:glossary:txt": "tsx scripts/build-glossary-from-txt.ts",
+    "build:summaries": "tsx scripts/build-summaries.ts"
   },
   "dependencies": {
     "openai": "^4.5.0",
