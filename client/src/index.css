@@ -1325,6 +1325,232 @@ body.timeline-open {
   cursor: default;
 }
 
+/* ===========================================================================
+   Onboarding tour — a single centered card that showcases the site.
+   Minimalist, route-free, always advanceable. A large ghosted icon bleeds
+   behind the card as the one expressive flourish.
+   =========================================================================== */
+.tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.tour-scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: hsl(30 28% 10% / 0.5);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 280ms ease;
+  cursor: default;
+}
+
+.tour-root.is-entered .tour-scrim {
+  opacity: 1;
+}
+
+.tour-card {
+  position: relative;
+  z-index: 1;
+  width: min(34rem, 100%);
+  overflow: hidden;
+  padding: 2.75rem 2.5rem 2rem;
+  border-radius: 1.1rem;
+  border: 1px solid hsl(var(--codex-rule) / 0.7);
+  background: hsl(var(--codex-vellum));
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.5) inset,
+    0 40px 90px -50px hsl(30 40% 18% / 0.6);
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+  transition: opacity 300ms ease, transform 360ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.dark .tour-card {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.04) inset,
+    0 40px 90px -50px hsl(0 0% 0% / 0.8);
+}
+
+.tour-root.is-entered .tour-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* The expressive flourish: a large, faint icon bleeding off the top-right */
+.tour-card-glow {
+  position: absolute;
+  top: -2.5rem;
+  right: -2.5rem;
+  width: 13rem;
+  height: 13rem;
+  color: hsl(var(--gilt) / 0.1);
+  pointer-events: none;
+}
+
+.dark .tour-card-glow {
+  color: hsl(var(--gilt) / 0.14);
+}
+
+.tour-skip {
+  position: absolute;
+  top: 1.4rem;
+  right: 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: hsl(var(--codex-ink-soft));
+  transition: color 150ms ease;
+}
+
+.tour-skip:hover {
+  color: hsl(var(--foreground));
+}
+
+.tour-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.9rem;
+  width: 2.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid hsl(var(--codex-rule));
+  background: hsl(var(--background) / 0.6);
+  color: hsl(var(--primary));
+  margin-bottom: 1.6rem;
+}
+
+.tour-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+  margin-bottom: 0.7rem;
+}
+
+.tour-title {
+  font-family: var(--font-heading);
+  font-size: 1.85rem;
+  font-weight: 600;
+  line-height: 1.12;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.9rem;
+  max-width: 24ch;
+}
+
+.tour-desc {
+  font-family: var(--font-serif);
+  font-size: 1.02rem;
+  line-height: 1.62;
+  color: hsl(var(--codex-ink-soft));
+  max-width: 46ch;
+}
+
+.tour-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 2.25rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid hsl(var(--codex-rule) / 0.6);
+}
+
+.tour-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tour-dot {
+  height: 0.42rem;
+  width: 0.42rem;
+  border-radius: 9999px;
+  background: hsl(var(--codex-rule));
+  transition: width 280ms ease, background-color 280ms ease;
+}
+
+.tour-dot.is-done {
+  background: hsl(var(--primary) / 0.5);
+}
+
+.tour-dot.is-active {
+  width: 1.5rem;
+  background: hsl(var(--primary));
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tour-btn,
+.tour-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 0.6rem;
+  padding: 0.55rem 1rem;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.tour-btn {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.tour-btn:hover {
+  background: hsl(var(--primary) / 0.9);
+}
+
+.tour-btn:active {
+  transform: translateY(0.5px);
+}
+
+.tour-btn-ghost {
+  color: hsl(var(--codex-ink-soft));
+}
+
+.tour-btn-ghost:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Each slide's text fades up when the step changes (keyed remount) */
+.tour-card .tour-eyebrow,
+.tour-card .tour-title,
+.tour-card .tour-desc {
+  animation: tour-rise 460ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.tour-card .tour-title { animation-delay: 40ms; }
+.tour-card .tour-desc { animation-delay: 80ms; }
+
+@keyframes tour-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-card,
+  .tour-scrim,
+  .tour-card .tour-eyebrow,
+  .tour-card .tour-title,
+  .tour-card .tour-desc {
+    transition: none;
+    animation: none;
+  }
+}
+
 .chapter-prose mark[data-highlight] {
   background: linear-gradient(135deg, hsla(48, 92%, 80%, 0.95), hsla(48, 85%, 70%, 0.95));
   color: var(--foreground);
