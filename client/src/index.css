@@ -434,47 +434,35 @@
    a single gilt rule, an oversized Cormorant quotation mark as a versal,
    and italic serif. One unified style for blockquote / scripture / auto.
    --------------------------------------------------------------------- */
+/* Quotation — a single clean gilt left-rule with italic serif. No floating
+   pseudo-quote glyphs (they detached and stacked on multi-paragraph quotes);
+   the rule alone carries the form, reliably and cleanly. */
 .chapter-prose blockquote,
 .scripture-quote,
 .chapter-prose p.auto-blockquote,
 .chapter-prose p.tt-quote {
   position: relative;
-  margin: 2.75rem 0;
-  padding: 0.5rem 0 0.5rem 2.5rem;
+  margin: 2.25rem 0;
+  padding: 0.15rem 0 0.15rem 1.75rem;
   border: none;
-  border-left: 2px solid hsl(var(--gilt));
+  border-left: 2px solid hsl(var(--gilt) / 0.8);
   border-radius: 0;
   background: none;
   box-shadow: none;
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.12em;
-  line-height: 1.8;
-  color: hsl(var(--foreground));
-  isolation: isolate;
+  font-size: 1.08em;
+  line-height: 1.78;
+  color: hsl(var(--foreground) / 0.92);
 }
 
-.chapter-prose blockquote::before,
-.scripture-quote::before,
-.chapter-prose p.auto-blockquote::before,
-.chapter-prose p.tt-quote::before {
-  content: "“";
-  position: absolute;
-  left: 1.4rem;
-  top: -0.55rem;
-  font-size: 3.4rem;
-  line-height: 1;
-  font-style: normal;
-  font-family: var(--font-heading);
-  color: hsl(var(--gilt) / 0.35);
-  pointer-events: none;
-  z-index: -1;
-}
-
-.chapter-prose blockquote::after,
-.scripture-quote::after,
-.chapter-prose p.auto-blockquote::after {
-  content: none;
+/* Consecutive quote paragraphs read as one block: collapse the gap and let
+   the gilt rule run continuously, so a multi-paragraph quotation never shows
+   a second bar or a detached mark. */
+.chapter-prose p.tt-quote + p.tt-quote,
+.chapter-prose p.auto-blockquote + p.auto-blockquote {
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .dark .chapter-prose blockquote,
@@ -483,13 +471,6 @@
 .dark .chapter-prose p.tt-quote {
   border-left-color: hsl(42 85% 65% / 0.85);
   color: hsl(45 28% 92%);
-}
-
-.dark .chapter-prose blockquote::before,
-.dark .scripture-quote::before,
-.dark .chapter-prose p.auto-blockquote::before,
-.dark .chapter-prose p.tt-quote::before {
-  color: hsl(42 60% 70% / 0.32);
 }
 
 .dark .chapter-prose blockquote cite,
@@ -1293,12 +1274,25 @@ body.timeline-open {
   color: hsl(var(--foreground));
 }
 
-.glossary-preview-hint {
+.glossary-preview-snippet {
   margin-top: 0.4rem;
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: hsl(var(--codex-ink-soft));
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.glossary-preview-hint {
+  margin-top: 0.5rem;
   font-family: var(--font-sans);
-  font-size: 0.66rem;
-  letter-spacing: 0.01em;
-  color: hsl(var(--codex-ink-soft) / 0.85);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--codex-ink-soft) / 0.7);
 }
 
 /* ===========================================================================

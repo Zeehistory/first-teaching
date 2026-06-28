@@ -1063,6 +1063,8 @@ export default function ChapterContent({
     const left = Math.min(Math.max(centeredLeft, 16), viewportWidth - width - 16);
     const top = glossaryPreview.rect.bottom + spacing;
 
+    const abridged = extractFootnoteSnippet(glossaryPreview.entry.bodyHtml ?? "", 150);
+
     return createPortal(
       <div
         className="glossary-preview pointer-events-none fixed z-50 max-w-[90vw]"
@@ -1072,6 +1074,9 @@ export default function ChapterContent({
       >
         <div className="glossary-preview-eyebrow">Glossary</div>
         <p className="glossary-preview-title">{glossaryPreview.entry.title}</p>
+        {abridged ? (
+          <p className="glossary-preview-snippet">{abridged}</p>
+        ) : null}
         <p className="glossary-preview-hint">Click to open the full entry</p>
       </div>,
       document.body
