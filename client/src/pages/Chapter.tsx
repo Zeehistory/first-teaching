@@ -8,6 +8,7 @@ import {
   PenSquare,
   Menu,
   ChevronLeft,
+  PanelLeftClose,
   Highlighter,
   X,
 } from "lucide-react";
@@ -937,7 +938,7 @@ export default function Chapter() {
       <div className="chapter-shell relative flex h-screen overflow-hidden">
         {!studyPaneCollapsed && (
           <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
-            <div className="flex items-center justify-between gap-6 px-5 pt-5">
+            <div className="flex items-center gap-4 px-5 pt-5">
               <div className="flex items-center gap-5" data-tour="notes-toggle">
                 <button
                   type="button"
@@ -973,7 +974,7 @@ export default function Chapter() {
                   type="button"
                   aria-label="Volume contents"
                   title="Volume contents"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground hover:bg-sidebar-border/50"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-sidebar-border/50 hover:text-foreground"
                   onClick={() => setLocation(`/v/${bookData.volumeNumber}`)}
                 >
                   <HomeMark className="h-[1.05rem] w-[1.05rem]" />
@@ -981,10 +982,10 @@ export default function Chapter() {
                 <button
                   type="button"
                   aria-label="Collapse study pane"
-                  className="-mr-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-sidebar-border/50 hover:text-foreground"
                   onClick={() => setStudyPaneCollapsed(true)}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <PanelLeftClose className="h-[18px] w-[18px]" />
                 </button>
               </div>
             </div>
