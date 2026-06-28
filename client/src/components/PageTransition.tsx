@@ -12,8 +12,8 @@ import { useLocation } from "wouter";
 
 type Phase = "idle" | "enter" | "exit";
 
-const HOLD_MS = 950;
-const EXIT_MS = 700;
+const HOLD_MS = 1900;
+const EXIT_MS = 850;
 
 export default function PageTransition() {
   const [location] = useLocation();

@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { hasRenderableContent } from "@/lib/content";
+import { processSubsections } from "@/lib/subsections";
 import type { Chapter } from "@shared/schema";
 
 interface ChapterSidebarProps {
@@ -10,6 +11,44 @@ interface ChapterSidebarProps {
   /** Retained for API compatibility; the home action now lives in the tab row. */
   onHomeClick?: (volumeNumber: number) => void;
   onSectionClick: (volumeNumber: number, chapterId: string, sectionId: string) => void;
+  /** Jump to a crosshead within a (possibly other) section, same page. */
+  onSubsectionClick?: (
+    volumeNumber: number,
+    chapterId: string,
+    sectionId: string,
+    subId: string
+  ) => void;
+}
+
+/* A "Book …" chapter is a subsection that nests under the most recent
+   thematic chapter (a Part). Anything that isn't a "Book" — descriptive
+   thematic titles, Introduction, Conclusion — is a Part header in its own
+   right. We group the flat chapter list accordingly so the nav reads as
+   Parts with their Books indented beneath. */
+const isBookChapter = (chapter: Chapter) =>
+  /^\s*book\b/i.test(chapter.title);
+
+interface ChapterGroup {
+  part: { chapter: Chapter; index: number } | null;
+  books: Array<{ chapter: Chapter; index: number }>;
+}
+
+function groupChapters(chapters: Chapter[]): ChapterGroup[] {
+  const groups: ChapterGroup[] = [];
+  chapters.forEach((chapter, index) => {
+    if (isBookChapter(chapter)) {
+      // A Book with no preceding Part stands on its own (no parent).
+      const current = groups[groups.length - 1];
+      if (current && current.part) {
+        current.books.push({ chapter, index });
+      } else {
+        groups.push({ part: null, books: [{ chapter, index }] });
+      }
+    } else {
+      groups.push({ part: { chapter, index }, books: [] });
+    }
+  });
+  return groups;
 }
 
 export default function ChapterSidebar({
@@ -18,13 +57,11 @@ export default function ChapterSidebar({
   currentChapterId,
   currentSectionId,
   onSectionClick,
+  onSubsectionClick,
 }: ChapterSidebarProps) {
-  return (
-    <div className="flex h-full flex-col bg-sidebar">
-      <ScrollArea className="flex-1">
-        <nav className="px-5 pb-6 pt-4">
-          <ol className="space-y-7">
-            {chapters.map((chapter, chapterIdx) => {
+  const groups = groupChapters(chapters);
+
+  const renderChapter = (chapter: Chapter, chapterIdx: number, isPart = false) => {
               const baseLevel =
                 chapter.sections.length > 0
                   ? Math.min(...chapter.sections.map((s) => s.level))
@@ -53,7 +90,7 @@ export default function ChapterSidebar({
                 echoSection != null && !hasRenderableContent(echoSection.content);
 
               return (
-                <li key={chapter.id}>
+                <>
                   <button
                     type="button"
                     onClick={
@@ -69,18 +106,26 @@ export default function ChapterSidebar({
                     <span
                       className={`mt-0.5 font-sans text-[0.7rem] font-semibold tabular-nums transition-colors ${
                         echoActive
-                          ? "text-[hsl(var(--gilt))]"
-                          : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
+                          ? "text-primary"
+                          : isPart
+                            ? "text-primary/70 group-hover:text-primary"
+                            : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
                       }`}
                     >
                       {String(chapterIdx + 1).padStart(2, "0")}
                     </span>
                     <span className="min-w-0">
                       <span
-                        className={`block font-heading text-[1.05rem] font-medium leading-snug transition-colors ${
+                        className={`block font-heading leading-snug transition-colors ${
+                          isPart
+                            ? "text-[1.15rem] font-semibold"
+                            : "text-[1.05rem] font-medium"
+                        } ${
                           echoActive
                             ? "text-primary"
-                            : "text-sidebar-foreground group-hover:text-primary"
+                            : isPart
+                              ? "text-primary group-hover:text-primary"
+                              : "text-sidebar-foreground group-hover:text-primary"
                         }`}
                       >
                         {headingLabel}
@@ -101,6 +146,9 @@ export default function ChapterSidebar({
                           currentSectionId === section.id;
                         const indentLevel = Math.max(0, section.level - baseLevel);
                         const isDisabled = !hasRenderableContent(section.content);
+                        const subsections = isDisabled
+                          ? []
+                          : processSubsections(section.content, section.id).subsections;
                         return (
                           <li key={section.id}>
                             <button
@@ -130,13 +178,66 @@ export default function ChapterSidebar({
                               )}
                               <span className="line-clamp-2">{section.title}</span>
                             </button>
+
+                            {subsections.length > 0 && (
+                              <ul className="mb-1 mt-0.5 space-y-px pl-3">
+                                {subsections.map((sub) => (
+                                  <li key={sub.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        onSubsectionClick?.(
+                                          volumeNumber,
+                                          chapter.id,
+                                          section.id,
+                                          sub.id
+                                        )
+                                      }
+                                      className="block w-full rounded-sm py-1 pr-2 text-left font-serif text-[0.8rem] italic leading-snug text-sidebar-foreground/55 transition-colors hover:text-primary"
+                                      style={{ paddingLeft: `${indentLevel * 14}px` }}
+                                    >
+                                      <span className="line-clamp-2">{sub.title}</span>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                           </li>
                         );
                       })}
                     </ul>
                   )}
-                </li>
+                </>
               );
+  };
+
+  return (
+    <div className="flex h-full flex-col bg-sidebar">
+      <ScrollArea className="flex-1">
+        <nav className="px-5 pb-6 pt-4">
+          <ol className="space-y-7">
+            {groups.map((group, groupIdx) => {
+              if (group.part && group.books.length > 0) {
+                return (
+                  <li key={group.part.chapter.id}>
+                    {renderChapter(group.part.chapter, group.part.index, true)}
+                    <ol className="mt-4 space-y-6 border-l border-sidebar-border/60 pl-4">
+                      {group.books.map((book) => (
+                        <li key={book.chapter.id}>
+                          {renderChapter(book.chapter, book.index)}
+                        </li>
+                      ))}
+                    </ol>
+                  </li>
+                );
+              }
+              // A standalone part (no books) or an orphan book group.
+              const flat = group.part ? [group.part] : group.books;
+              return flat.map((entry) => (
+                <li key={entry.chapter.id}>
+                  {renderChapter(entry.chapter, entry.index)}
+                </li>
+              ));
             })}
           </ol>
         </nav>

@@ -895,6 +895,31 @@ export default function Chapter() {
     [handleSectionClick, currentSectionId]
   );
 
+  const handleSubsectionClick = useCallback(
+    (volumeNo: number, chapId: string, sectionId: string, subId: string) => {
+      const scrollToSub = () => {
+        const el = document.getElementById(subId);
+        if (!el) return false;
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.classList.add("content-subhead-focus");
+        window.setTimeout(() => el.classList.remove("content-subhead-focus"), 2000);
+        return true;
+      };
+      if (sectionId === currentSectionId) {
+        scrollToSub();
+        return;
+      }
+      handleSectionClick(volumeNo, chapId, sectionId);
+      // The new section needs a tick to render before the anchor exists.
+      let tries = 0;
+      const timer = window.setInterval(() => {
+        tries += 1;
+        if (scrollToSub() || tries > 20) window.clearInterval(timer);
+      }, 60);
+    },
+    [currentSectionId, handleSectionClick]
+  );
+
   return (
     <>
       <ReadingProgress />
@@ -976,6 +1001,7 @@ export default function Chapter() {
                     onSectionClick={(volumeNo, chapId, sectionId) =>
                       handleSectionClick(volumeNo, chapId, sectionId)
                     }
+                    onSubsectionClick={handleSubsectionClick}
                   />
                 </div>
               ) : (

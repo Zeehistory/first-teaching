@@ -16,6 +16,7 @@ import {
   getFootnoteOrigin,
 } from "@/lib/footnotes";
 import { captureReadingReturnState } from "@/lib/readingReturn";
+import { processSubsections } from "@/lib/subsections";
 import { italicizeTransliterations } from "@/lib/transliteration";
 import Transliterated from "./Transliterated";
 
@@ -312,9 +313,10 @@ export default function ChapterContent({
   }, [baseContent, showImageCatalogue]);
 
   const sanitizedContent = useMemo(() => {
-    if (sectionMarkupOverride) return sectionMarkupOverride;
-    return contentWithInlineImages;
-  }, [contentWithInlineImages, sectionMarkupOverride]);
+    const source = sectionMarkupOverride ?? contentWithInlineImages;
+    // Tag crossheadings so the prose styles them and the nav can anchor here.
+    return processSubsections(source, section.id).html;
+  }, [contentWithInlineImages, sectionMarkupOverride, section.id]);
 
   useEffect(() => {
     if (!showImageCatalogue) {
