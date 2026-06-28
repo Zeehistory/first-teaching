@@ -1545,56 +1545,53 @@ body.timeline-open {
   }
 }
 
-.chapter-prose mark[data-highlight] {
-  background: linear-gradient(135deg, hsla(48, 92%, 80%, 0.95), hsla(48, 85%, 70%, 0.95));
-  color: var(--foreground);
-  padding: 0 0.2em;
-  border-radius: 0.25em;
-  box-shadow: 0 0 0 1px hsla(48, 65%, 55%, 0.4), 0 6px 16px -12px rgba(120, 90, 10, 0.45);
-  transition: background 400ms ease;
-  animation: highlight-glow 2.8s ease-out 1;
-}
-
-.chapter-prose mark[data-highlight].is-active {
-  background: linear-gradient(135deg, hsl(48, 95%, 78%), hsl(45, 90%, 72%));
-  box-shadow: 0 0 0 2px hsla(48, 70%, 60%, 0.5);
+/* Highlights must survive line wraps cleanly. box-decoration-break: clone makes
+   each line fragment carry its own background/padding/radius, so a multi-line
+   highlight reads as a continuous wash instead of one box whose ring/shadow
+   fragments into stray bars at the block edges. No ring/drop-shadow — those are
+   what produced the broken gilt slivers on full-paragraph selections. */
+.chapter-prose mark[data-highlight],
+.chapter-prose mark.note-highlight,
+.chapter-prose mark[data-reader-note],
+.chapter-prose mark.user-highlight {
+  background: hsl(var(--gilt) / 0.26);
+  color: inherit;
+  padding: 0.04em 0.1em;
+  border-radius: 0.2em;
+  box-shadow: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: background-color 250ms ease;
 }
 
 .chapter-prose mark.note-highlight,
 .chapter-prose mark[data-reader-note],
 .chapter-prose mark.user-highlight {
-  background: linear-gradient(135deg, hsla(48, 96%, 84%, 0.95), hsla(45, 92%, 76%, 0.95));
-  color: var(--foreground);
-  padding: 0 0.22em;
-  border-radius: 0.35em;
-  box-shadow: 0 0 0 1px hsla(45, 80%, 58%, 0.4), 0 6px 18px -12px rgba(155, 120, 20, 0.4);
   cursor: pointer;
-  transition: box-shadow 200ms ease, background-color 200ms ease;
 }
 
+.chapter-prose mark[data-highlight] {
+  animation: highlight-glow 2.4s ease-out 1;
+}
+
+.chapter-prose mark[data-highlight].is-active,
 .chapter-prose mark[data-reader-note]:hover,
-.chapter-prose mark.user-highlight:hover {
-  box-shadow: 0 0 0 2px hsla(45, 85%, 62%, 0.45);
-}
-
+.chapter-prose mark.user-highlight:hover,
 .chapter-prose mark[data-reader-note].note-highlight-focus,
 .chapter-prose mark.user-highlight.note-highlight-focus {
-  box-shadow: 0 0 0 3px hsla(45, 85%, 62%, 0.55);
+  background: hsl(var(--gilt) / 0.42);
+}
+
+.dark .chapter-prose mark[data-highlight],
+.dark .chapter-prose mark.note-highlight,
+.dark .chapter-prose mark[data-reader-note],
+.dark .chapter-prose mark.user-highlight {
+  background: hsl(var(--gilt) / 0.32);
 }
 
 @keyframes highlight-glow {
-  0% {
-    background: hsla(48, 95%, 80%, 1);
-    box-shadow: 0 0 0 4px hsla(48, 80%, 70%, 0.35);
-  }
-  60% {
-    background: hsla(48, 90%, 72%, 1);
-    box-shadow: 0 0 0 2px hsla(48, 70%, 62%, 0.25);
-  }
-  100% {
-    background: linear-gradient(135deg, hsla(48, 92%, 80%, 0.95), hsla(48, 85%, 70%, 0.95));
-    box-shadow: 0 0 0 1px hsla(48, 65%, 55%, 0.2);
-  }
+  0% { background: hsl(var(--gilt) / 0.5); }
+  100% { background: hsl(var(--gilt) / 0.26); }
 }
 
 /* Inline citation chips used inside Ask Assistant answers */
