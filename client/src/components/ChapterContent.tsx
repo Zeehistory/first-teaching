@@ -121,6 +121,23 @@ function classifyQuotations(container: HTMLElement) {
     const prevText = plain(el.previousElementSibling);
     const afterLeadIn = LEADIN_COLON.test(prevText);
 
+    // --- Verse held in a single <p> with <br> line breaks ----------------
+    // Poems are often authored as one paragraph with hard breaks rather than
+    // a paragraph per line. Treat ≥2 breaks as a verse block, and pull in a
+    // following short attribution line ("~ Emily Dickinson (d. …)").
+    const breakCount = el.querySelectorAll("br").length;
+    if (breakCount >= 2 && !isAttribution(text)) {
+      el.classList.add("tt-verse", "tt-verse-start", "tt-verse-end");
+      el.dataset.ttClassified = "done";
+      const attr = blocks[i + 1];
+      if (attr && isAttribution(plain(attr))) {
+        attr.classList.add("tt-attribution", "tt-verse");
+        attr.dataset.ttClassified = "done";
+        i += 1;
+      }
+      continue;
+    }
+
     // --- Verse run -------------------------------------------------------
     // Collect consecutive verse-like lines. A run qualifies as verse when it
     // either follows a colon lead-in (≥2 lines) or stands alone as a cluster
@@ -701,7 +718,9 @@ export default function ChapterContent({
 
     const openGlossary = (slug: string) => {
       captureReadingReturnState();
-      window.location.assign(`/glossary#${slug}`);
+      // Route through wouter so the deployment base (/first-teaching on Pages)
+      // is applied; carry the slug as a hash for the glossary page to focus.
+      navigateRef.current(`/glossary#${slug}`);
     };
 
     const getTermHost = (target: EventTarget | null): HTMLElement | null => {

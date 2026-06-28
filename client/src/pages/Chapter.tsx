@@ -32,6 +32,22 @@ import { cn } from "@/lib/utils";
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/* A minimalist home mark — a single open roofline over a doorway, drawn as
+   thin strokes to sit quietly beside the Contents / Notes tabs. */
+function HomeMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+      <path
+        d="M4 11.2 L12 5 L20 11.2 V19 a1 1 0 0 1 -1 1 h-4 v-5 h-6 v5 H5 a1 1 0 0 1 -1 -1 Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 interface ReaderNote {
   id: string;
   anchorId: string;
@@ -927,14 +943,25 @@ export default function Chapter() {
                   )}
                 </button>
               </div>
-              <button
-                type="button"
-                aria-label="Collapse study pane"
-                className="-mr-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
-                onClick={() => setStudyPaneCollapsed(true)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Volume contents"
+                  title="Volume contents"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground hover:bg-sidebar-border/50"
+                  onClick={() => setLocation(`/v/${bookData.volumeNumber}`)}
+                >
+                  <HomeMark className="h-[1.05rem] w-[1.05rem]" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Collapse study pane"
+                  className="-mr-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+                  onClick={() => setStudyPaneCollapsed(true)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             <div className="mx-5 mt-4 border-t border-sidebar-border/70" />
             <div className="flex-1 min-h-0 overflow-hidden">

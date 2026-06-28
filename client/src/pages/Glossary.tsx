@@ -4,9 +4,19 @@ import { glossary, type GlossaryEntry } from "@shared/glossary";
 import { ArrowLeft, Search, X, CornerDownLeft } from "lucide-react";
 import { readReadingReturnState } from "@/lib/readingReturn";
 
+// Sort key ignores leading quotes/punctuation and diacritics so that
+// "Identity" files under I and Ḥadīth under H — while quotes stay in display.
+function sortKey(title: string): string {
+  return title
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // strip diacritics (Ḥadīth → Hadith)
+    .replace(/^[^A-Za-z0-9]+/, "") // drop leading quotes/punctuation
+    .toLowerCase();
+}
+
 // First letter used for the A–Z index. Non-alphabetic titles fall under "#".
 function letterOf(title: string): string {
-  const ch = title.trim().charAt(0).toUpperCase();
+  const ch = sortKey(title).charAt(0).toUpperCase();
   return /[A-Z]/.test(ch) ? ch : "#";
 }
 
@@ -31,7 +41,8 @@ export default function Glossary() {
     return glossary.filter((e) => e.title.toLowerCase().includes(q));
   }, [query]);
 
-  // Group filtered entries by first letter, preserving order.
+  // Group filtered entries by first letter; sort entries alphabetically within
+  // each letter and the letters themselves ("#" last).
   const groups = useMemo(() => {
     const map = new Map<string, GlossaryEntry[]>();
     for (const entry of filtered) {
@@ -40,7 +51,15 @@ export default function Glossary() {
       if (bucket) bucket.push(entry);
       else map.set(letter, [entry]);
     }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+    const entries = Array.from(map.entries());
+    entries.forEach(([, bucket]) =>
+      bucket.sort((a, b) => sortKey(a.title).localeCompare(sortKey(b.title))),
+    );
+    return entries.sort(([a]: [string, GlossaryEntry[]], [b]: [string, GlossaryEntry[]]) => {
+      if (a === "#") return 1;
+      if (b === "#") return -1;
+      return a.localeCompare(b);
+    });
   }, [filtered]);
 
   const activeLetters = useMemo(() => new Set(groups.map(([l]) => l)), [groups]);
@@ -54,11 +73,26 @@ export default function Glossary() {
     [selectedSlug],
   );
 
+  // Honour an incoming hash (e.g. /glossary#identity from a clicked term):
+  // select that entry and scroll its index row into view.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const slug = window.location.hash.replace(/^#/, "");
+    if (!slug || !glossary.some((e) => e.slug === slug)) return;
+    setSelectedSlug(slug);
+    const t = window.setTimeout(() => {
+      const row = document.getElementById(`gterm-${slug}`);
+      row?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // Default the detail pane to the first entry once results settle.
   useEffect(() => {
+    if (selectedSlug) return;
     if (selected && filtered.some((e) => e.slug === selected.slug)) return;
     setSelectedSlug(filtered[0]?.slug ?? null);
-  }, [filtered, selected]);
+  }, [filtered, selected, selectedSlug]);
 
   const jumpToLetter = (letter: string) => {
     const el = document.getElementById(`letter-${letter}`);
@@ -138,6 +172,7 @@ export default function Glossary() {
                         <li key={entry.slug}>
                           <button
                             type="button"
+                            id={`gterm-${entry.slug}`}
                             onClick={() => setSelectedSlug(entry.slug)}
                             className={`glossary-term-row ${isActive ? "is-active" : ""}`}
                           >

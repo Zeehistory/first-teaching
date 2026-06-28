@@ -1,4 +1,3 @@
-import { Home } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { hasRenderableContent } from "@/lib/content";
 import type { Chapter } from "@shared/schema";
@@ -8,7 +7,8 @@ interface ChapterSidebarProps {
   chapters: Chapter[];
   currentChapterId: string | null;
   currentSectionId: string | null;
-  onHomeClick: (volumeNumber: number) => void;
+  /** Retained for API compatibility; the home action now lives in the tab row. */
+  onHomeClick?: (volumeNumber: number) => void;
   onSectionClick: (volumeNumber: number, chapterId: string, sectionId: string) => void;
 }
 
@@ -17,24 +17,12 @@ export default function ChapterSidebar({
   chapters,
   currentChapterId,
   currentSectionId,
-  onHomeClick,
   onSectionClick,
 }: ChapterSidebarProps) {
   return (
     <div className="flex h-full flex-col bg-sidebar">
-      <div className="px-5 pt-5 pb-3">
-        <button
-          type="button"
-          onClick={() => onHomeClick(volumeNumber)}
-          data-testid="button-home"
-          className="group inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
-        >
-          <Home className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-          Volume contents
-        </button>
-      </div>
       <ScrollArea className="flex-1">
-        <nav className="px-5 pb-6 pt-1">
+        <nav className="px-5 pb-6 pt-4">
           <ol className="space-y-7">
             {chapters.map((chapter, chapterIdx) => {
               const baseLevel =

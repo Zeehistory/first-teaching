@@ -1,83 +1,65 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BookOpenText,
-  Highlighter,
-  Library,
-  type LucideIcon,
-  MessageCircleQuestion,
-  Headphones,
-  Search,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import TourVisual from "./TourVisuals";
 
-const STORAGE_KEY_SEEN = "ft_onboarding_seen_v2";
+const STORAGE_KEY_SEEN = "ft_onboarding_seen_v3";
 
 type Slide = {
   id: string;
   eyebrow: string;
   title: string;
   description: string;
-  icon: LucideIcon;
 };
 
 const SLIDES: Slide[] = [
   {
     id: "welcome",
-    eyebrow: "Welcome",
-    title: "The First Teaching, made to be read closely.",
+    eyebrow: "Orientation",
+    title: "A scholarly edition of the First Teaching.",
     description:
-      "A digital home for the nineteen-volume Syntopicon — typeset for study, with the apparatus of a scholarly edition and the ease of the web.",
-    icon: Sparkles,
+      "The nineteen-volume compendium, set for close reading: full critical apparatus, cross-references, and search, delivered in the browser.",
   },
   {
     id: "library",
     eyebrow: "The Library",
-    title: "Nineteen volumes, one continuous curriculum.",
+    title: "Nineteen volumes in one structured corpus.",
     description:
-      "Open any available Syntopicon from the landing ledger. Each volume carries its full text, chapter by chapter, with more arriving as they are prepared.",
-    icon: Library,
+      "Each available Syntopicon is opened from the index. Volumes carry their complete text, ordered by chapter and section; further volumes are released as edited.",
   },
   {
     id: "reading",
-    eyebrow: "Reading",
-    title: "A clean leaf of vellum for every chapter.",
+    eyebrow: "The Reading Surface",
+    title: "A single column, with type controls.",
     description:
-      "Adjust the text size, switch between light and dark, and read without clutter. The page is built to disappear so the words can stay.",
-    icon: BookOpenText,
+      "Adjust type size and toggle light or dark. The layout is deliberately spare so the text, not the interface, holds attention.",
   },
   {
     id: "apparatus",
-    eyebrow: "The Apparatus",
-    title: "Footnotes, web-extensions & a living glossary.",
+    eyebrow: "The Critical Apparatus",
+    title: "Footnotes, web-extensions, and glossary.",
     description:
-      "Tap a marker to open its note in a quiet side panel. Highlighted terms reveal glossary definitions — the scholarly apparatus, one tap away.",
-    icon: Highlighter,
+      "A reference marker opens its note in a side panel. Indexed terms resolve to glossary definitions; web-extensions hold material beyond the printed margin.",
   },
   {
     id: "search",
-    eyebrow: "Search",
-    title: "Find any passage across the whole corpus.",
+    eyebrow: "Concordance",
+    title: "Search the chapter, volume, or corpus.",
     description:
-      "Search within a chapter, a volume, or every available volume at once. Results carry you straight to the line.",
-    icon: Search,
+      "Queries may be scoped to the current chapter, the whole volume, or every available volume. Each result links directly to its passage.",
   },
   {
     id: "audio",
-    eyebrow: "Listen",
-    title: "A soft audio companion for each section.",
+    eyebrow: "Recitation",
+    title: "A narration track for each section.",
     description:
-      "Prefer to listen? A calm narration preview accompanies the text — lovely for exploration while the final recordings are prepared.",
-    icon: Headphones,
+      "Sections carry a synchronized audio reading. The present tracks are a preview; the authorized classroom recordings will follow.",
   },
   {
     id: "assistant",
-    eyebrow: "Ask",
-    title: "A focused study companion beside the text.",
+    eyebrow: "Study Companion",
+    title: "An assistant grounded in the text.",
     description:
-      "Summon the assistant for clarifications, summaries, and citations — context drawn from the Teaching itself, right where you are reading.",
-    icon: MessageCircleQuestion,
+      "Request clarification, summary, or citation. Responses are drawn from the Teaching itself and presented beside the passage at hand.",
   },
 ];
 
@@ -152,7 +134,6 @@ export default function OnboardingTour() {
   if (!active) return null;
 
   const slide = SLIDES[index];
-  const Icon = slide.icon;
   const isLast = index === SLIDES.length - 1;
 
   return (
@@ -160,7 +141,7 @@ export default function OnboardingTour() {
       className={`tour-root ${entered ? "is-entered" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-label="Quick tour"
+      aria-label="Guided tour"
     >
       <button
         type="button"
@@ -169,22 +150,32 @@ export default function OnboardingTour() {
         onClick={finish}
       />
 
-      <div className="tour-card" key={slide.id}>
-        <div className="tour-card-glow" aria-hidden="true">
-          <Icon className="h-full w-full" strokeWidth={1.1} />
-        </div>
+      <div className="tour-card">
+        {/* Geometric heritage frame: corner rosettes + a hairline inner rule */}
+        <span className="tour-rosette tour-rosette-tl" aria-hidden="true">
+          <StarMotif />
+        </span>
+        <span className="tour-rosette tour-rosette-br" aria-hidden="true">
+          <StarMotif />
+        </span>
 
         <button type="button" className="tour-skip" onClick={finish}>
           Skip
         </button>
 
-        <div className="tour-icon">
-          <Icon className="h-5 w-5" strokeWidth={1.6} />
+        {/* The visualization stage — re-mounts per slide to replay its motion */}
+        <div className="tour-stage" key={`stage-${slide.id}`}>
+          <TourVisual id={slide.id} />
         </div>
 
-        <p className="tour-eyebrow">{slide.eyebrow}</p>
-        <h2 className="tour-title">{slide.title}</h2>
-        <p className="tour-desc">{slide.description}</p>
+        <div className="tour-body" key={`body-${slide.id}`}>
+          <div className="tour-eyebrow">
+            <StarMotif className="tour-eyebrow-star" />
+            {slide.eyebrow}
+          </div>
+          <h2 className="tour-title">{slide.title}</h2>
+          <p className="tour-desc">{slide.description}</p>
+        </div>
 
         <div className="tour-foot">
           <div className="tour-dots" aria-hidden="true">
@@ -213,5 +204,28 @@ export default function OnboardingTour() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* An eight-point star (najmah) — the heritage signature, drawn as two squares. */
+function StarMotif({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        d="M12 1 L15 9 L23 12 L15 15 L12 23 L9 15 L1 12 L9 9 Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="5.7" y="5.7" width="12.6" height="12.6"
+        transform="rotate(45 12 12)"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="0.7"
+        opacity="0.5"
+      />
+    </svg>
   );
 }
