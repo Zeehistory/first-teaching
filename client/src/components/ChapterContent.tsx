@@ -730,7 +730,7 @@ export default function ChapterContent({
     glossaryBuilt.current = true;
 
     const openGlossary = (slug: string) => {
-      captureReadingReturnState();
+      captureReadingReturnState(undefined, slug);
       // Route through wouter so the deployment base (/first-teaching on Pages)
       // is applied; carry the slug as a hash for the glossary page to focus.
       navigateRef.current(`/glossary#${slug}`);

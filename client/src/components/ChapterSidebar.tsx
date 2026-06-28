@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { hasRenderableContent } from "@/lib/content";
 import { processSubsections } from "@/lib/subsections";
+import Transliterated from "@/components/Transliterated";
 import type { Chapter } from "@shared/schema";
 
 interface ChapterSidebarProps {
@@ -83,7 +84,7 @@ export default function ChapterSidebar({
               className="block w-full rounded-sm py-1 pr-2 text-left font-serif text-[0.8rem] italic leading-snug text-sidebar-foreground/55 transition-colors hover:text-primary"
               style={{ paddingLeft: `${baseIndentPx}px` }}
             >
-              <span className="line-clamp-2">{sub.title}</span>
+              <span className="line-clamp-2"><Transliterated text={sub.title} /></span>
             </button>
           </li>
         ))}
@@ -158,11 +159,11 @@ export default function ChapterSidebar({
                               : "text-sidebar-foreground group-hover:text-primary"
                         }`}
                       >
-                        {headingLabel}
+                        <Transliterated text={headingLabel} />
                       </span>
                       {headingSubtitle && onlyEcho && (
                         <span className="mt-0.5 block font-serif text-sm leading-snug text-sidebar-foreground/60">
-                          {headingSubtitle}
+                          <Transliterated text={headingSubtitle} />
                         </span>
                       )}
                     </span>
@@ -206,7 +207,7 @@ export default function ChapterSidebar({
                                   aria-hidden="true"
                                 />
                               )}
-                              <span className="line-clamp-2">{section.title}</span>
+                              <span className="line-clamp-2"><Transliterated text={section.title} /></span>
                             </button>
 
                             {!isDisabled &&

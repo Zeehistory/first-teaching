@@ -1,5 +1,6 @@
 import { ArrowUpRight, BookOpen, Bookmark, GraduationCap, ScrollText, Wand2 } from "lucide-react";
 import { useLocation } from "wouter";
+import Transliterated from "@/components/Transliterated";
 import type { Volume } from "@shared/schema";
 
 interface VolumesLandingProps {
@@ -124,13 +125,15 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
                       isAvailable ? "text-foreground" : "text-[hsl(var(--codex-ink-soft))]"
                     }`}
                   >
-                    {volume.subtitle && volume.subtitle !== "In Development"
-                      ? volume.subtitle
-                      : `Volume ${volume.number}`}
+                    {volume.subtitle && volume.subtitle !== "In Development" ? (
+                      <Transliterated text={volume.subtitle} />
+                    ) : (
+                      `Volume ${volume.number}`
+                    )}
                   </span>
                   {isAvailable && (
                     <span className="mt-1 line-clamp-1 block text-sm text-[hsl(var(--codex-ink-soft))]">
-                      {volume.description}
+                      <Transliterated text={volume.description} />
                     </span>
                   )}
                 </span>

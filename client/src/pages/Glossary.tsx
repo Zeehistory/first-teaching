@@ -182,7 +182,7 @@ export default function Glossary() {
                             onClick={() => setSelectedSlug(entry.slug)}
                             className={`glossary-term-row ${isActive ? "is-active" : ""}`}
                           >
-                            {entry.title}
+                            <Transliterated text={entry.title} />
                           </button>
                         </li>
                       );
@@ -216,9 +216,9 @@ export default function Glossary() {
         </nav>
 
         {/* Detail pane */}
-        <div className="hidden flex-1 overflow-y-auto md:block">
+        <div className="minimal-scrollbar hidden flex-1 overflow-y-auto md:block">
           {selected ? (
-            <article className="minimal-scrollbar w-full px-8 py-12 lg:px-16 lg:py-16">
+            <article className="mx-auto w-full max-w-3xl px-8 py-12 lg:px-12 lg:py-16">
               <div className="flex items-baseline gap-3 text-[0.7rem] uppercase tracking-[0.22em] text-[hsl(var(--codex-ink-soft))]">
                 <span>Term</span>
                 <span aria-hidden="true">·</span>
@@ -257,7 +257,7 @@ export default function Glossary() {
       {selected && (
         <div className="glossary-mobile-detail border-t border-[hsl(var(--codex-rule)/0.6)] bg-[hsl(var(--codex-vellum))] px-5 py-5 md:hidden">
           <h2 className="font-heading text-xl font-semibold text-foreground">
-            {selected.title}
+            <Transliterated text={selected.title} />
           </h2>
           <div
             className="mt-2 font-serif text-[0.95rem] leading-relaxed text-foreground/90"

@@ -4,6 +4,8 @@ interface ReadingReturnState {
   path: string;
   scrollTop: number;
   savedAt: number;
+  /** Glossary term that was opened, so we can glow it on return. */
+  glossarySlug?: string;
 }
 
 function getScrollContainer(): HTMLElement | null {
@@ -22,7 +24,7 @@ function toRouterPath(fullPath: string): string {
   return fullPath;
 }
 
-export function captureReadingReturnState(path?: string) {
+export function captureReadingReturnState(path?: string, glossarySlug?: string) {
   if (typeof window === "undefined") return;
 
   const container = getScrollContainer();
@@ -32,6 +34,7 @@ export function captureReadingReturnState(path?: string) {
       `${toRouterPath(window.location.pathname)}${window.location.search}`,
     scrollTop: container?.scrollTop ?? 0,
     savedAt: Date.now(),
+    glossarySlug,
   };
 
   window.sessionStorage.setItem(READING_RETURN_STATE_KEY, JSON.stringify(state));
@@ -64,6 +67,28 @@ export function restoreReadingReturnScroll(path: string) {
   if (!container) return false;
 
   container.scrollTo({ top: state.scrollTop, behavior: "auto" });
+  const slug = state.glossarySlug;
   clearReadingReturnState();
+
+  // Glow the glossary term the reader had opened, so the eye relands on it.
+  if (slug && typeof document !== "undefined") {
+    let tries = 0;
+    const tick = () => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-glossary="${CSS.escape(slug)}"]`,
+      );
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("glossary-term-return-focus");
+        window.setTimeout(
+          () => el.classList.remove("glossary-term-return-focus"),
+          2200,
+        );
+        return;
+      }
+      if (tries++ < 25) window.setTimeout(tick, 80);
+    };
+    window.setTimeout(tick, 120);
+  }
   return true;
 }
