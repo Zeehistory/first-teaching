@@ -89,6 +89,19 @@ function isWhollyItalic(inner: string): boolean {
   return stripped.length === 0 && /<(em|i)\b/i.test(inner);
 }
 
+/** Is the paragraph's whole visible content bold (optionally bold-italic)? A
+ *  standalone fully-bold line is an editorial crosshead — e.g. "Conclusion" or
+ *  "Did al-Ḥijr's Monumental Structures Originate as Nabataean Tombs?". */
+function isWhollyBold(inner: string): boolean {
+  const stripped = inner
+    .replace(/<strong\b[^>]*>[\s\S]*?<\/strong>/gi, "") // remove bold runs (and their text)
+    .replace(/<[^>]+>/g, "")
+    .replace(/&[a-z]+;/gi, " ")
+    .trim();
+  // Nothing visible sits outside the bold run → the whole line is bold.
+  return stripped.length === 0 && /<strong\b/i.test(inner);
+}
+
 /**
  * Detect crossheads in `html`, tag them, and return the tagged html plus the
  * ordered list of subsections. `keyPrefix` keeps ids unique across sections.
@@ -138,6 +151,8 @@ export function processSubsections(html: string, keyPrefix = "sub"): ProcessedCo
     leadinTitle?: string;
     leadinTitleHtml?: string;
     leadinRest?: string;
+    boldHeadTitle?: string;
+    boldHeadHtml?: string;
   }> = [];
   const re = /<p>([\s\S]*?)<\/p>/g;
   let m: RegExpExecArray | null;
@@ -159,6 +174,19 @@ export function processSubsections(html: string, keyPrefix = "sub"): ProcessedCo
         para.leadinTitle = title;
         para.leadinTitleHtml = titleHtml;
         para.leadinRest = leadin[2].trim();
+      }
+    } else if (!structural && isWhollyBold(inner)) {
+      // A standalone fully-bold line is a crosshead heading. Lift the bold so it
+      // isn't double-weighted (keep any inner <em> for transliterations) and
+      // strip a trailing colon — keep "?" since question headings are common.
+      const text = plain(inner);
+      const words = text ? text.split(/\s+/).length : 0;
+      if (text && text.length <= 120 && words >= 1 && words <= 16) {
+        para.boldHeadHtml = inner
+          .replace(/<\/?strong\b[^>]*>/gi, "")
+          .replace(/\s*[:：]\s*$/, "")
+          .trim();
+        para.boldHeadTitle = decodeEntities(text).replace(/\s*[:：]\s*$/, "").trim();
       }
     }
     paras.push(para);
@@ -196,6 +224,14 @@ export function processSubsections(html: string, keyPrefix = "sub"): ProcessedCo
       subsections.push({ id, title: p.leadinTitle });
       out += `<p id="${id}" class="${SUBHEAD_CLASS}">${p.leadinTitleHtml}</p>`;
       if (p.leadinRest) out += `<p>${p.leadinRest}</p>`;
+      cursor = p.end;
+      return;
+    }
+    if (p.boldHeadTitle) {
+      // Promote a standalone fully-bold line to a crosshead heading.
+      const id = makeId(p.boldHeadTitle);
+      subsections.push({ id, title: p.boldHeadTitle });
+      out += `<p id="${id}" class="${SUBHEAD_CLASS}">${p.boldHeadHtml}</p>`;
       cursor = p.end;
       return;
     }
