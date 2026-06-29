@@ -6,3 +6,6 @@ vite.config.ts.*
 *.tar.gz
 tmp/
 .gh-pages-worktree/
+
+# Source manuscript material (docx) — not part of the app build
+25p - First Teaching/

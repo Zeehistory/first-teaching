@@ -97,23 +97,80 @@ function isWhollyItalic(inner: string): boolean {
  * line. If its immediate neighbours are also short title-like (or italic)
  * lines, it belongs to a verse/poetry run and is left as body text.
  */
+/** Decode the handful of HTML entities that appear in heading text so the nav
+ *  shows "History & Languages" rather than "History &amp; Languages". */
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// A bold-italic lead-in ending in a colon ("**_Translation_:** …") is an
+// editorial crosshead embedded at the head of a paragraph. We lift it out as a
+// real sub-subsection title (nav + UI) and leave the remaining prose behind.
+const LEADIN_RE =
+  /^<strong><em>([^<]*?)<\/em>\s*:\s*(?:<em>[\s\S]*?<\/em>\s*)?<\/strong>\s*([\s\S]*)$/;
+
 export function processSubsections(html: string, keyPrefix = "sub"): ProcessedContent {
   const subsections: Subsection[] = [];
   const seen = new Set<string>();
   let counter = 0;
 
+  const makeId = (text: string): string => {
+    let id = `${keyPrefix}-${slugify(text)}`;
+    while (seen.has(id)) id = `${keyPrefix}-${slugify(text)}-${++counter}`;
+    seen.add(id);
+    return id;
+  };
+
   // First pass: index every plain <p> and classify it in isolation.
-  const paras: Array<{ start: number; end: number; inner: string; candidate: boolean }> = [];
+  const paras: Array<{
+    start: number;
+    end: number;
+    inner: string;
+    candidate: boolean;
+    leadinTitle?: string;
+    leadinTitleHtml?: string;
+    leadinRest?: string;
+  }> = [];
   const re = /<p>([\s\S]*?)<\/p>/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(html))) {
     const inner = m[1];
     const structural = /data-|class=|<a\b|<img\b/i.test(inner);
     const italic = isWhollyItalic(inner);
-    const candidate =
-      !structural && !italic && looksLikeSubhead(plain(inner));
-    paras.push({ start: m.index, end: re.lastIndex, inner, candidate });
+    const leadin = LEADIN_RE.exec(inner);
+    const para: (typeof paras)[number] = {
+      start: m.index,
+      end: re.lastIndex,
+      inner,
+      candidate: !structural && !italic && looksLikeSubhead(plain(inner)),
+    };
+    if (leadin) {
+      const titleHtml = leadin[1].trim();
+      const title = decodeEntities(titleHtml.replace(/<[^>]+>/g, ""));
+      if (title) {
+        para.leadinTitle = title;
+        para.leadinTitleHtml = titleHtml;
+        para.leadinRest = leadin[2].trim();
+      }
+    }
+    paras.push(para);
   }
+
+  // A colon lead-in ("…said in his Divan:") introduces a quotation or a verse
+  // run, not a heading — the line that follows it is content, never a crosshead.
+  const followsColonLeadIn = (idx: number): boolean => {
+    const prev = paras[idx - 1];
+    if (!prev) return false;
+    return /[:：]\s*$/.test(plain(prev.inner));
+  };
 
   // A "short/verse-like" neighbour disqualifies a candidate (poetry run).
   const neighbourLooksLikeVerse = (idx: number): boolean => {
@@ -132,16 +189,24 @@ export function processSubsections(html: string, keyPrefix = "sub"): ProcessedCo
   let out = "";
   let cursor = 0;
   paras.forEach((p, i) => {
+    out += html.slice(cursor, p.start);
+    if (p.leadinTitle) {
+      // Promote the bold-italic lead-in to a crosshead and keep the prose body.
+      const id = makeId(p.leadinTitle);
+      subsections.push({ id, title: p.leadinTitle });
+      out += `<p id="${id}" class="${SUBHEAD_CLASS}">${p.leadinTitleHtml}</p>`;
+      if (p.leadinRest) out += `<p>${p.leadinRest}</p>`;
+      cursor = p.end;
+      return;
+    }
     const standalone =
       p.candidate &&
+      !followsColonLeadIn(i) &&
       !neighbourLooksLikeVerse(i - 1) &&
       !neighbourLooksLikeVerse(i + 1);
-    out += html.slice(cursor, p.start);
     if (standalone) {
       const text = plain(p.inner);
-      let id = `${keyPrefix}-${slugify(text)}`;
-      while (seen.has(id)) id = `${keyPrefix}-${slugify(text)}-${++counter}`;
-      seen.add(id);
+      const id = makeId(text);
       subsections.push({ id, title: text });
       out += `<p id="${id}" class="${SUBHEAD_CLASS}">${p.inner}</p>`;
     } else {

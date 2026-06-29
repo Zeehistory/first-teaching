@@ -5,7 +5,15 @@ import ChapterContent from "@/components/ChapterContent";
 import ThemeToggle from "@/components/ThemeToggle";
 import TextSizeControl from "@/components/TextSizeControl";
 import type { Footnote, Section, WebExtensionEntry } from "@shared/schema";
-import { volumeEighteenWebExtensions, volumeOneWebExtensions } from "@/lib/content";
+import {
+  volumeOneWebExtensions,
+  volumeThirteenWebExtensions,
+  volumeFourteenWebExtensions,
+  volumeFifteenWebExtensions,
+  volumeSixteenWebExtensions,
+  volumeSeventeenWebExtensions,
+  volumeEighteenWebExtensions,
+} from "@/lib/content";
 import { buildFootnoteSelector, getFootnoteDisplayNumber } from "@/lib/footnotes";
 import { readReadingReturnState } from "@/lib/readingReturn";
 
@@ -26,10 +34,17 @@ export default function WebExtension() {
   const chapterId = params?.id ?? "";
   const extensionsByVolume = {
     1: volumeOneWebExtensions,
+    13: volumeThirteenWebExtensions,
+    14: volumeFourteenWebExtensions,
+    15: volumeFifteenWebExtensions,
+    16: volumeSixteenWebExtensions,
+    17: volumeSeventeenWebExtensions,
     18: volumeEighteenWebExtensions,
   } as const;
   const extensionMap =
-    volumeNumber === 1 || volumeNumber === 18 ? extensionsByVolume[volumeNumber] : null;
+    volumeNumber in extensionsByVolume
+      ? extensionsByVolume[volumeNumber as keyof typeof extensionsByVolume]
+      : null;
   const extension = extensionMap ? extensionMap[chapterId] ?? null : null;
   const returnState = useMemo(() => readReadingReturnState(), []);
 

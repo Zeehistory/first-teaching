@@ -562,25 +562,36 @@
   bottom: 1rem;
 }
 
+/* Attribution beneath a verse: a quiet, centred signature. The name sits in
+   the serif italic of the poem, dimmed, spaced ever so slightly, and ushered
+   in by a single slender gilt em-dash — the only ornament it needs. */
 .chapter-prose p.tt-attribution {
+  margin: 0;
+  padding-top: 1.6rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.86em;
+  letter-spacing: 0.015em;
+  color: hsl(var(--codex-ink-soft) / 0.9);
+  text-align: center;
+}
+
+.chapter-prose p.tt-attribution::before {
+  content: "—";
+  margin-right: 0.5em;
   font-style: normal;
-  font-size: 0.82em;
-  letter-spacing: 0.01em;
-  color: hsl(var(--codex-ink-soft));
-  padding-top: 1.1rem;
+  color: hsl(var(--gilt));
 }
 
 /* A prose pull-quote that carries an attribution loses its bottom margin
-   so the two read as one block. */
+   so the two read as one block; its signature aligns under the quote, not
+   centred, but keeps the same gilt em-dash flourish. */
 .chapter-prose p.tt-quote + p.tt-attribution.tt-quote {
-  margin-top: -1.4rem;
-  padding-left: 2.5rem;
-  font-style: normal;
+  margin-top: -1rem;
+  padding-top: 0.9rem;
+  padding-left: 1.75rem;
+  text-align: left;
   font-size: 0.9em;
-  color: hsl(var(--codex-ink-soft));
-}
-.chapter-prose p.tt-attribution.tt-quote::before {
-  content: none;
 }
 
 /* Ensure HTML formatting renders in chapter content */
@@ -638,6 +649,12 @@
    tinted lozenge (clearly visible) bordered by a hairline, with a gilt seam
    along its foot as the creative signature. Compact: it raises as a superscript
    and adds almost no inline width. The number is never italicised. */
+/* Keeps a footnote marker welded to the word it annotates so the superscript
+   can never wrap onto a line by itself, regardless of font size. */
+.chapter-prose .footnote-anchor {
+  white-space: nowrap;
+}
+
 .chapter-prose sup[data-footnote],
 .chapter-prose sup[data-footnote-key] {
   position: relative;
@@ -739,6 +756,23 @@
   vertical-align: middle;
   box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.22);
   transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* The apparatus footer: web-extension chips gathered, centred, and set off
+   from the prose by a hairline and generous space. */
+.chapter-prose .web-extension-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 3.25rem;
+  padding-top: 1.85rem;
+  border-top: 1px solid hsl(var(--codex-rule) / 0.6);
+}
+
+.chapter-prose .web-extension-links .web-extension-chip {
+  margin: 0;
 }
 
 .chapter-prose .web-extension-chip::before {

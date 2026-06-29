@@ -137,18 +137,22 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
                   )}
                 </span>
 
-                <span className="flex items-center gap-2 self-center whitespace-nowrap">
-                  <span
-                    className={`codex-label text-sm ${
-                      isAvailable
-                        ? "text-primary group-hover:text-[hsl(var(--gilt))]"
-                        : "text-[hsl(var(--codex-ink-soft))]/60"
-                    }`}
-                  >
-                    {statusLabel[volume.status]}
-                  </span>
-                  {isAvailable && (
-                    <ArrowUpRight className="h-4 w-4 text-primary opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
+                <span className="flex items-center self-center whitespace-nowrap">
+                  {isAvailable ? (
+                    <span className="inline-flex items-center gap-1.5 codex-label text-sm text-primary transition-colors group-hover:text-[hsl(var(--gilt))]">
+                      <span className="relative">
+                        Open
+                        <span
+                          aria-hidden="true"
+                          className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-[hsl(var(--gilt))] transition-transform duration-300 ease-out group-hover:scale-x-100"
+                        />
+                      </span>
+                      <ArrowUpRight className="h-3.5 w-3.5 opacity-50 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
+                    </span>
+                  ) : (
+                    <span className="codex-label text-sm text-[hsl(var(--codex-ink-soft))]/50">
+                      {statusLabel[volume.status]}
+                    </span>
                   )}
                 </span>
               </button>

@@ -30,6 +30,9 @@ type ExtensionFootnoteRef = {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, "..");
+const SOURCE_ROOT = process.env.FIRST_TEACHING_SOURCE_ROOT
+  ? path.resolve(process.env.FIRST_TEACHING_SOURCE_ROOT)
+  : ROOT;
 const SOURCE_DIR = path.join(ROOT, "content", "source");
 const CONFIGS = {
   1: {
@@ -65,6 +68,86 @@ const CONFIGS = {
     extensionStartPattern: /^Opening of Web-?Extension \(1:1\)$/,
     introduction:
       "Syntopicon 1 gathers the main text for Speaking the Truth with Love with linked chapter-by-chapter web extensions and inline supporting footnotes where the extension material directly clarifies the main text.",
+  },
+  13: {
+    mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume13_25-page.docx alias"),
+    extAlias: path.join(SOURCE_DIR, "Volume13_WebExt.docx alias"),
+    mainFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 13 - 25p", "Syntopicon-Volume13_25-page.docx"),
+    extFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 13 - 25p", "Volume13_WebExt.docx"),
+    outputMain: path.join(ROOT, "client", "src", "lib", "content", "volume13.ts"),
+    outputExt: path.join(ROOT, "client", "src", "lib", "content", "volume13WebExtensions.ts"),
+    exportMainName: "volumeThirteenData",
+    exportExtName: "volumeThirteenWebExtensions",
+    volumeTitle: "Introducing God’s Prophets & Messengers",
+    expectedChapters: 10,
+    bodyStartText: "Fundamental Creedal Tenets Regarding God’s Prophets & Messengers (13:1)",
+    extensionStartPattern: /^Opening of Web-?Extension \(13:1\)$/i,
+    introduction:
+      "Syntopicon 13 introduces God’s Prophets and Messengers, tracing the unity of their message from Adam through the antediluvian and early postdiluvian worlds.",
+  },
+  14: {
+    mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume14_25-page.docx alias"),
+    extAlias: path.join(SOURCE_DIR, "Volume14_WebExt.docx alias"),
+    mainFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 14 - 25p", "Syntopicon-Volume14_25-page.docx"),
+    extFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 14 - 25p", "Volume14_WebExt.docx"),
+    outputMain: path.join(ROOT, "client", "src", "lib", "content", "volume14.ts"),
+    outputExt: path.join(ROOT, "client", "src", "lib", "content", "volume14WebExtensions.ts"),
+    exportMainName: "volumeFourteenData",
+    exportExtName: "volumeFourteenWebExtensions",
+    volumeTitle: "Prophets & Messengers at the End of the Bronze Age & Beginning of the Iron Age",
+    expectedChapters: 14,
+    bodyStartText: "Late Bronze Age Messengers & Their Times (14:1)",
+    extensionStartPattern: /^Opening of Web-?Extension \(14:1\)$/i,
+    introduction:
+      "Syntopicon 14 follows the Prophetic succession from Jacob and Joseph through Moses, David, and Solomon at the meeting point of the Bronze and Iron Ages.",
+  },
+  15: {
+    mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume15_25page.docx alias"),
+    extAlias: path.join(SOURCE_DIR, "Volume15_WebExt.docx alias"),
+    mainFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 15 - 25p", "Syntopicon-Volume15_25page.docx"),
+    extFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 15 - 25p", "Volume15_WebExt.docx"),
+    outputMain: path.join(ROOT, "client", "src", "lib", "content", "volume15.ts"),
+    outputExt: path.join(ROOT, "client", "src", "lib", "content", "volume15WebExtensions.ts"),
+    exportMainName: "volumeFifteenData",
+    exportExtName: "volumeFifteenWebExtensions",
+    volumeTitle: "Prophets & Messengers after Solomon & the Onset of the Age of Wrath",
+    expectedChapters: 12,
+    bodyStartText: "Breakup of Solomon’s Kingdom, Schism, Apostasy, & the Onset of Israel’s Coming Millennium of Wrath & Wickedness (15:1)",
+    extensionStartPattern: /^Opening of Web-?Extension \(15:1\)$/i,
+    introduction:
+      "Syntopicon 15 traces the Prophetic line after Solomon through the age of division and exile, culminating in Mary and the Messiah Jesus son of Mary.",
+  },
+  16: {
+    mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume16_25page.docx alias"),
+    extAlias: path.join(SOURCE_DIR, "Volume16_WebExt.docx alias"),
+    mainFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 16 - 25p", "Syntopicon-Volume16_25page.docx"),
+    extFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 16 - 25p", "Volume16_WebExt.docx"),
+    outputMain: path.join(ROOT, "client", "src", "lib", "content", "volume16.ts"),
+    outputExt: path.join(ROOT, "client", "src", "lib", "content", "volume16WebExtensions.ts"),
+    exportMainName: "volumeSixteenData",
+    exportExtName: "volumeSixteenWebExtensions",
+    volumeTitle: "God’s Last Messenger Muḥammad, the Paraclete & Prophet of the End of Days",
+    expectedChapters: 6,
+    bodyStartText: "The End of the Age of Wrath, the Restoration of Prophecy, & the Dawn of the Age of Supreme Felicity (16:1)",
+    extensionStartPattern: /^Opening of Web-?Extension \(16:1\)$/i,
+    introduction:
+      "Syntopicon 16 examines ancient allusions to the final Prophet and presents Muḥammad as the Deuteronomy Prophet, the Paraclete, and the Messenger of the End of Days.",
+  },
+  17: {
+    mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume17_25page.docx alias"),
+    extAlias: path.join(SOURCE_DIR, "Volume17_WebExt.docx alias"),
+    mainFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 17 - 25p", "Syntopicon-Volume17_25page.docx"),
+    extFallback: path.join(SOURCE_ROOT, "25p - First Teaching", "Volume 17 - 25p", "Volume17_WebExt.docx"),
+    outputMain: path.join(ROOT, "client", "src", "lib", "content", "volume17.ts"),
+    outputExt: path.join(ROOT, "client", "src", "lib", "content", "volume17WebExtensions.ts"),
+    exportMainName: "volumeSeventeenData",
+    exportExtName: "volumeSeventeenWebExtensions",
+    volumeTitle: "Eschatology Part One: The Earthly Cosmic Order of Good, the Order of Evil, & Their Contrasting Destinies",
+    expectedChapters: 21,
+    bodyStartText: "Introduction (17:1)",
+    extensionStartPattern: /^Opening of Webextension \(17:1\)$/i,
+    introduction:
+      "Syntopicon 17 opens the study of Last Things, gathering the main text on Sainthood, Sufism, mediated supplication, worldly eschatology, and the Signs of the End of Time, with linked chapter-by-chapter web extensions and inline supporting footnotes.",
   },
   18: {
     mainAlias: path.join(SOURCE_DIR, "Syntopicon-Volume18_25page.docx alias"),
@@ -565,16 +648,20 @@ function findMainHeadings(bodyHtml: string, volumeNumber: number, expectedChapte
   });
 
   paragraphs.forEach((paragraph) => {
-    const match = paragraph.text.match(new RegExp(`^(.*)\\((${volumeNumber}:\\d+)\\):?$`));
+    const correctedHeading =
+      volumeNumber === 14 && paragraph.text === "Iron Age Messengers & Saints, & Their Times (14:1)"
+        ? "Iron Age Messengers & Saints, & Their Times (14:11)"
+        : paragraph.text;
+    const match = correctedHeading.match(new RegExp(`^(.*)\\((${volumeNumber}:\\d+)\\):?$`));
     if (!match) return;
     const markerNumber = Number(match[2].split(":")[1]);
     if (markerNumber === 1) return;
-    if (paragraph.text.length > 180) return;
+    if (correctedHeading.length > 180) return;
     if (headings.some((entry) => entry.markerNumber === markerNumber)) return;
     headings.push({
       start: paragraph.start,
       end: paragraph.end,
-      text: paragraph.text,
+      text: correctedHeading,
       markerCode: match[2],
       markerNumber,
     });
@@ -900,7 +987,7 @@ function findExtensionMarkers(bodyHtml: string, volumeNumber: number) {
 
   paragraphs.forEach((paragraph) => {
     const opening = paragraph.text.match(
-      new RegExp(`^Opening of Web-?Extension \\((${volumeNumber}:\\d+)\\)$`)
+      new RegExp(`^Opening of Web-?Extension \\((${volumeNumber}:\\d+)\\)$`, "i")
     );
     if (opening) {
       const markerNumber = Number(opening[1].split(":")[1]);
@@ -909,7 +996,7 @@ function findExtensionMarkers(bodyHtml: string, volumeNumber: number) {
     }
 
     const ending = paragraph.text.match(
-      new RegExp(`^End of Web-?Extension(?: \\+ Draft)? \\((${volumeNumber}:\\d+)\\)$`)
+      new RegExp(`^End of Web-?Extension(?: \\+ Draft)? \\((${volumeNumber}:\\d+)\\)$`, "i")
     );
     if (ending) {
       const markerNumber = Number(ending[1].split(":")[1]);
@@ -1060,18 +1147,21 @@ async function runImport(config: ImportConfig, volumeNumber: number) {
 
   tocEntries.forEach((entry) => {
     const open = openings.get(entry.markerNumber);
-    const end = endings.get(entry.markerNumber);
-    if (!open || !end) {
-      throw new Error(`Missing extension boundaries for ${entry.markerCode}`);
+    const explicitEnd = endings.get(entry.markerNumber);
+    const nextOpen = openings.get(entry.markerNumber + 1);
+    if (!open) {
+      throw new Error(`Missing extension opening for ${entry.markerCode}`);
     }
     const chapterMeta = chapterMetaByMarker.get(entry.markerCode);
     if (!chapterMeta) {
       throw new Error(`Missing chapter meta for ${entry.markerCode}`);
     }
 
-    const segmentHtml = removeBoilerplateLead(
-      extensionBodyHtml.slice(open.end, end.start).trim()
-    );
+    const segmentEnd =
+      explicitEnd && explicitEnd.start > open.end
+        ? explicitEnd.start
+        : nextOpen?.start ?? extensionBodyHtml.length;
+    const segmentHtml = removeBoilerplateLead(extensionBodyHtml.slice(open.end, segmentEnd).trim());
 
     const mainChapter = chapters.find((chapter) => chapter.id === chapterMeta.chapterId)!;
     const extSectionId = `web-extension-${chapterMeta.chapterId}`;

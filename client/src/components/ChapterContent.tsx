@@ -27,6 +27,24 @@ const INLINE_IMAGE_CONFIG: Record<string, { itemId: string; variant: "default" |
 };
 const IMAGE_SECTION_ID = "list-of-images";
 
+/**
+ * Web-extension chips are authored inline at the tail of the final paragraph.
+ * Pull them out of the prose flow and gather them into a single centred block
+ * beneath the section, with breathing room — an apparatus footer rather than a
+ * tag dangling off a sentence.
+ */
+function relocateWebExtensionLinks(html: string): string {
+  const chipRe =
+    /\s*<a\b[^>]*class="[^"]*web-extension-chip[^"]*"[^>]*>[\s\S]*?<\/a>/g;
+  const chips = html.match(chipRe);
+  if (!chips || chips.length === 0) return html;
+  const stripped = html.replace(chipRe, "");
+  const footer = `<div class="web-extension-links">${chips
+    .map((chip) => chip.trim())
+    .join("")}</div>`;
+  return `${stripped}${footer}`;
+}
+
 function htmlToPlainText(content: string) {
   const text = (() => {
     if (typeof window !== "undefined") {
@@ -115,6 +133,16 @@ function classifyQuotations(container: HTMLElement) {
   const isAttribution = (t: string) =>
     ATTRIBUTION.test(t) && wordCount(t) <= 12;
 
+  // Tag an attribution line and strip its raw "~ "/"— " lead-in, so the CSS can
+  // render a single, elegant gilt em-dash flourish instead of a stray glyph.
+  const markAttribution = (el: HTMLElement, kind: "tt-verse" | "tt-quote") => {
+    el.classList.add("tt-attribution", kind);
+    el.dataset.ttClassified = "done";
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const first = walker.nextNode() as Text | null;
+    if (first) first.data = first.data.replace(/^\s*[~—–-]\s*/, "");
+  };
+
   // A line that reads as verse: short, and not a flowing prose sentence.
   // Prose paragraphs are long and end in a period; verse lines are short and
   // tend to end in a comma / question mark / dash / nothing, or are a fragment.
@@ -143,8 +171,7 @@ function classifyQuotations(container: HTMLElement) {
       el.dataset.ttClassified = "done";
       const attr = blocks[i + 1];
       if (attr && isAttribution(plain(attr))) {
-        attr.classList.add("tt-attribution", "tt-verse");
-        attr.dataset.ttClassified = "done";
+        markAttribution(attr, "tt-verse");
         i += 1;
       }
       continue;
@@ -175,8 +202,7 @@ function classifyQuotations(container: HTMLElement) {
         });
         const attr = blocks[j];
         if (attr && isAttribution(plain(attr))) {
-          attr.classList.add("tt-attribution", "tt-verse");
-          attr.dataset.ttClassified = "done";
+          markAttribution(attr, "tt-verse");
           j++;
         }
         i = j - 1;
@@ -217,8 +243,7 @@ function classifyQuotations(container: HTMLElement) {
       el.dataset.ttClassified = "done";
       const next = blocks[i + 1];
       if (next && isAttribution(plain(next))) {
-        next.classList.add("tt-attribution", "tt-quote");
-        next.dataset.ttClassified = "done";
+        markAttribution(next, "tt-quote");
         i += 1;
       }
       continue;
@@ -329,7 +354,9 @@ export default function ChapterContent({
   const sanitizedContent = useMemo(() => {
     const source = sectionMarkupOverride ?? contentWithInlineImages;
     // Tag crossheadings so the prose styles them and the nav can anchor here.
-    return processSubsections(source, section.id).html;
+    const processed = processSubsections(source, section.id).html;
+    // Gather web-extension chips into a centred footer below the prose.
+    return relocateWebExtensionLinks(processed);
   }, [contentWithInlineImages, sectionMarkupOverride, section.id]);
 
   useEffect(() => {
@@ -503,6 +530,43 @@ export default function ChapterContent({
         /* non-contiguous markers — ignore */
       }
     }
+
+    // A footnote marker is an atomic inline box, so the browser may wrap it onto
+    // the next line on its own — leaving a stray superscript orphaned from the
+    // word it annotates. Glue each marker to its preceding word/element inside a
+    // nowrap wrapper so the two can never be split, at any font size.
+    const glueMarkerToPreviousWord = (marker: HTMLElement) => {
+      const parent = marker.parentNode;
+      if (!parent) return;
+      if (marker.parentElement?.classList.contains("footnote-anchor")) return;
+      const prev = marker.previousSibling;
+      // Join an existing glued cluster (doubled markers share one anchor).
+      if (prev instanceof HTMLElement && prev.classList.contains("footnote-anchor")) {
+        prev.appendChild(marker);
+        return;
+      }
+      const wrap = document.createElement("span");
+      wrap.className = "footnote-anchor";
+      if (prev instanceof HTMLElement) {
+        // Preceded by an inline element (e.g. <strong>famous meeting</strong>).
+        parent.insertBefore(wrap, prev);
+        wrap.appendChild(prev);
+        wrap.appendChild(marker);
+        return;
+      }
+      if (prev && prev.nodeType === Node.TEXT_NODE) {
+        // Preceded by text: glue only the trailing word, leaving the rest behind.
+        const text = prev.textContent || "";
+        const match = text.match(/(\S+)\s*$/);
+        if (match && match.index !== undefined) {
+          prev.textContent = text.slice(0, match.index);
+          wrap.appendChild(document.createTextNode(match[1]));
+        }
+      }
+      parent.insertBefore(wrap, marker);
+      wrap.appendChild(marker);
+    };
+    markerList.forEach((marker) => glueMarkerToPreviousWord(marker));
 
     markers.forEach((marker) => {
       const footnote = resolveFootnote(marker);

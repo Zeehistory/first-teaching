@@ -119,11 +119,6 @@ export default function ChapterSidebar({
                       >
                         <Transliterated text={headingLabel} />
                       </span>
-                      {headingSubtitle && onlyEcho && (
-                        <span className="mt-0.5 block font-serif text-sm leading-snug text-sidebar-foreground/60">
-                          <Transliterated text={headingSubtitle} />
-                        </span>
-                      )}
                     </span>
                   </button>
 

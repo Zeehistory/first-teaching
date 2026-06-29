@@ -4,7 +4,15 @@ import type {
   TimelineEventSource,
 } from "@shared/schema";
 import { volumes } from "@/lib/volumes";
-import { volumeEighteenWebExtensions } from "@/lib/content";
+import {
+  volumeOneWebExtensions,
+  volumeThirteenWebExtensions,
+  volumeFourteenWebExtensions,
+  volumeFifteenWebExtensions,
+  volumeSixteenWebExtensions,
+  volumeSeventeenWebExtensions,
+  volumeEighteenWebExtensions,
+} from "@/lib/content";
 
 type TimelineSourceDescriptor = {
   key: string;
@@ -33,6 +41,16 @@ const DATE_PATTERNS = [
 ] as const;
 
 let cachedRuntime: TimelineRuntime | null = null;
+
+const webExtensionsByVolume = {
+  1: volumeOneWebExtensions,
+  13: volumeThirteenWebExtensions,
+  14: volumeFourteenWebExtensions,
+  15: volumeFifteenWebExtensions,
+  16: volumeSixteenWebExtensions,
+  17: volumeSeventeenWebExtensions,
+  18: volumeEighteenWebExtensions,
+} as const;
 
 function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -183,8 +201,10 @@ function collectTimelineSources() {
           });
         });
 
-        if (book.volumeNumber === 18) {
-          const extension = volumeEighteenWebExtensions[chapter.id];
+        if (book.volumeNumber in webExtensionsByVolume) {
+          const extensionMap =
+            webExtensionsByVolume[book.volumeNumber as keyof typeof webExtensionsByVolume];
+          const extension = extensionMap[chapter.id];
           if (!extension) return;
 
           sources.push({

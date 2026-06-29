@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import HomePage from "@/components/HomePage";
 import SearchOverlay from "@/components/SearchOverlay";
+import Bibliography from "@/pages/Bibliography";
 import { Button } from "@/components/ui/button";
 import { volumes } from "@/lib/volumes";
 
@@ -30,6 +31,10 @@ export default function Volume() {
         </div>
       </div>
     );
+  }
+
+  if (volume.bibliography) {
+    return <Bibliography data={volume.bibliography} onBack={() => setLocation("/")} />;
   }
 
   if (!volume.data) {

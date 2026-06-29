@@ -52,6 +52,30 @@ export interface BookData {
   chapters: Chapter[];
 }
 
+export type BibliographySourceType = "primary" | "secondary";
+
+export interface BibliographyEntry {
+  id: string;
+  html: string;
+  text: string;
+}
+
+export interface BibliographySection {
+  code: string;
+  title: string;
+  sourceType: BibliographySourceType;
+  entries: BibliographyEntry[];
+}
+
+export interface BibliographyData {
+  volumeNumber: 19;
+  title: string;
+  introduction: string;
+  notes: string[];
+  sections: BibliographySection[];
+  totalEntries: number;
+}
+
 export interface WebExtensionEntry {
   id: string;
   markerCode: string;
@@ -105,4 +129,5 @@ export interface VolumeSummary {
 
 export interface Volume extends VolumeSummary {
   data?: BookData;
+  bibliography?: BibliographyData;
 }
