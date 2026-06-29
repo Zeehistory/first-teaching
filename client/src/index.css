@@ -792,13 +792,26 @@
   justify-content: center;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 3.25rem;
-  padding-top: 1.85rem;
-  border-top: 1px solid hsl(var(--codex-rule) / 0.6);
+  margin-top: 2.75rem;
 }
 
 .chapter-prose .web-extension-links .web-extension-chip {
   margin: 0;
+}
+
+/* Arabesque section close — a gilt najmah-and-vine flourish marking the end of
+   a section, in place of a hard rule. */
+.chapter-prose .section-ornament {
+  display: flex;
+  justify-content: center;
+  margin: 2.4rem auto 0.5rem;
+  color: hsl(var(--gilt));
+}
+.chapter-prose .section-ornament svg {
+  width: 15rem;
+  max-width: 70%;
+  height: auto;
+  opacity: 0.85;
 }
 
 .chapter-prose .web-extension-chip::before {

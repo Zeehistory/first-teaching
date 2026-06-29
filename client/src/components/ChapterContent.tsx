@@ -42,8 +42,12 @@ function relocateWebExtensionLinks(html: string): string {
   const footer = `<div class="web-extension-links">${chips
     .map((chip) => chip.trim())
     .join("")}</div>`;
-  return `${stripped}${footer}`;
+  return `${stripped}${footer}${SECTION_ORNAMENT}`;
 }
+
+/* A small Islamicate arabesque — a central eight-point star (najmah) flanked by
+   symmetric vine scrolls in gilt — that closes a section in place of a rule. */
+const SECTION_ORNAMENT = `<div class="section-ornament" aria-hidden="true"><svg viewBox="0 0 280 40" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"><path d="M22 20 C 62 20 72 11 94 16 C 106 19 106 28 98 27 C 92 26 94 19 102 20"/><path d="M258 20 C 218 20 208 11 186 16 C 174 19 174 28 182 27 C 188 26 186 19 178 20"/></g><g transform="translate(140 20)"><path d="M0 -13 L3.2 -3.2 L13 0 L3.2 3.2 L0 13 L-3.2 3.2 L-13 0 L-3.2 -3.2 Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle r="2.1" fill="currentColor" stroke="none"/></g><circle cx="30" cy="20" r="1.7" fill="currentColor" stroke="none" opacity="0.7"/><circle cx="250" cy="20" r="1.7" fill="currentColor" stroke="none" opacity="0.7"/></svg></div>`;
 
 /**
  * Content images are authored as a bare <p><img …></p> followed by a short
