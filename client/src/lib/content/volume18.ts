@@ -12,7 +12,7 @@ export const volumeEighteenData: BookData = {
     {
       "id": "obligatory-creedal-belief-in-the-hereafter-otherworldly-eschatology",
       "number": 1,
-      "title": "Introduction",
+      "title": "Obligatory Creedal Belief in the Hereafter & Otherworldly Eschatology",
       "description": "</p><blockquote><p>This World is not Conclusion.</p><p>A Species stands beyond—</p><p>Invisible, as Music—</p><p>But positive, as Sound.</p><p>~ Emily Elizabeth Dickinson (d. 1303/1886)</p></blockquote><p> The Qur’ān opens by highlighting the fact that Belief in the World to Come is one of the most…",
       "sections": [
         {

@@ -594,6 +594,32 @@
   font-size: 0.9em;
 }
 
+/* Content images: small, centred plates with an italic caption beneath. */
+.chapter-prose img {
+  max-width: 100%;
+  height: auto;
+}
+.chapter-prose .content-figure {
+  margin: 2.5rem auto;
+  max-width: 340px;
+  text-align: center;
+}
+.chapter-prose .content-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 0.25rem;
+}
+.chapter-prose .content-figure figcaption {
+  margin-top: 0.85rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.86em;
+  line-height: 1.5;
+  color: hsl(var(--codex-ink-soft));
+}
+
 /* Ensure HTML formatting renders in chapter content */
 .chapter-prose b,
 .chapter-prose strong {

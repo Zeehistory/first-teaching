@@ -45,6 +45,28 @@ function relocateWebExtensionLinks(html: string): string {
   return `${stripped}${footer}`;
 }
 
+/**
+ * Content images are authored as a bare <p><img …></p> followed by a short
+ * caption paragraph. Wrap each into a centred <figure>, pulling a short trailing
+ * paragraph in as its <figcaption>, so images read as small centred plates with
+ * a caption rather than a giant left-aligned block.
+ */
+function wrapFiguresWithCaptions(html: string): string {
+  let out = html.replace(
+    /<p>\s*(<img\b[^>]*>)\s*<\/p>/gi,
+    '<figure class="content-figure">$1</figure>'
+  );
+  // Adopt a short following paragraph as the caption (skip if it holds an image).
+  out = out.replace(
+    /<\/figure>\s*<p>((?:(?!<\/p>)[\s\S]){1,180})<\/p>/gi,
+    (match, cap) =>
+      /<img\b/i.test(cap)
+        ? match
+        : `<figcaption>${cap.trim()}</figcaption></figure>`
+  );
+  return out;
+}
+
 function htmlToPlainText(content: string) {
   const text = (() => {
     if (typeof window !== "undefined") {
@@ -353,8 +375,10 @@ export default function ChapterContent({
 
   const sanitizedContent = useMemo(() => {
     const source = sectionMarkupOverride ?? contentWithInlineImages;
+    // Centre content images into figures (with captions) before anything else.
+    const withFigures = wrapFiguresWithCaptions(source);
     // Tag crossheadings so the prose styles them and the nav can anchor here.
-    const processed = processSubsections(source, section.id).html;
+    const processed = processSubsections(withFigures, section.id).html;
     // Gather web-extension chips into a centred footer below the prose.
     return relocateWebExtensionLinks(processed);
   }, [contentWithInlineImages, sectionMarkupOverride, section.id]);
