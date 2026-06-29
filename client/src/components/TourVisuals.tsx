@@ -1,9 +1,45 @@
 /**
- * Small, looping, on-palette visualizations for each onboarding slide.
- * Pure CSS/SVG — no dependencies. Each is keyed by slide id and re-mounts on
- * step change so its entrance animation replays. Restrained by design: one
- * idea per panel, codex colors, gentle motion.
+ * Visualizations for each onboarding slide.
+ *
+ * Primary path: a short, silent, looping screen-recording of the actual site
+ * performing the interaction the slide describes (captured from the live app).
+ * Each clip is keyed by slide id. The hand-drawn SVG/CSS panels below are kept
+ * as a graceful fallback for any id without a recording.
  */
+import welcomeClip from "@/assets/tour/welcome.mp4";
+import libraryClip from "@/assets/tour/library.mp4";
+import readingClip from "@/assets/tour/reading.mp4";
+import apparatusClip from "@/assets/tour/apparatus.mp4";
+import searchClip from "@/assets/tour/search.mp4";
+import audioClip from "@/assets/tour/audio.mp4";
+import assistantClip from "@/assets/tour/assistant.mp4";
+
+const CLIPS: Record<string, string> = {
+  welcome: welcomeClip,
+  library: libraryClip,
+  reading: readingClip,
+  apparatus: apparatusClip,
+  search: searchClip,
+  audio: audioClip,
+  assistant: assistantClip,
+};
+
+function ClipViz({ src }: { src: string }) {
+  return (
+    <div className="tour-viz tour-viz-clip">
+      <video
+        className="tour-viz-video"
+        src={src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
 
 function Stage({ children }: { children: React.ReactNode }) {
   return <div className="tour-viz">{children}</div>;
@@ -159,6 +195,8 @@ const MAP: Record<string, () => JSX.Element> = {
 };
 
 export default function TourVisual({ id }: { id: string }) {
+  const clip = CLIPS[id];
+  if (clip) return <ClipViz src={clip} />;
   const Viz = MAP[id];
   if (!Viz) return null;
   return <Viz />;

@@ -1546,6 +1546,14 @@ body.timeline-open {
 }
 .tour-viz { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .tour-viz-svg { width: 75%; height: 70%; overflow: visible; }
+/* A live screen-recording fills the stage; cover-crop keeps the salient action
+   framed and the codex-vellum corners hidden behind it. */
+.tour-viz-clip { inset: 0; }
+.tour-viz-video {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  display: block;
+}
 .tour-body { padding: 1.5rem 1.5rem 0.25rem; }
 .tour-eyebrow {
   display: inline-flex; align-items: center; gap: 0.5rem;
