@@ -152,12 +152,26 @@ export default function HomePage({
         </div>
 
         <div role="list">
-          {groupChapters(bookData.chapters).flatMap((group) => {
-            // Contents is a flat list (no indentation): Part headers still read
-            // as bolder, but every chapter sits flush-left.
-            const entries = group.part ? [group.part, ...group.books] : group.books;
-            return entries.map((e) =>
-              renderChapter(e.chapter, group.part?.chapter.id === e.chapter.id),
+          {groupChapters(bookData.chapters).map((group, groupIdx) => {
+            // A thematic Part header reads flush-left and bolder; the Books that
+            // nest under it are indented beneath, gathered by a hairline rule.
+            const key = group.part?.chapter.id ?? group.books[0]?.chapter.id ?? `g${groupIdx}`;
+            if (!group.part) {
+              return (
+                <div key={key}>
+                  {group.books.map((b) => renderChapter(b.chapter, false))}
+                </div>
+              );
+            }
+            return (
+              <div key={key}>
+                {renderChapter(group.part.chapter, true)}
+                {group.books.length > 0 && (
+                  <div className="ml-1 border-l border-[hsl(var(--codex-rule)/0.5)] pl-5 sm:ml-3 sm:pl-7">
+                    {group.books.map((b) => renderChapter(b.chapter, false))}
+                  </div>
+                )}
+              </div>
             );
           })}
           <div className="border-t border-[hsl(var(--codex-rule)/0.7)]" />

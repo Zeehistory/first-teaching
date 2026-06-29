@@ -167,7 +167,7 @@ export default function VolumesLanding({ overview, volumes, onSelectVolume }: Vo
         <div className="mx-auto max-w-5xl px-6 py-16">
           <div className="flex items-baseline gap-3">
             <BookOpen className="h-4 w-4 translate-y-0.5 text-[hsl(var(--gilt))]" />
-            <h2 className="codex-label">The Apparatus</h2>
+            <h2 className="codex-label">The Reference Shelf</h2>
           </div>
           <p className="mt-3 max-w-xl font-heading text-2xl text-foreground">
             Index, Bibliography &amp; Teaching Glossary
